@@ -1,0 +1,36 @@
+services:
+    vulkan-compiler:
+        image: srpatsu21/dear-glfw-vulkan-compiler:1.3.0
+        container_name: ApotheosisCompiler
+        stdin_open: true
+        tty: true
+        working_dir: /workspace
+        environment:
+            # ssh pass
+            ROOT_PASSWORD: 123asdasdadasd12313asdasdwqe
+        # ports:
+            # ssh port
+            # - "2222:22"
+        volumes:
+            # create build files
+            - ./build:/workspace/build
+            - ./build-release:/workspace/build-release
+            - ./build-windows:/workspace/build-windows
+            - ./build-windows-release:/workspace/build-windows-release
+
+            # map your libs and config
+            - ./CMakeLists.txt:/workspace/CMakeLists.txt
+            - ./toolchain-mingw.cmake:/workspace/toolchain-mingw.cmake
+            - ./lib:/workspace/lib
+
+            # make src interactive
+            - ./src:/workspace/src
+
+            # if you want to replace the scripts
+            - ./scripts:/workspace/scripts
+
+            # git
+            - ./.git:/workspace/.git
+
+            # uml
+            - .:/workspace
