@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 # ============================================================
 # Project
 # ============================================================
-set(PROJECT_NAME "bvh_comparasion")
+set(PROJECT_NAME "bvh_comparison")
 project(
     ${PROJECT_NAME}
     VERSION 1.0.0

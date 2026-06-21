@@ -84,7 +84,7 @@ chmod +x scripts/install_vulkansdk_wine.sh
 ```shell
 cd build-windows
 source ./wine-vulkan-env.sh
-wine Apotheosis_client.exe
+wine bvh_comparison.exe
 ```
 
 ## Textures and Models

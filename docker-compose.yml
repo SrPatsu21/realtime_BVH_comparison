@@ -1,7 +1,7 @@
 services:
     vulkan-compiler:
         image: srpatsu21/dear-glfw-vulkan-compiler:1.3.0
-        container_name: ApotheosisCompiler
+        container_name: bvh_comparison
         stdin_open: true
         tty: true
         working_dir: /workspace
