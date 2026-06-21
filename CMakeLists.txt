@@ -264,7 +264,6 @@ if(WIN32)
     )
 
     target_link_libraries(${PROJECT_NAME}_client
-        game_common
         glfw
         assimp
         vulkan
@@ -273,7 +272,6 @@ if(WIN32)
     )
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME}_client
-        game_common
         glfw
         Vulkan::Vulkan
         glm::glm
@@ -292,4 +290,3 @@ endif()
 # Output names
 # ============================================================
 set_target_properties(${PROJECT_NAME}_client PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_client")
-set_target_properties(${PROJECT_NAME}_server PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_server")
