@@ -1,0 +1,10 @@
+All assets contained in this directory are NOT licensed under the Apache License 2.0.
+
+Unless explicitly stated otherwise:
+- These assets are proprietary.
+- Redistribution, modification, or reuse is not permitted without permission.
+
+This includes, but is not limited to:
+- Art, textures, sprites, models
+- Audio, music, sound effects
+- Story, characters, worldbuilding

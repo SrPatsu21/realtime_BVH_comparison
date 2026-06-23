@@ -148,7 +148,6 @@ set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
 
 set(SHADERS
-    skinned.vert.glsl
     triangle.frag.glsl
     triangle.vert.glsl
     particle.frag.glsl
