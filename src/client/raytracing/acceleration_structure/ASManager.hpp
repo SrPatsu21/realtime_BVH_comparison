@@ -13,6 +13,10 @@ enum class BVHType
     BSAH
 };
 
+template<
+    typename BuilderType,
+    typename NodeType = BVHNode
+>
 class ASManager
 {
 public:
@@ -21,10 +25,18 @@ public:
         const std::vector<Triangle>& triangles
     );
 
-    void buildTLAS();
+    void buildTLAS(
+        const std::vector<BLASInstance>& instances
+    );
+
+    const AS<NodeType>& getBLAS(
+        uint32_t index
+    ) const;
+
+    const AS<NodeType>& getTLAS() const;
 
 private:
 
-    std::vector<AS<BVHNode>> m_blas;
-    TLAS<BVHNode> m_tlas;
+    std::vector<AS<NodeType>> m_blas;
+    AS<NodeType> m_tlas;
 };
