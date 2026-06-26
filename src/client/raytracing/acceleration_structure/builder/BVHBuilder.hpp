@@ -3,10 +3,11 @@
 #include <vector>
 #include <cstdint>
 
-template<typename NodeType>
+template<typename TNodeType>
 class BVHBuilder
 {
 public:
+    using NodeType = TNodeType;
 
     static constexpr uint32_t LEAF_SIZE = 4;
 

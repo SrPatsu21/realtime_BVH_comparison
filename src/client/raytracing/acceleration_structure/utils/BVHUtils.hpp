@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "AABB.hpp"
+#include "../AABB.hpp"
 
 class BVHUtils
 {

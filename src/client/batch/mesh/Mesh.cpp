@@ -149,6 +149,9 @@ Mesh::Mesh(
 
     load(path, vertices, indices);
 
+    cpuVertices = vertices;
+    cpuIndices = indices;
+
     vertexBufferManager =
         std::make_unique<VertexBufferManager>(
             device, bufferManager, vertices

@@ -60,7 +60,7 @@ uint32_t BVHBuilder<NodeType>::buildRecursive(
             end
         );
 
-    int axis = SelectSplitAxis(centroidBounds);
+    int axis = BVHUtils::selectSplitAxis(centroidBounds);
 
     uint32_t mid = begin + count / 2;
 

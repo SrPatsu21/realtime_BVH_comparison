@@ -22,7 +22,7 @@ public:
         const Mesh::SubMesh* submesh;
         std::shared_ptr<Material> material;
         GraphicsPipeline::PipelineFlags pipelineFlags;
-        std::shared_ptr<AccelerationStructure<BVHNode>> accelerationStructure;
+        uint32_t blasIndex;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
@@ -59,7 +59,12 @@ private:
     std::shared_ptr<RenderInstance> testRInstance;
 
     ResourceManager* resourceManager;
-    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* AccelerationStructureManager;
+    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* accelerationStructureManager;
+
+    std::vector<Triangle> buildTriangles(
+        const Mesh& mesh,
+        const Mesh::SubMesh& submesh
+    ) const;
 
 public:
     void addInstance(

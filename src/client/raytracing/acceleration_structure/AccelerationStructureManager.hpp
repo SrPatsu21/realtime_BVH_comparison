@@ -20,10 +20,10 @@ public:
         const std::vector<BLASInstance>& instances
     );
 
+    template<typename Primitive>
     uint32_t createBLAS(
-        const std::vector<Triangle>& triangles
+        const std::vector<Primitive>& primitives
     );
-
 
     const AccelerationStructure<BLNodeType>& getBLAS(
         uint32_t index
@@ -33,6 +33,6 @@ public:
 
 private:
 
-    std::vector<AccelerationStructure<BLNodeType>> m_blas;
-    AccelerationStructure<TLNodeType> m_tlas;
+    AccelerationStructure<TLNodeType> tlas;
+    std::vector<AccelerationStructure<BLNodeType>> blas;
 };

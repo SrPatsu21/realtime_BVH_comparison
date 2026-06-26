@@ -66,6 +66,9 @@ protected:
     std::vector<SubMesh> subMeshes;
     std::vector<MaterialData> materials;
 
+    std::vector<Vertex> cpuVertices;
+    std::vector<uint32_t> cpuIndices;
+
     uint32_t indexCount = 0;
 
     /**
@@ -128,6 +131,9 @@ public:
 
     const std::vector<Mesh::SubMesh>& getSubMeshes() const { return subMeshes; }
     const std::vector<Mesh::MaterialData>& getMaterials() const { return materials; }
+
+    const std::vector<Vertex>& getVertices() const { return cpuVertices; }
+    const std::vector<uint32_t>& getIndices() const { return cpuIndices; }
 
     uint32_t getIndexCount() const { return indexCount; }
 };

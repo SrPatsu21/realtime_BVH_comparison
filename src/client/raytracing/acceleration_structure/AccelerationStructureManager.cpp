@@ -4,34 +4,35 @@ template<
     typename TLBuilderType,
     typename BLBuilderType
 >
+template<typename Primitive>
 uint32_t AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
 >::createBLAS(
-    const std::vector<Triangle>& triangles
+    const std::vector<Primitive>& primitives
 )
 {
     using BLNodeType =
-    typename AccelerationStructureManager<
-        TLBuilderType,
-        BLBuilderType
-    >::BLNodeType;
+        typename AccelerationStructureManager<
+            TLBuilderType,
+            BLBuilderType
+        >::BLNodeType;
 
-    AccelerationStructure<BLNodeType> blas;
+    AccelerationStructure<BLNodeType> accelerationStructure;
 
-    std::vector<Triangle> localTriangles = triangles;
+    std::vector<Primitive> localPrimitives = primitives;
 
     BLBuilderType::Build(
-        blas.nodes,
-        localTriangles
+        accelerationStructure.nodes,
+        localPrimitives
     );
 
-    m_blas.push_back(
-        std::move(blas)
+    this->blas.push_back(
+        std::move(accelerationStructure)
     );
 
     return static_cast<uint32_t>(
-        m_blas.size() - 1
+        this->blas.size() - 1
     );
 }
 
@@ -46,13 +47,13 @@ void AccelerationStructureManager<
     const std::vector<BLASInstance>& instances
 )
 {
-    m_tlas.nodes.clear();
+    tlas.nodes.clear();
 
     std::vector<BLASInstance> localInstances =
         instances;
 
     TLBuilderType::Build(
-        m_tlas.nodes,
+        tlas.nodes,
         localInstances
     );
 }
@@ -73,7 +74,7 @@ AccelerationStructureManager<
 >::getBLAS(
     uint32_t index
 ) const {
-    return m_blas[index];
+    return blas[index];
 }
 
 template<
@@ -92,5 +93,5 @@ AccelerationStructureManager<
 >::getTLAS(
 ) const
 {
-    return m_tlas;
+    return tlas;
 }
