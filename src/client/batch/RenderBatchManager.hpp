@@ -4,6 +4,10 @@
 #include "instance/InstanceData.hpp"
 #include "instance/RenderInstance.hpp"
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
+#include "../raytracing/acceleration_structure/AccelerationStructure.hpp"
+#include "../raytracing/acceleration_structure/BVHNode.hpp"
+#include "../raytracing/acceleration_structure/AccelerationStructureManager.hpp"
+#include "../raytracing/acceleration_structure/builder/BVHBuilder.hpp"
 
 #include <list>
 
@@ -18,6 +22,7 @@ public:
         const Mesh::SubMesh* submesh;
         std::shared_ptr<Material> material;
         GraphicsPipeline::PipelineFlags pipelineFlags;
+        std::shared_ptr<AccelerationStructure<BVHNode>> accelerationStructure;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
@@ -54,6 +59,7 @@ private:
     std::shared_ptr<RenderInstance> testRInstance;
 
     ResourceManager* resourceManager;
+    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* AccelerationStructureManager;
 
 public:
     void addInstance(

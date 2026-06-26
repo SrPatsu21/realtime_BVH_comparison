@@ -9,20 +9,20 @@ class BVHUtils
 {
 public:
     template<typename PrimitiveType>
-    static AABB ComputeBounds(
+    static AABB computeBounds(
         const std::vector<PrimitiveType>& primitives,
         uint32_t begin,
         uint32_t end
     );
 
     template<typename PrimitiveType>
-    static AABB ComputeCentroidBounds(
+    static AABB computeCentroidBounds(
         const std::vector<PrimitiveType>& primitives,
         uint32_t begin,
         uint32_t end
     );
 
-    static int SelectSplitAxis(
+    static int selectSplitAxis(
         const AABB& centroidBounds
     );
 };

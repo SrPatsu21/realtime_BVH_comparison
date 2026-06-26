@@ -1,7 +1,7 @@
 #include "BVHUtils.hpp"
 
 template<typename PrimitiveType>
-AABB BVHUtils::ComputeBounds(
+AABB BVHUtils::computeBounds(
     const std::vector<PrimitiveType>& primitives,
     uint32_t begin,
     uint32_t end
@@ -17,7 +17,7 @@ AABB BVHUtils::ComputeBounds(
 }
 
 template<typename PrimitiveType>
-AABB BVHUtils::ComputeCentroidBounds(
+AABB BVHUtils::computeCentroidBounds(
     const std::vector<PrimitiveType>& primitives,
     uint32_t begin,
     uint32_t end
@@ -39,7 +39,7 @@ AABB BVHUtils::ComputeCentroidBounds(
     return bounds;
 }
 
-int BVHUtils::SelectSplitAxis(
+int BVHUtils::selectSplitAxis(
     const AABB& centroidBounds
 ) {
     float dx =
