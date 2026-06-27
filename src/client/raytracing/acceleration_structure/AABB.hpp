@@ -1,27 +1,22 @@
 #pragma once
-#include <algorithm>
-#include <cmath>
+
+#include <glm/glm.hpp>
 
 class AABB
 {
 public:
-
-    class Axis {
-    public:
-        static constexpr int X = 0;
-        static constexpr int Y = 1;
-        static constexpr int Z = 2;
-    };
-
-    float min[3];
-    float max[3];
+    glm::vec3 min;
+    glm::vec3 max;
 
     AABB();
 
-    void expand(const AABB& b);
-    void expand(const float p[3]);
+    void reset();
+
+    void expand(const AABB& other);
+    void expand(const glm::vec3& point);
+
+    glm::vec3 getCenter() const;
+    float getCenterAxis(int axis) const;
 
     float surfaceArea() const;
-
-    float getCentroidAxis(int axis) const;
 };

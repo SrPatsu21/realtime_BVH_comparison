@@ -3,8 +3,6 @@
 #include "instance/RenderInstance.hpp"
 #include "instance/InstanceData.hpp"
 
-#include <algorithm>
-
 // ========================
 // BatchKey
 // ========================
@@ -127,7 +125,8 @@ void RenderBatchManager::addInstance(
             mesh,
             &meshs[i],
             resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i]),
-            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_NONE | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND
+            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_NONE | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND,
+            resourceManager->getAccelerationStructure(mesh.get())
         };
 
         auto it = batches_map.find(key);
@@ -141,13 +140,6 @@ void RenderBatchManager::addInstance(
             auto batch = std::make_unique<RenderBatch>(key);
             auto* batchPtr = batch.get();
 
-            auto triangles = buildTriangles(
-                *mesh,
-                meshs[i]
-            );
-
-            batchPtr->batchKey.blasIndex = accelerationStructureManager->createBLAS(triangles);
-
             batches_map.emplace(key, std::move(batch));
 
             batchPtr->addInstance(
@@ -157,34 +149,6 @@ void RenderBatchManager::addInstance(
             batches_dirty = true;
         }
     }
-}
-
-std::vector<Triangle> RenderBatchManager::buildTriangles(
-    const Mesh& mesh,
-    const Mesh::SubMesh& submesh
-) const
-{
-    std::vector<Triangle> triangles;
-
-    const auto& vertices = mesh.getVertices();
-    const auto& indices  = mesh.getIndices();
-
-    triangles.reserve(submesh.indexCount / 3);
-
-    for (uint32_t i = 0; i < submesh.indexCount; i += 3)
-    {
-        uint32_t i0 = indices[submesh.firstIndex + i + 0];
-        uint32_t i1 = indices[submesh.firstIndex + i + 1];
-        uint32_t i2 = indices[submesh.firstIndex + i + 2];
-
-        triangles.emplace_back(
-            vertices[i0 + submesh.vertexOffset],
-            vertices[i1 + submesh.vertexOffset],
-            vertices[i2 + submesh.vertexOffset]
-        );
-    }
-
-    return triangles;
 }
 
 bool RenderBatchManager::removeInstance(

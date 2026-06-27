@@ -1,43 +1,43 @@
 #include "AABB.hpp"
+#include <algorithm>
 
 AABB::AABB()
 {
-    min[0] = min[1] = min[2] =  1e30f;
-    max[0] = max[1] = max[2] = -1e30f;
+    reset();
 }
 
-void AABB::expand(const AABB& b)
+void AABB::reset()
 {
-    min[0] = std::min(min[0], b.min[0]);
-    min[1] = std::min(min[1], b.min[1]);
-    min[2] = std::min(min[2], b.min[2]);
-
-    max[0] = std::max(max[0], b.max[0]);
-    max[1] = std::max(max[1], b.max[1]);
-    max[2] = std::max(max[2], b.max[2]);
+    min = glm::vec3( 1e30f);
+    max = glm::vec3(-1e30f);
 }
 
-void AABB::expand(const float p[3])
+void AABB::expand(const AABB& other)
 {
-    min[0] = std::min(min[0], p[0]);
-    min[1] = std::min(min[1], p[1]);
-    min[2] = std::min(min[2], p[2]);
+    min = glm::min(min, other.min);
+    max = glm::max(max, other.max);
+}
 
-    max[0] = std::max(max[0], p[0]);
-    max[1] = std::max(max[1], p[1]);
-    max[2] = std::max(max[2], p[2]);
+void AABB::expand(const glm::vec3& point)
+{
+    min = glm::min(min, point);
+    max = glm::max(max, point);
+}
+
+glm::vec3 AABB::getCenter() const
+{
+    return (min + max) * 0.5f;
+}
+
+float AABB::getCenterAxis(int axis) const
+{
+    return getCenter()[axis];
 }
 
 float AABB::surfaceArea() const
 {
-    float dx = max[0] - min[0];
-    float dy = max[1] - min[1];
-    float dz = max[2] - min[2];
-
-    return 2.0f * (dx*dy + dy*dz + dz*dx);
-}
-
-float AABB::getCentroidAxis(int axis) const
-{
-    return 0.5f * (min[axis] + max[axis]);
+    glm::vec3 size = max - min;
+    return 2.0f * (size.x * size.y +
+                   size.y * size.z +
+                   size.z * size.x);
 }

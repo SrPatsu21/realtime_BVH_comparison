@@ -8,6 +8,11 @@
 #include "material/Material.hpp"
 #include "texture/SamplerManager.hpp"
 #include "texture/TextureImage.hpp"
+#include "../raytracing/acceleration_structure/AccelerationStructure.hpp"
+#include "../raytracing/acceleration_structure/BVHNode.hpp"
+#include "../raytracing/acceleration_structure/AccelerationStructureManager.hpp"
+#include "../raytracing/acceleration_structure/builder/BVHBuilder.hpp"
+#include "../raytracing/acceleration_structure/primitives/PrimitiveRef.hpp"
 
 class ResourceManager
 {
@@ -17,10 +22,17 @@ private:
     BufferManager* bufferManager;
     SamplerManager samplerManager;
     MaterialDescriptorManager* descriptorManager;
+    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* accelerationStructureManager;
 
     std::unordered_map<std::string, std::weak_ptr<Mesh>> meshes;
     std::unordered_map<std::string, std::weak_ptr<TextureImage>> textures;
     std::unordered_map<std::string, std::weak_ptr<Material>> materials;
+    std::unordered_map<const Mesh*, std::weak_ptr<AccelerationStructure<BVHNode>>> accelerationStructures;
+
+    static void buildPrimitiveRefs(
+        const Mesh& mesh,
+        std::vector<PrimitiveRef>& primitives
+    );
 public:
     ResourceManager(
         VkPhysicalDevice physicalDevice,
@@ -45,5 +57,10 @@ public:
 
     std::shared_ptr<TextureImage> getTexture(
         const std::string& path
+    );
+
+    std::shared_ptr<AccelerationStructure<BVHNode>>
+    getAccelerationStructure(
+        const Mesh* mash
     );
 };

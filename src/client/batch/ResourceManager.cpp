@@ -166,3 +166,67 @@ ResourceManager::getTexture(const std::string& path)
 
     return textureImage;
 }
+
+std::shared_ptr<AccelerationStructure<BVHNode>>
+ResourceManager::getAccelerationStructure(
+    const Mesh* mesh
+)
+{
+    auto it = accelerationStructures.find(mesh);
+
+    if (it != accelerationStructures.end())
+    {
+        if (std::shared_ptr<AccelerationStructure<BVHNode>> accelerationStructure = it->second.lock())
+            return accelerationStructure;
+    }
+
+    std::shared_ptr<AccelerationStructure<BVHNode>> accelerationStructure = std::make_shared<AccelerationStructure<BVHNode>>();
+
+    std::vector<PrimitiveRef> primitives;
+
+    buildPrimitiveRefs(
+        *mesh,
+        primitives
+    );
+
+    BVHBuilder<BVHNode>::build(
+        accelerationStructure->nodes,
+        primitives
+    );
+
+    accelerationStructures[mesh] = accelerationStructure;
+
+    return accelerationStructure;
+}
+
+void ResourceManager::buildPrimitiveRefs(
+    const Mesh& mesh,
+    std::vector<PrimitiveRef>& primitives
+)
+{
+    primitives.clear();
+
+    const auto& vertices = mesh.getVertices();
+    const auto& indices = mesh.getIndices();
+
+    primitives.reserve(indices.size() / 3);
+
+    for (uint32_t i = 0; i < indices.size(); i += 3)
+    {
+        const glm::vec3& v0 = vertices[indices[i + 0]].pos;
+        const glm::vec3& v1 = vertices[indices[i + 1]].pos;
+        const glm::vec3& v2 = vertices[indices[i + 2]].pos;
+
+        PrimitiveRef primitive{};
+
+        primitive.meshID = 0;
+        primitive.triangleIndex = i / 3;
+
+        primitive.bounds.reset();
+        primitive.bounds.expand(v0);
+        primitive.bounds.expand(v1);
+        primitive.bounds.expand(v2);
+
+        primitives.emplace_back(std::move(primitive));
+    }
+}
