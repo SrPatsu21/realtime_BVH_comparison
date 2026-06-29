@@ -167,20 +167,17 @@ ResourceManager::getTexture(const std::string& path)
     return textureImage;
 }
 
-std::shared_ptr<AccelerationStructure<BVHNode>>
-ResourceManager::getAccelerationStructure(
+uint32_t
+ResourceManager::getAccelerationStructureIndex(
     const Mesh* mesh
 )
 {
-    auto it = accelerationStructures.find(mesh);
+    auto it = accelerationStructuresIndex.find(mesh);
 
-    if (it != accelerationStructures.end())
+    if (it != accelerationStructuresIndex.end())
     {
-        if (std::shared_ptr<AccelerationStructure<BVHNode>> accelerationStructure = it->second.lock())
-            return accelerationStructure;
+        return it->second;
     }
-
-    std::shared_ptr<AccelerationStructure<BVHNode>> accelerationStructure = std::make_shared<AccelerationStructure<BVHNode>>();
 
     std::vector<PrimitiveRef> primitives;
 
@@ -189,14 +186,11 @@ ResourceManager::getAccelerationStructure(
         primitives
     );
 
-    BVHBuilder<BVHNode>::build(
-        accelerationStructure->nodes,
-        primitives
-    );
+    uint32_t accelerationStructureIndex = accelerationStructureManager->createBLAS(mesh, primitives);
 
-    accelerationStructures[mesh] = accelerationStructure;
+    accelerationStructuresIndex[mesh] = accelerationStructureIndex;
 
-    return accelerationStructure;
+    return accelerationStructureIndex;
 }
 
 void ResourceManager::buildPrimitiveRefs(
@@ -219,7 +213,6 @@ void ResourceManager::buildPrimitiveRefs(
 
         PrimitiveRef primitive{};
 
-        primitive.meshID = 0;
         primitive.triangleIndex = i / 3;
 
         primitive.bounds.reset();

@@ -2,7 +2,6 @@
 
 struct PrimitiveRef
 {
-    uint32_t meshID;
     uint32_t triangleIndex;
 
     AABB bounds;

@@ -2,8 +2,10 @@
 #include <cstdint>
 #include "BVHNode.hpp"
 #include "primitives/BLASInstance.hpp"
-#include "primitives/Triangle.hpp"
 #include "AccelerationStructure.hpp"
+#include "BLAS.hpp"
+#include "vulkan/VulkanBLAS.hpp"
+#include "../../batch/mesh/Mesh.hpp"
 
 template<
     typename TLBuilderType,
@@ -22,10 +24,11 @@ public:
 
     template<typename Primitive>
     uint32_t createBLAS(
+        const Mesh* mesh,
         const std::vector<Primitive>& primitives
     );
 
-    const AccelerationStructure<BLNodeType>& getBLAS(
+    const BLAS<BLNodeType>& getBLAS(
         uint32_t index
     ) const;
 
@@ -34,5 +37,5 @@ public:
 private:
 
     AccelerationStructure<TLNodeType> tlas;
-    std::vector<AccelerationStructure<BLNodeType>> blas;
+    std::vector<BLAS<BLNodeType>> blas;
 };

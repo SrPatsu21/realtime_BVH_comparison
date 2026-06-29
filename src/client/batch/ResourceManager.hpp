@@ -27,7 +27,7 @@ private:
     std::unordered_map<std::string, std::weak_ptr<Mesh>> meshes;
     std::unordered_map<std::string, std::weak_ptr<TextureImage>> textures;
     std::unordered_map<std::string, std::weak_ptr<Material>> materials;
-    std::unordered_map<const Mesh*, std::weak_ptr<AccelerationStructure<BVHNode>>> accelerationStructures;
+    std::unordered_map<const Mesh*, uint32_t> accelerationStructuresIndex;
 
     static void buildPrimitiveRefs(
         const Mesh& mesh,
@@ -59,8 +59,8 @@ public:
         const std::string& path
     );
 
-    std::shared_ptr<AccelerationStructure<BVHNode>>
-    getAccelerationStructure(
+    uint32_t
+    getAccelerationStructureIndex(
         const Mesh* mash
     );
 };
