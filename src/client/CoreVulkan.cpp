@@ -78,7 +78,6 @@ CoreVulkan::CoreVulkan(CoreVulkan&& other) noexcept
     graphicsQueue = other.graphicsQueue;
     depthFormat = other.depthFormat;
 
-    // deixa o objeto movido em estado seguro
     other.instance = VK_NULL_HANDLE;
     other.surface = VK_NULL_HANDLE;
     other.physicalDevice = VK_NULL_HANDLE;
@@ -500,7 +499,7 @@ void CoreVulkan::createLogicalDevice(
         p->contribute(config);
     }
 
-    // resolve feature suport
+    // resolve feature support
     supportedFeatures12 = {};
     supportedFeatures12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
@@ -513,6 +512,15 @@ void CoreVulkan::createLogicalDevice(
     // enable features
     VkPhysicalDeviceVulkan12Features enabled12{};
     enabled12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+    if (!supportedFeatures12.bufferDeviceAddress)
+    {
+        throw std::runtime_error(
+            "GPU does not support buffer device address."
+        );
+    }
+
+    enabled12.bufferDeviceAddress = VK_TRUE;
 
     if (supportedFeatures12.descriptorIndexing) {
         enabled12.descriptorIndexing = VK_TRUE;

@@ -106,6 +106,13 @@ public:    /**
         VkBuffer& buffer
     );
 
+    void allocateBufferMemory(
+        VkBuffer buffer,
+        VkMemoryPropertyFlags properties,
+        VkDeviceMemory& bufferMemory,
+        bool deviceAddress
+    );
+
     /**
      * @brief Allocates device memory for a buffer.
      *
@@ -241,8 +248,135 @@ public:    /**
         uint32_t layerCount
     );
 
+    template<typename T>
+    VkBuffer
+    createDeviceBuffer(
+        const std::vector<T>& data,
+        VkBufferUsageFlags usage,
+        VkDeviceMemory& memory,
+        VkDeviceAddress* address
+    );
+
     /**
      * @brief Destroys the BufferManager and releases internal resources.
      */
     ~BufferManager();
 };
+
+template<typename T>
+VkBuffer BufferManager::createDeviceBuffer(
+    const std::vector<T>& data,
+    VkBufferUsageFlags usage,
+    VkDeviceMemory& memory,
+    VkDeviceAddress* address
+)
+{
+    const VkDeviceSize size = sizeof(T) * data.size();
+
+    VkBuffer buffer;
+
+    // staging
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+
+    createBuffer(
+        size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        stagingBuffer
+    );
+
+    allocateBufferMemory(
+        stagingBuffer,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingMemory
+    );
+
+    vkBindBufferMemory(
+        device,
+        stagingBuffer,
+        stagingMemory,
+        0
+    );
+
+    void* mapped;
+
+    vkMapMemory(
+        device,
+        stagingMemory,
+        0,
+        size,
+        0,
+        &mapped
+    );
+
+    memcpy(
+        mapped,
+        data.data(),
+        size
+    );
+
+    vkUnmapMemory(
+        device,
+        stagingMemory
+    );
+
+    // device buffer
+
+    createBuffer(
+        size,
+        usage |
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        buffer
+    );
+
+    allocateBufferMemory(
+        buffer,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        memory,
+        true
+    );
+
+    vkBindBufferMemory(
+        device,
+        buffer,
+        memory,
+        0
+    );
+
+    copyBuffer(
+        stagingBuffer,
+        buffer,
+        size
+    );
+
+    vkDestroyBuffer(
+        device,
+        stagingBuffer,
+        nullptr
+    );
+
+    vkFreeMemory(
+        device,
+        stagingMemory,
+        nullptr
+    );
+
+    if (address)
+    {
+        VkBufferDeviceAddressInfo info{};
+        info.sType =
+            VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        info.buffer = buffer;
+
+        *address =
+            vkGetBufferDeviceAddress(
+                device,
+                &info
+            );
+    }
+
+    return buffer;
+}

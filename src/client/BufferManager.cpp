@@ -32,6 +32,57 @@ void BufferManager::createBuffer(
 void BufferManager::allocateBufferMemory(
     VkBuffer buffer,
     VkMemoryPropertyFlags properties,
+    VkDeviceMemory& bufferMemory,
+    bool deviceAddress
+)
+{
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(
+        device,
+        buffer,
+        &memRequirements
+    );
+
+    VkMemoryAllocateFlagsInfo flagsInfo{};
+    flagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+    flagsInfo.flags =
+        deviceAddress
+            ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+            : 0;
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.pNext =
+        deviceAddress
+            ? &flagsInfo
+            : nullptr;
+
+    allocInfo.allocationSize = memRequirements.size;
+
+    allocInfo.memoryTypeIndex =
+        CoreVulkan::findMemoryType(
+            physicalDevice,
+            memRequirements.memoryTypeBits,
+            properties,
+            0
+        );
+
+    if (vkAllocateMemory(
+            device,
+            &allocInfo,
+            nullptr,
+            &bufferMemory
+        ) != VK_SUCCESS)
+    {
+        throw std::runtime_error(
+            "failed to allocate buffer memory!"
+        );
+    }
+}
+
+void BufferManager::allocateBufferMemory(
+    VkBuffer buffer,
+    VkMemoryPropertyFlags properties,
     VkDeviceMemory& bufferMemory
 ) {
     VkMemoryRequirements memRequirements;
@@ -73,7 +124,6 @@ void BufferManager::allocateBufferMemory(
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
-    // Descobrir flags reais da memória escolhida
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
@@ -214,7 +264,7 @@ void BufferManager::uploadToImageMipLevel(
     uint32_t layerCount
 )
 {
-    // Criar staging buffer
+    // Create staging buffer
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
@@ -233,7 +283,7 @@ void BufferManager::uploadToImageMipLevel(
 
     vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
 
-    // Copiar dados CPU → staging
+    // Copy data CPU → staging
     void* mapped;
     vkMapMemory(device, stagingMemory, 0, size, 0, &mapped);
     memcpy(mapped, data, (size_t)size);

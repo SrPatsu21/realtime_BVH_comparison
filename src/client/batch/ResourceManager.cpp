@@ -12,6 +12,7 @@ ResourceManager::ResourceManager(
     descriptorManager(descriptorManager),
     samplerManager(physicalDevice, device)
 {
+    accelerationStructureManager = new AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>(device);
 }
 
 std::shared_ptr<Mesh> ResourceManager::getMesh(
@@ -178,7 +179,6 @@ ResourceManager::getAccelerationStructureIndex(
     {
         return it->second;
     }
-
     std::vector<PrimitiveRef> primitives;
 
     buildPrimitiveRefs(
@@ -186,7 +186,7 @@ ResourceManager::getAccelerationStructureIndex(
         primitives
     );
 
-    uint32_t accelerationStructureIndex = accelerationStructureManager->createBLAS(mesh, primitives);
+    uint32_t accelerationStructureIndex = accelerationStructureManager->createBLAS(mesh, primitives, bufferManager);
 
     accelerationStructuresIndex[mesh] = accelerationStructureIndex;
 
@@ -222,4 +222,8 @@ void ResourceManager::buildPrimitiveRefs(
 
         primitives.emplace_back(std::move(primitive));
     }
+}
+
+ResourceManager::~ResourceManager(){
+    delete accelerationStructureManager;
 }

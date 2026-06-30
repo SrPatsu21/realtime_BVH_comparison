@@ -17,10 +17,10 @@ public:
     struct BatchKey
     {
         std::shared_ptr<Mesh> mesh;
-        const Mesh::SubMesh* submesh;
+        const Mesh::SubMesh* subMesh;
         std::shared_ptr<Material> material;
         GraphicsPipeline::PipelineFlags pipelineFlags;
-        std::shared_ptr<AccelerationStructure<BVHNode>> blas;
+        uint32_t blas;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
@@ -39,7 +39,7 @@ public:
 
             hash_combine(std::hash<GraphicsPipeline::PipelineFlags>()(key.pipelineFlags));
             hash_combine(std::hash<Mesh*>()(key.mesh.get()));
-            hash_combine(std::hash<const Mesh::SubMesh*>()(key.submesh));
+            hash_combine(std::hash<const Mesh::SubMesh*>()(key.subMesh));
             hash_combine(std::hash<Material*>()(key.material.get()));
 
             return seed;
@@ -70,13 +70,13 @@ public:
 
     void findBatchKey(
         const std::string& meshPath,
-        uint32_t submeshIndex,
+        uint32_t subMeshIndex,
         BatchKey& key
     );
 
     RenderBatchManager::BatchKey findBatchKey(
         const std::string& meshPath,
-        uint32_t submeshIndex
+        uint32_t subMeshIndex
     );
 
     template<typename Func> void forEachBatch(Func&& func)

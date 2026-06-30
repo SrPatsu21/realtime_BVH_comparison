@@ -4,45 +4,6 @@ template<
     typename TLBuilderType,
     typename BLBuilderType
 >
-template<typename Primitive>
-uint32_t AccelerationStructureManager<
-    TLBuilderType,
-    BLBuilderType
->::createBLAS(
-    const Mesh* mesh,
-    const std::vector<Primitive>& primitives
-)
-{
-    using BLNodeType =
-        typename AccelerationStructureManager<
-            TLBuilderType,
-            BLBuilderType
-        >::BLNodeType;
-
-    BLAS<BLNodeType> blas;
-
-    blas.mesh = mesh;
-
-    BLBuilderType::Build(
-        blas.accelerationStructure.nodes,
-        primitives
-    );
-
-    // VulkanBLAS build
-
-    this->blas.emplace_back(
-        std::move(blas)
-    );
-
-    return static_cast<uint32_t>(
-        this->blas.size() - 1
-    );
-}
-
-template<
-    typename TLBuilderType,
-    typename BLBuilderType
->
 void AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
@@ -77,7 +38,7 @@ AccelerationStructureManager<
 >::getBLAS(
     uint32_t index
 ) const {
-    return blas[index];
+    return blas_vector[index];
 }
 
 template<

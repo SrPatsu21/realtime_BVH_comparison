@@ -10,7 +10,7 @@
 bool RenderBatchManager::BatchKey::operator==(
     const RenderBatchManager::BatchKey& other
 ) const {
-    return material == other.material && submesh == other.submesh && mesh == other.mesh && pipelineFlags == other.pipelineFlags;
+    return material == other.material && subMesh == other.subMesh && mesh == other.mesh && pipelineFlags == other.pipelineFlags;
 }
 
 bool RenderBatchManager::BatchKey::operator<(
@@ -25,7 +25,7 @@ bool RenderBatchManager::BatchKey::operator<(
     if (mesh.get() != other.mesh.get())
         return mesh.get() < other.mesh.get();
 
-    return submesh < other.submesh;
+    return subMesh < other.subMesh;
 }
 
 // ========================
@@ -117,16 +117,16 @@ void RenderBatchManager::addInstance(
     RenderInstance* instance
 ) {
     instance->getRegistrations().reserve(mesh->getSubMeshes().size());
-    const std::vector<Mesh::SubMesh>& meshs = mesh->getSubMeshes();
+    const std::vector<Mesh::SubMesh>& meshes = mesh->getSubMeshes();
 
-    for (size_t i = 0; i < meshs.size(); i++)
+    for (size_t i = 0; i < meshes.size(); i++)
     {
         BatchKey key = {
             mesh,
-            &meshs[i],
-            resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i]),
+            &meshes[i],
+            resourceManager->getMaterialForSubMesh(*mesh.get(), meshes[i]),
             GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_NONE | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND,
-            resourceManager->getAccelerationStructure(mesh.get())
+            resourceManager->getAccelerationStructureIndex(mesh.get())
         };
 
         auto it = batches_map.find(key);
@@ -209,13 +209,13 @@ void RenderBatchManager::rebuildSortedBatches()
 
 void RenderBatchManager::findBatchKey(
     const std::string& meshPath,
-    uint32_t submeshIndex,
+    uint32_t subMeshIndex,
     BatchKey& key
 )
 {
     key.mesh = resourceManager->getMesh(meshPath);
-    key.submesh = &key.mesh->getSubMeshes()[submeshIndex];
-    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.submesh);
+    key.subMesh = &key.mesh->getSubMeshes()[subMeshIndex];
+    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.subMesh);
     key.pipelineFlags =
         GraphicsPipeline::PIPE_TOPO_TRIANGLES |
         GraphicsPipeline::PIPE_CULL_NONE |
@@ -227,13 +227,13 @@ void RenderBatchManager::findBatchKey(
 RenderBatchManager::BatchKey
 RenderBatchManager::findBatchKey(
     const std::string& meshPath,
-    uint32_t submeshIndex
+    uint32_t subMeshIndex
 )
 {
     BatchKey key;
     key.mesh = resourceManager->getMesh(meshPath);
-    key.submesh = &key.mesh->getSubMeshes()[submeshIndex];
-    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.submesh);
+    key.subMesh = &key.mesh->getSubMeshes()[subMeshIndex];
+    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.subMesh);
     key.pipelineFlags =
         GraphicsPipeline::PIPE_TOPO_TRIANGLES |
         GraphicsPipeline::PIPE_CULL_NONE |

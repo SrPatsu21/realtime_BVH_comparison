@@ -181,7 +181,7 @@ void CommandManager::recordCommandBuffer(
         {
             const RenderBatchManager::BatchKey& key = batch.getKey();
             const std::shared_ptr<Mesh>&  mesh = key.mesh;
-            const Mesh::SubMesh* submesh = key.submesh;
+            const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
             const GraphicsPipeline::PipelineFlags pipelineFlags = key.pipelineFlags;
             const std::vector<InstanceData>& instancesData = batch.getinstancesData();

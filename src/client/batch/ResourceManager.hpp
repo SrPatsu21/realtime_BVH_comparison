@@ -40,7 +40,7 @@ public:
         BufferManager* bufferManager,
         MaterialDescriptorManager* descriptorManager
     );
-    ~ResourceManager() = default;
+    ~ResourceManager();
 
     std::shared_ptr<Mesh> getMesh(
         const std::string& meshPath
