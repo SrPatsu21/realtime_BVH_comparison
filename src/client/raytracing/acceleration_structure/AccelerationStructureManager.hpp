@@ -99,3 +99,43 @@ uint32_t AccelerationStructureManager<
         this->blas_vector.size() - 1
     );
 }
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+void AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::buildTLAS(
+    const std::vector<BLASInstance>& instances
+)
+{
+    tlas.nodes.clear();
+
+    std::vector<BLASInstance> localInstances = instances;
+
+    TLBuilderType::build(
+        tlas.nodes,
+        localInstances
+    );
+}
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+const BLAS<
+    typename AccelerationStructureManager<
+        TLBuilderType,
+        BLBuilderType
+    >::BLNodeType
+>&
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::getBLAS(
+    uint32_t index
+) const {
+    return blas_vector[index];
+}

@@ -59,6 +59,10 @@ public:
         const std::string& path
     );
 
+    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* getAccelerationStructureManager(){
+        return accelerationStructureManager;
+    }
+
     uint32_t
     getAccelerationStructureIndex(
         const Mesh* mash

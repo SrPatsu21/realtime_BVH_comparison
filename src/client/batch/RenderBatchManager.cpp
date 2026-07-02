@@ -203,6 +203,82 @@ void RenderBatchManager::rebuildSortedBatches()
     batches_dirty = false;
 }
 
+inline AABB transformAABB(
+    const AABB& localBounds,
+    const glm::mat4& transform
+)
+{
+    AABB result;
+    result.reset();
+
+    const glm::vec3 min = localBounds.min;
+    const glm::vec3 max = localBounds.max;
+
+    const glm::vec3 corners[8] =
+    {
+        { min.x, min.y, min.z },
+        { max.x, min.y, min.z },
+        { min.x, max.y, min.z },
+        { max.x, max.y, min.z },
+
+        { min.x, min.y, max.z },
+        { max.x, min.y, max.z },
+        { min.x, max.y, max.z },
+        { max.x, max.y, max.z }
+    };
+
+    for (const glm::vec3& corner : corners)
+    {
+        glm::vec3 world =
+            glm::vec3(transform * glm::vec4(corner, 1.0f));
+
+        result.expand(world);
+    }
+
+    return result;
+}
+
+void RenderBatchManager::rebuildTLAS()
+{
+    std::vector<BLASInstance> tlasInstances;
+
+    size_t totalInstances = 0;
+    for (RenderBatch* batch : batches_sorted)
+        totalInstances += batch->getinstancesData().size();
+
+    tlasInstances.reserve(totalInstances);
+
+    auto accelerationStructureManager = resourceManager->getAccelerationStructureManager();
+
+    for (RenderBatch* batch : batches_sorted)
+    {
+        const uint32_t blasIndex =
+            batch->getKey().accelerationStructureIndex;
+
+        const auto& instanceData = batch->getinstancesData();
+
+        for (const InstanceData& instance : instanceData)
+        {
+            BLASInstance blasInstance{};
+
+            blasInstance.blasIndex = blasIndex;
+            blasInstance.transform = instance.model;
+
+            const auto& localBounds = accelerationStructureManager->getBLAS(blasIndex).accelerationStructure.nodes[0].bounds;
+
+            blasInstance.bounds =
+                transformAABB(
+                    localBounds,
+                    instance.model
+                );
+
+            tlasInstances.emplace_back(std::move(blasInstance));
+        }
+    }
+
+    accelerationStructureManager->buildTLAS(tlasInstances);
+}
+
 // ========================
 // BatchKey helpers
 // ========================

@@ -20,7 +20,7 @@ public:
         const Mesh::SubMesh* subMesh;
         std::shared_ptr<Material> material;
         GraphicsPipeline::PipelineFlags pipelineFlags;
-        uint32_t blas;
+        uint32_t accelerationStructureIndex;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
@@ -51,10 +51,6 @@ private:
     std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches_map;
     std::vector<RenderBatch*> batches_sorted;
     bool batches_dirty = true;
-
-    std::shared_ptr<Mesh> testMesh;
-    std::shared_ptr<Material> testMaterial;
-    std::shared_ptr<RenderInstance> testRInstance;
 
     ResourceManager* resourceManager;
 
@@ -91,6 +87,7 @@ public:
 
 
     void rebuildSortedBatches();
+    void rebuildTLAS();
 
     RenderBatchManager(ResourceManager* resourceManager);
     ~RenderBatchManager() = default;

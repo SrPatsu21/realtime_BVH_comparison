@@ -7,7 +7,7 @@ struct BLASInstance
 
     uint32_t blasIndex;
 
-    float transform[16];
+    glm::mat4 transform;
 
     inline const AABB& getBounds() const
     {
