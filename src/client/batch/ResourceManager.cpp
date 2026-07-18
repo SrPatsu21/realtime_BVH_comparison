@@ -12,26 +12,26 @@ ResourceManager::ResourceManager(
     descriptorManager(descriptorManager),
     samplerManager(physicalDevice, device)
 {
-    accelerationStructureManager = new AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>(device);
+    accelerationStructureManager = new AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>();
 }
 
 std::shared_ptr<Mesh> ResourceManager::getMesh(
     const std::string& meshPath
 ) {
-    auto it = meshes.find(meshPath);
+    auto [it, inserted] = meshes.try_emplace(meshPath);
 
-    if (it != meshes.end())
+    if (!inserted)
     {
         if (auto mesh = it->second.lock())
             return mesh;
     }
 
-    auto mesh = std::make_shared<Mesh>(
+    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(
         meshPath,
         device,
         bufferManager
     );
-    meshes[meshPath] = mesh;
+    it->second = mesh;
 
     return mesh;
 }
@@ -154,7 +154,7 @@ ResourceManager::getTexture(const std::string& path)
 
     TextureAsset asset(path, physicalDevice);
 
-    std::shared_ptr<TextureImage> textureImage = std::make_unique<TextureImage>(
+    std::shared_ptr<TextureImage> textureImage = std::make_shared<TextureImage>(
         physicalDevice,
         device,
         bufferManager,
@@ -168,17 +168,18 @@ ResourceManager::getTexture(const std::string& path)
     return textureImage;
 }
 
-uint32_t
-ResourceManager::getAccelerationStructureIndex(
+std::shared_ptr<BLAS<DefaultBLASNode>> ResourceManager::getAccelerationStructure(
     const Mesh* mesh
 )
 {
-    auto it = accelerationStructuresIndex.find(mesh);
+    auto it = accelerationStructures.find(mesh);
 
-    if (it != accelerationStructuresIndex.end())
+    if (it != accelerationStructures.end())
     {
-        return it->second;
+        if (auto ac = it->second.lock())
+            return ac;
     }
+
     std::vector<PrimitiveRef> primitives;
 
     buildPrimitiveRefs(
@@ -186,11 +187,18 @@ ResourceManager::getAccelerationStructureIndex(
         primitives
     );
 
-    uint32_t accelerationStructureIndex = accelerationStructureManager->createBLAS(mesh, primitives, bufferManager);
+    std::shared_ptr<BLAS<DefaultBLASNode>> accelerationStructure = std::make_shared<BLAS<DefaultBLASNode>>();
 
-    accelerationStructuresIndex[mesh] = accelerationStructureIndex;
+    accelerationStructureManager->createBLAS<PrimitiveRef>(
+        mesh,
+        primitives,
+        bufferManager,
+        *accelerationStructure.get()
+    );
 
-    return accelerationStructureIndex;
+    accelerationStructures[mesh] = accelerationStructure;
+
+    return accelerationStructure;
 }
 
 void ResourceManager::buildPrimitiveRefs(
@@ -226,4 +234,12 @@ void ResourceManager::buildPrimitiveRefs(
 
 ResourceManager::~ResourceManager(){
     delete accelerationStructureManager;
+}
+
+void ResourceManager::CleanupMaps()
+{
+    CleanupMap(meshes);
+    CleanupMap(textures);
+    CleanupMap(materials);
+    CleanupMap(accelerationStructures);
 }

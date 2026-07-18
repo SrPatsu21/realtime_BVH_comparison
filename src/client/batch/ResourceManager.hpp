@@ -11,7 +11,7 @@
 #include "../raytracing/acceleration_structure/AccelerationStructure.hpp"
 #include "../raytracing/acceleration_structure/BVHNode.hpp"
 #include "../raytracing/acceleration_structure/AccelerationStructureManager.hpp"
-#include "../raytracing/acceleration_structure/builder/BVHBuilder.hpp"
+#include "../raytracing/acceleration_structure/accelerationStructureConfig.hpp"
 #include "../raytracing/acceleration_structure/primitives/PrimitiveRef.hpp"
 
 class ResourceManager
@@ -22,12 +22,12 @@ private:
     BufferManager* bufferManager;
     SamplerManager samplerManager;
     MaterialDescriptorManager* descriptorManager;
-    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* accelerationStructureManager;
+    AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>* accelerationStructureManager;
 
     std::unordered_map<std::string, std::weak_ptr<Mesh>> meshes;
     std::unordered_map<std::string, std::weak_ptr<TextureImage>> textures;
     std::unordered_map<std::string, std::weak_ptr<Material>> materials;
-    std::unordered_map<const Mesh*, uint32_t> accelerationStructuresIndex;
+    std::unordered_map<const Mesh*, std::weak_ptr<BLAS<DefaultBLASNode>>> accelerationStructures;
 
     static void buildPrimitiveRefs(
         const Mesh& mesh,
@@ -41,6 +41,10 @@ public:
         MaterialDescriptorManager* descriptorManager
     );
     ~ResourceManager();
+
+    BufferManager* getBufferManager(){
+            return bufferManager;
+    };
 
     std::shared_ptr<Mesh> getMesh(
         const std::string& meshPath
@@ -59,12 +63,21 @@ public:
         const std::string& path
     );
 
-    AccelerationStructureManager<BVHBuilder<BVHNode>, BVHBuilder<BVHNode>>* getAccelerationStructureManager(){
+    AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>* getAccelerationStructureManager(){
         return accelerationStructureManager;
     }
 
-    uint32_t
-    getAccelerationStructureIndex(
+    std::shared_ptr<BLAS<DefaultBLASNode>> getAccelerationStructure(
         const Mesh* mash
     );
+
+    template<typename Map>
+    void CleanupMap(Map& map)
+    {
+        std::erase_if(map, [](const auto& item) {
+            return item.second.expired();
+        });
+    }
+
+    void CleanupMaps();
 };

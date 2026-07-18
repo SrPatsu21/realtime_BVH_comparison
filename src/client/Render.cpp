@@ -230,10 +230,10 @@ void Render::initInstances(){
         materialDescriptorManager
     );
 
-    renderBatchManager = new RenderBatchManager(resourceManager);
+    renderInstanceManager = new RenderInstanceManager(resourceManager);
 
     renderInstance = new RenderInstance();
-    renderBatchManager->addInstance(
+    renderInstanceManager->addInstance(
         resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
         renderInstance
     );
@@ -334,7 +334,7 @@ void Render::drawFrame(){
         globalDescriptorManager,
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
-        renderBatchManager,
+        renderInstanceManager,
         {particle, particle1},
         // {},
         {},
@@ -411,7 +411,7 @@ void Render::cleanup(){
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
         if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
-        if (renderBatchManager){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (renderInstanceManager){ delete renderInstanceManager; renderInstanceManager = nullptr; }
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
         if (defaultTextures.metallic)
         {

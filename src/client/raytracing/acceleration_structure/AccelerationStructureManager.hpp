@@ -1,12 +1,18 @@
+#pragma once
+
+#include <deque>
 #include <vector>
 #include <cstdint>
+
+#include "TLAS.hpp"
+#include "BLAS.hpp"
 #include "BVHNode.hpp"
 #include "primitives/BLASInstance.hpp"
-#include "AccelerationStructure.hpp"
-#include "BLAS.hpp"
-#include "vulkan/VulkanBLAS.hpp"
+
 #include "../../batch/mesh/Mesh.hpp"
+
 #include "vulkan/BuildVulkanBLAS.hpp"
+#include "vulkan/BuildVulkanTLAS.hpp"
 
 template<
     typename TLBuilderType,
@@ -14,73 +20,49 @@ template<
 >
 class AccelerationStructureManager
 {
+public:
+
     using TLNodeType = typename TLBuilderType::NodeType;
     using BLNodeType = typename BLBuilderType::NodeType;
 
-public:
-
-    void buildTLAS(
-        const std::vector<BLASInstance>& instances
-    );
-
     template<typename Primitive>
-    uint32_t createBLAS(
+    void createBLAS(
         const Mesh* mesh,
         std::vector<Primitive>& primitives,
-        BufferManager* bufferManager
+        BufferManager* bufferManager,
+        BLAS<BLNodeType>& blas
     );
 
-    const BLAS<BLNodeType>& getBLAS(
-        uint32_t index
-    ) const;
-
-    const AccelerationStructure<TLNodeType>& getTLAS() const;
-
-    AccelerationStructureManager(VkDevice device)
-    :
-        device(device)
-    {
-    };
-
-    ~AccelerationStructureManager()
-    {
-        for (auto& blas : blas_vector)
-            blas.destroy(device);
-
-        blas_vector.clear();
-    }
-
-private:
-
-    VkDevice device = VK_NULL_HANDLE;
-    AccelerationStructure<TLNodeType> tlas;
-    std::vector<BLAS<BLNodeType>> blas_vector;
+    void createTLAS(
+        std::vector<BLASInstance>& instances,
+        BufferManager* bufferManager,
+        TLAS<TLNodeType>& tlas
+    );
 };
+
+//*======================
+//* buildBLAS
+//*======================
 
 template<
     typename TLBuilderType,
     typename BLBuilderType
 >
 template<typename Primitive>
-uint32_t AccelerationStructureManager<
+void
+AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
 >::createBLAS(
     const Mesh* mesh,
     std::vector<Primitive>& primitives,
-    BufferManager* bufferManager
+    BufferManager* bufferManager,
+    BLAS<BLNodeType>& blas
 )
 {
-    using BLNodeType =
-        typename AccelerationStructureManager<
-            TLBuilderType,
-            BLBuilderType
-        >::BLNodeType;
-
-    BLAS<BLNodeType> blas;
-
     blas.mesh = mesh;
 
+    blas.accelerationStructure.nodes.clear();
     BLBuilderType::build(
         blas.accelerationStructure.nodes,
         primitives
@@ -90,52 +72,86 @@ uint32_t AccelerationStructureManager<
         bufferManager,
         blas
     );
-
-    this->blas_vector.emplace_back(
-        std::move(blas)
-    );
-
-    return static_cast<uint32_t>(
-        this->blas_vector.size() - 1
-    );
 }
+
+//*======================
+//* buildTLAS
+//*======================
 
 template<
     typename TLBuilderType,
     typename BLBuilderType
 >
-void AccelerationStructureManager<
-    TLBuilderType,
-    BLBuilderType
->::buildTLAS(
-    const std::vector<BLASInstance>& instances
-)
-{
-    tlas.nodes.clear();
-
-    std::vector<BLASInstance> localInstances = instances;
-
-    TLBuilderType::build(
-        tlas.nodes,
-        localInstances
-    );
-}
-
-template<
-    typename TLBuilderType,
-    typename BLBuilderType
->
-const BLAS<
-    typename AccelerationStructureManager<
-        TLBuilderType,
-        BLBuilderType
-    >::BLNodeType
->&
+void
 AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
->::getBLAS(
-    uint32_t index
-) const {
-    return blas_vector[index];
+>::createTLAS(
+    std::vector<BLASInstance>& instances,
+    BufferManager* bufferManager,
+    TLAS<TLNodeType>& tlas
+)
+{
+    tlas.accelerationStructure.nodes.clear();
+    TLBuilderType::build(
+        tlas.accelerationStructure.nodes,
+        instances
+    );
+
+    buildVulkanTLAS(
+        bufferManager,
+        tlas
+    );
+}
+
+//*======================
+//* Helpers
+//*======================
+
+template<typename NodeType>
+void printBVH(
+    const std::vector<NodeType>& nodes,
+    uint32_t index = 0
+)
+{
+    if (index >= nodes.size())
+        return;
+
+    const NodeType& node = nodes[index];
+
+    std::cout
+        << "[" << index << "] "
+        << "min=("
+        << node.bounds.min.x << ", "
+        << node.bounds.min.y << ", "
+        << node.bounds.min.z << ") "
+        << "max=("
+        << node.bounds.max.x << ", "
+        << node.bounds.max.y << ", "
+        << node.bounds.max.z << ") ";
+
+    if (node.leaf)
+    {
+        std::cout
+            << "LEAF first="
+            << node.firstPrimitive
+            << " count="
+            << node.primitiveCount;
+    }
+    else
+    {
+        std::cout
+            << "INTERNAL left="
+            << node.left
+            << " right="
+            << node.right;
+    }
+
+    std::cout << '\n';
+
+    if (!node.leaf)
+    {
+        printBVH(nodes, node.left);
+        printBVH(nodes, node.right);
+    }
 }

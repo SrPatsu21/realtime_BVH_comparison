@@ -1,10 +1,11 @@
 #include "RenderInstance.hpp"
-#include "../RenderBatchManager.hpp"
+#include "../RenderInstanceManager.hpp"
 #include <glm/gtc/matrix_transform.hpp>
+#include "../RenderBatch.hpp"
 
 RenderInstance::RenderInstance(
     const glm::vec3& position,
-    const glm::vec3& rotation,
+    const glm::quat& rotation,
     const glm::vec3& scale
 ) :
     position(position),
@@ -28,17 +29,14 @@ void RenderInstance::clearRegistrations()
 
 void RenderInstance::updateModelMatrix()
 {
-    glm::mat4 model(1.0f);
-
-    model = glm::translate(model, position);
-    model = glm::rotate(model, rotation.x, glm::vec3(1, 0, 0));
-    model = glm::rotate(model, rotation.y, glm::vec3(0, 1, 0));
-    model = glm::rotate(model, rotation.z, glm::vec3(0, 0, 1));
-    model = glm::scale(model, scale);
+    model =
+        glm::translate(glm::mat4(1.0f), position) *
+        glm::mat4_cast(rotation) *
+        glm::scale(glm::mat4(1.0f), scale);
 
     for (auto& reg : registrations)
     {
-        reg.batch->getinstancesData()[reg.indexInBatch] = model;
+        reg.renderBatch->getinstancesData()[reg.indexInBatch] = model;
     }
 }
 
@@ -46,7 +44,7 @@ RenderInstance::~RenderInstance()
 {
     for (auto& reg : registrations)
     {
-        if (reg.batch)
-            reg.batch->removeInstance(this, reg.indexInBatch);
+        if (reg.renderBatch)
+            reg.renderBatch->removeInstance(this, reg.indexInBatch);
     }
 }

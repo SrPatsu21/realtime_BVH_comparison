@@ -14,7 +14,7 @@
 #include "camera/UniformBufferGlobal.hpp"
 #include "image/ImageColor.hpp"
 #include "batch/material/MaterialDescriptorManager.hpp"
-#include "batch/RenderBatchManager.hpp"
+#include "batch/RenderInstanceManager.hpp"
 #include "batch/ResourceManager.hpp"
 #include "batch/instance/RenderInstance.hpp"
 #include "batch/instance/InstanceDescriptorManager.hpp"
@@ -58,7 +58,7 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
-    RenderBatchManager* renderBatchManager;
+    RenderInstanceManager* renderInstanceManager;
     ResourceManager* resourceManager;
     RenderInstance* renderInstance;
     BufferManager* bufferManager;

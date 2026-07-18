@@ -24,6 +24,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # ============================================================
+# Acceleration Structure Configuration
+# ============================================================
+
+option(USE_BLAS_SAH_NODE "Use SAH node layout for BLAS" OFF)
+option(USE_BLAS_SAH_BUILDER "Use SAH builder for BLAS" OFF)
+
+option(USE_TLAS_SAH_NODE "Use SAH node layout for TLAS" OFF)
+option(USE_TLAS_SAH_BUILDER "Use SAH builder for TLAS" OFF)
+
+# ============================================================
 # Output directories
 # ============================================================
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -230,9 +240,34 @@ endif()
 # ============================================================
 # Client compile definitions
 # ============================================================
+
 target_compile_definitions(${PROJECT_NAME}_client PRIVATE
     VK_PROTOTYPES
 )
+
+if(USE_BLAS_SAH_NODE)
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        USE_BLAS_SAH_NODE
+    )
+endif()
+
+if(USE_BLAS_SAH_BUILDER)
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        USE_BLAS_SAH_BUILDER
+    )
+endif()
+
+if(USE_TLAS_SAH_NODE)
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        USE_TLAS_SAH_NODE
+    )
+endif()
+
+if(USE_TLAS_SAH_BUILDER)
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        USE_TLAS_SAH_BUILDER
+    )
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_definitions(

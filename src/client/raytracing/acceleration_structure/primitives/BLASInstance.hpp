@@ -1,11 +1,12 @@
 #include "../AABB.hpp"
 #include <cstdint>
-
+#include "../BLAS.hpp"
+#include "../accelerationStructureConfig.hpp"
 struct BLASInstance
 {
     AABB bounds;
 
-    uint32_t blasIndex;
+    const BLAS<DefaultBLASNode>* blas;
 
     glm::mat4 transform;
 

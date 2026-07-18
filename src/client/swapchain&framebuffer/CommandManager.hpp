@@ -3,7 +3,7 @@
 #include <bits/stdc++.h>
 #include "../CoreVulkan.hpp"
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
-#include "../batch/RenderBatchManager.hpp"
+#include "../batch/RenderInstanceManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
 #include "../batch/material/MaterialDescriptorManager.hpp"
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
@@ -191,7 +191,7 @@ public:
      * - Begins the render pass
      * - Configures dynamic viewport and scissor states
      * - Binds the graphics pipeline and descriptor sets
-     * - Records draw calls via RenderBatchManager
+     * - Records draw calls via RenderInstanceManager
      * - Executes optional extra command recorders
      * - Ends the render pass
      *
@@ -203,7 +203,7 @@ public:
      * @param extent Current swapchain extent (width and height).
      * @param globalDescriptorSet Descriptor set containing global resources
      *                            (e.g., camera, lighting).
-     * @param renderBatchManager Manager responsible for issuing draw calls.
+     * @param RenderInstanceManager Manager responsible for issuing draw calls.
      * @param clearProviders Providers that supply VkClearValue entries for
      *                       the render pass attachments.
      * @param viewportProviders Providers responsible for configuring dynamic
@@ -226,7 +226,7 @@ public:
         GlobalDescriptorManager* globalDescriptorManager,
         InstanceDescriptorManager* instanceDescriptorManager,
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
-        RenderBatchManager* renderBatchManager,
+        RenderInstanceManager* RenderInstanceManager,
         const std::vector<ParticleData>& particles,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

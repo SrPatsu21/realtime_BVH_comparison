@@ -1,6 +1,7 @@
 #include "CommandManager.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "../batch/RenderBatch.hpp"
 #include "../batch/instance/RenderInstance.hpp"
 
 CommandManager::CommandManager(
@@ -132,7 +133,7 @@ void CommandManager::recordCommandBuffer(
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
-    RenderBatchManager* renderBatchManager,
+    RenderInstanceManager* RenderInstanceManager,
     const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -176,10 +177,10 @@ void CommandManager::recordCommandBuffer(
     Material* lastMaterial = nullptr;
     GraphicsPipeline::PipelineFlags lastPipeline = 0;
     uint32_t currentOffset = 0;
-    renderBatchManager->forEachBatch(
+    RenderInstanceManager->forEachBatch(
         [&](RenderBatch& batch)
         {
-            const RenderBatchManager::BatchKey& key = batch.getKey();
+            const BatchKey& key = batch.getKey();
             const std::shared_ptr<Mesh>&  mesh = key.mesh;
             const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
