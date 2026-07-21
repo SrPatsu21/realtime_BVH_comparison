@@ -93,6 +93,12 @@ AccelerationStructureManager<
 )
 {
     tlas.accelerationStructure.nodes.clear();
+    if(!instances.size()){
+        // TODO change to throw
+        std::cout << "No instances to build TLAS" << std::endl;
+        return;
+    }
+
     TLBuilderType::build(
         tlas.accelerationStructure.nodes,
         instances

@@ -9,6 +9,7 @@
 #include "../raytracing/acceleration_structure/accelerationStructureConfig.hpp"
 #include "../raytracing/acceleration_structure/BVHNode.hpp"
 #include "BatchKey.hpp"
+#include "instance/RenderInstanceRegistration.hpp"
 
 #include <list>
 
@@ -26,7 +27,6 @@ private:
 
     ResourceManager* resourceManager;
 
-public:
     void addInstance(
         std::shared_ptr<Mesh> mesh,
         RenderInstance* instance
@@ -34,6 +34,15 @@ public:
 
     bool removeInstance(
         RenderInstance* instance
+    );
+
+public:
+    RenderInstanceRegistration* createRenderInstance(
+        std::shared_ptr<Mesh> mesh
+    );
+
+    bool removeRenderInstance(
+        RenderInstanceRegistration* registration
     );
 
     void findBatchKey(
@@ -60,6 +69,13 @@ public:
 
     void rebuildSortedBatches();
     void rebuildTLAS();
+
+    std::vector<RenderInstance> const getRenderInstances(){
+        return instances;
+    }
+    RenderInstance* const getRenderInstances(size_t index){
+        return &instances[index];
+    }
 
     RenderInstanceManager(ResourceManager* resourceManager);
     ~RenderInstanceManager() = default;

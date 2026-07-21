@@ -14,6 +14,32 @@ RenderInstance::RenderInstance(
 {
 }
 
+RenderInstance::RenderInstance(RenderInstance&& other) noexcept
+    : model(std::move(other.model))
+    , registrations(std::move(other.registrations))
+    , position(other.position)
+    , rotation(other.rotation)
+    , scale(other.scale)
+    , renderInstanceRegistration(other.renderInstanceRegistration)
+    , blas(other.blas)
+{
+}
+
+RenderInstance& RenderInstance::operator=(RenderInstance&& other) noexcept
+{
+    if (this != &other)
+    {
+        model = std::move(other.model);
+        rotation = std::move(other.rotation);
+        position = std::move(other.position);
+        scale = std::move(other.scale);
+        registrations = std::move(other.registrations);
+        renderInstanceRegistration = other.renderInstanceRegistration;
+        blas = other.blas;
+    }
+    return *this;
+}
+
 void RenderInstance::addRegistration(
     RenderBatch* batch,
     size_t index
@@ -47,4 +73,5 @@ RenderInstance::~RenderInstance()
         if (reg.renderBatch)
             reg.renderBatch->removeInstance(this, reg.indexInBatch);
     }
+    delete renderInstanceRegistration;
 }

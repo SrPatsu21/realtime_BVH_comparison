@@ -25,7 +25,7 @@ void BufferManager::createBuffer(
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create vertex buffer!");
+        throw std::runtime_error("failed to create buffer!");
     }
 }
 
@@ -94,7 +94,7 @@ void BufferManager::allocateBufferMemory(
     allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties, 0);
 
     if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate vertex buffer memory!");
+        throw std::runtime_error("failed to allocate buffer memory!");
     }
 };
 

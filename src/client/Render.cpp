@@ -230,16 +230,12 @@ void Render::initInstances(){
         materialDescriptorManager
     );
 
-    renderInstanceManager = new RenderInstanceManager(resourceManager);
-
-    renderInstance = new RenderInstance();
-    renderInstanceManager->addInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
-        renderInstance
+    renderInstanceRegistration = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
     );
+    RenderInstance* renderInstance = renderInstanceManager->getRenderInstances(renderInstanceRegistration->indexInVector);
     renderInstance->scale = glm::vec3(0.2f);
     renderInstance->position += glm::vec3(1.5f, 0, 0);
-
 }
 
 void Render::drawFrame(){
@@ -279,12 +275,20 @@ void Render::drawFrame(){
         swapchainManager->getExtent()
     );
     this->cameraBufferManager->update(currentFrame, ubg);
-    renderInstance->rotation = glm::vec3(
-        0.5* time,
-        0.3,
-        0.6
-    );
-    renderInstance->updateModelMatrix();
+
+
+    std::vector<RenderInstance> renderInstances = renderInstanceManager->getRenderInstances();
+    std::size_t renderInstancesSize = renderInstances.size();
+    for (size_t i = 0; i < renderInstancesSize; i++)
+    {
+        renderInstances[i].rotation = glm::vec3(
+            0.5* time,
+            0.3,
+            0.6
+        );
+        renderInstances[i].updateModelMatrix();
+    }
+
 
     // platicles
     float timetester = (time * 5);
@@ -410,7 +414,6 @@ void Render::cleanup(){
         // 3) Managers: destroy in strict reverse-creation order.
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
-        if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
         if (renderInstanceManager){ delete renderInstanceManager; renderInstanceManager = nullptr; }
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
         if (defaultTextures.metallic)

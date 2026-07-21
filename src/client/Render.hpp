@@ -15,6 +15,7 @@
 #include "image/ImageColor.hpp"
 #include "batch/material/MaterialDescriptorManager.hpp"
 #include "batch/RenderInstanceManager.hpp"
+#include "batch/instance/RenderInstanceRegistration.hpp"
 #include "batch/ResourceManager.hpp"
 #include "batch/instance/RenderInstance.hpp"
 #include "batch/instance/InstanceDescriptorManager.hpp"
@@ -60,7 +61,7 @@ private:
     std::vector<VkFence> imagesInFlight;
     RenderInstanceManager* renderInstanceManager;
     ResourceManager* resourceManager;
-    RenderInstance* renderInstance;
+    RenderInstanceRegistration* renderInstanceRegistration;
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;

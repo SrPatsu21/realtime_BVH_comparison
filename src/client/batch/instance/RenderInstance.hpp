@@ -27,7 +27,7 @@ public:
 private:
     std::vector<BatchRegistration> registrations; //12
     RenderInstanceRegistration* renderInstanceRegistration; //8
-    BLAS<DefaultBLASNode>* blas; //8
+    std::shared_ptr<BLAS<DefaultBLASNode>> blas; //8
 
 public:
     // bool dirtyTransform = true; // 1
@@ -45,8 +45,8 @@ public:
     RenderInstance(const RenderInstance&) = delete;
     RenderInstance& operator=(const RenderInstance&) = delete;
 
-    RenderInstance(RenderInstance&&) noexcept = delete;
-    RenderInstance& operator=(RenderInstance&&) noexcept = delete;
+    RenderInstance(RenderInstance&&) noexcept;
+    RenderInstance& operator=(RenderInstance&&) noexcept;
 
     void updateModelMatrix();
 
@@ -63,7 +63,7 @@ private:
 public:
     const BLAS<DefaultBLASNode>* getBLAS() const
     {
-        return blas;
+        return blas.get();
     }
 
     const glm::mat4& getModelMatrix() const

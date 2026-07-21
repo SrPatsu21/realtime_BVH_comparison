@@ -3,6 +3,7 @@
 #include "instance/RenderInstance.hpp"
 #include "instance/InstanceData.hpp"
 #include "RenderBatch.hpp"
+#include <utility>
 
 // ========================
 // RenderInstanceManager
@@ -14,6 +15,50 @@ RenderInstanceManager::RenderInstanceManager(
     : resourceManager(resourceManager)
 {
 }
+
+RenderInstanceRegistration* RenderInstanceManager::createRenderInstance(
+    std::shared_ptr<Mesh> mesh
+){
+    instances.emplace_back();
+
+    RenderInstance& instance = instances.back();
+
+    RenderInstanceRegistration* registration = new RenderInstanceRegistration{
+        instances.size() - 1
+    };
+
+    instance.renderInstanceRegistration = registration;
+
+    instance.blas = resourceManager->getAccelerationStructure(mesh.get());
+
+    addInstance(
+        mesh,
+        &instance
+    );
+
+    return registration;
+};
+
+bool RenderInstanceManager::removeRenderInstance(
+    RenderInstanceRegistration* registration
+){
+    RenderInstance& instance = instances[registration->indexInVector];
+    if(removeInstance(&instance)){
+        size_t index = registration->indexInVector;
+        size_t last = instances.size() - 1;
+
+        //* swap
+        if (index != last)
+        {
+            instances[index] = std::move(instances[last]);
+            instances[index].renderInstanceRegistration->indexInVector = index;
+        }
+
+        instances.pop_back();
+        return true;
+    };
+    return false;
+};
 
 void RenderInstanceManager::addInstance(
     std::shared_ptr<Mesh> mesh,
