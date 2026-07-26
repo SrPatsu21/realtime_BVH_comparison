@@ -14,6 +14,30 @@ RenderInstance::RenderInstance(
 {
 }
 
+//copy
+RenderInstance::RenderInstance(const RenderInstance& other) noexcept
+    : model(other.model), registrations(other.registrations), position(other.position),
+        rotation(other.rotation), scale(other.scale), renderInstanceRegistration(other.renderInstanceRegistration),
+        blas(other.blas)
+{
+}
+
+RenderInstance& RenderInstance::operator=(const RenderInstance& other) noexcept
+{
+    if (this != &other)
+    {
+        model = other.model;
+        rotation = other.rotation;
+        position = other.position;
+        scale = other.scale;
+        registrations = other.registrations;
+        renderInstanceRegistration = other.renderInstanceRegistration;
+        blas = other.blas;
+    }
+    return *this;
+}
+
+// move
 RenderInstance::RenderInstance(RenderInstance&& other) noexcept
     : model(std::move(other.model))
     , registrations(std::move(other.registrations))

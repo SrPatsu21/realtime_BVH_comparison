@@ -42,8 +42,8 @@ public:
 
     ~RenderInstance();
 
-    RenderInstance(const RenderInstance&) = delete;
-    RenderInstance& operator=(const RenderInstance&) = delete;
+    RenderInstance(const RenderInstance&) noexcept;
+    RenderInstance& operator=(const RenderInstance&) noexcept;
 
     RenderInstance(RenderInstance&&) noexcept;
     RenderInstance& operator=(RenderInstance&&) noexcept;
