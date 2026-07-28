@@ -26,7 +26,9 @@ public:
     glm::vec3 scale; //12
 private:
     std::vector<BatchRegistration> registrations; //12
+public:
     RenderInstanceRegistration* renderInstanceRegistration; //8
+private:
     std::shared_ptr<BLAS<DefaultBLASNode>> blas; //8
 
 public:

@@ -14,6 +14,9 @@ RenderInstanceManager::RenderInstanceManager(
 )
     : resourceManager(resourceManager)
 {
+    batches_map.clear();
+    batches_sorted.clear();
+    instances.clear();
 }
 
 RenderInstanceRegistration* RenderInstanceManager::createRenderInstance(

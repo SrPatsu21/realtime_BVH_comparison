@@ -230,12 +230,42 @@ void Render::initInstances(){
         materialDescriptorManager
     );
 
+    renderInstanceManager = new RenderInstanceManager(
+        resourceManager
+    );
+
     renderInstanceRegistration = renderInstanceManager->createRenderInstance(
         resourceManager->getMesh("models/Maxwell/Untitled.gltf")
     );
-    RenderInstance* renderInstance = renderInstanceManager->getRenderInstances(renderInstanceRegistration->indexInVector);
+
+    // test
+    // ====================================
+
+    RenderInstanceRegistration* renderInstanceRegistration2 = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
+    );
+
+    RenderInstanceRegistration* renderInstanceRegistration3 = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
+    );
+
+    std::cout << "fault1" << std::endl;
+    renderInstanceManager->removeRenderInstance(renderInstanceRegistration);
+    std::cout << "fault2" << std::endl;
+    renderInstanceManager->removeRenderInstance(renderInstanceRegistration2);
+    std::cout << "fault3" << std::endl;
+    renderInstanceRegistration = renderInstanceRegistration3;
+    std::cout << "fault4" << std::endl;
+
+
+
+    // ====================================
+    // end test
+
+    RenderInstance* renderInstance = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
     renderInstance->scale = glm::vec3(0.2f);
     renderInstance->position += glm::vec3(1.5f, 0, 0);
+
 }
 
 void Render::drawFrame(){
@@ -276,8 +306,7 @@ void Render::drawFrame(){
     );
     this->cameraBufferManager->update(currentFrame, ubg);
 
-
-    std::vector<RenderInstance> renderInstances = renderInstanceManager->getRenderInstances();
+    std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
     std::size_t renderInstancesSize = renderInstances.size();
     for (size_t i = 0; i < renderInstancesSize; i++)
     {
@@ -288,7 +317,6 @@ void Render::drawFrame(){
         );
         renderInstances[i].updateModelMatrix();
     }
-
 
     // platicles
     float timetester = (time * 5);

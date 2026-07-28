@@ -64,18 +64,17 @@ public:
         {
             func(*batch);
         }
-    }
-
+    };
 
     void rebuildSortedBatches();
     void rebuildTLAS();
 
-    std::vector<RenderInstance> const getRenderInstances(){
+    std::vector<RenderInstance>& getRenderInstances(){
         return instances;
-    }
-    RenderInstance* const getRenderInstances(size_t index){
+    };
+    RenderInstance* const getRenderInstance(size_t index){
         return &instances[index];
-    }
+    };
 
     RenderInstanceManager(ResourceManager* resourceManager);
     ~RenderInstanceManager() = default;

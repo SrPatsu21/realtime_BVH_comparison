@@ -16,9 +16,14 @@ RenderInstance::RenderInstance(
 
 //copy
 RenderInstance::RenderInstance(const RenderInstance& other) noexcept
-    : model(other.model), registrations(other.registrations), position(other.position),
-        rotation(other.rotation), scale(other.scale), renderInstanceRegistration(other.renderInstanceRegistration),
-        blas(other.blas)
+    :
+    model(other.model),
+    registrations(other.registrations),
+    position(other.position),
+    rotation(other.rotation),
+    scale(other.scale),
+    renderInstanceRegistration(other.renderInstanceRegistration),
+    blas(other.blas)
 {
 }
 
@@ -92,10 +97,4 @@ void RenderInstance::updateModelMatrix()
 
 RenderInstance::~RenderInstance()
 {
-    for (auto& reg : registrations)
-    {
-        if (reg.renderBatch)
-            reg.renderBatch->removeInstance(this, reg.indexInBatch);
-    }
-    delete renderInstanceRegistration;
 }
