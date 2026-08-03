@@ -293,6 +293,7 @@ RenderInstanceManager::~RenderInstanceManager()
     {
         i.getBLAS()->destroy(device);
     }
+    tlas.destroy(device);
 
     batches_map.clear();
     batches_sorted.clear();
