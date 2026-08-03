@@ -241,23 +241,25 @@ void Render::initInstances(){
         resourceManager->getMesh("models/Maxwell/Untitled.gltf")
     );
 
-    // test
-    // ====================================
+    #ifndef NDEBUG
+        // test
+        // ====================================
 
-    RenderInstanceRegistration* renderInstanceRegistration2 = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
-    );
+        RenderInstanceRegistration* renderInstanceRegistration2 = renderInstanceManager->createRenderInstance(
+            resourceManager->getMesh("models/Maxwell/Untitled.gltf")
+        );
 
-    RenderInstanceRegistration* renderInstanceRegistration3 = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
-    );
+        RenderInstanceRegistration* renderInstanceRegistration3 = renderInstanceManager->createRenderInstance(
+            resourceManager->getMesh("models/Maxwell/Untitled.gltf")
+        );
 
-    renderInstanceManager->removeRenderInstance(renderInstanceRegistration);
-    renderInstanceManager->removeRenderInstance(renderInstanceRegistration2);
-    renderInstanceRegistration = renderInstanceRegistration3;
+        renderInstanceManager->removeRenderInstance(renderInstanceRegistration);
+        renderInstanceManager->removeRenderInstance(renderInstanceRegistration2);
+        renderInstanceRegistration = renderInstanceRegistration3;
 
-    // ====================================
-    // end test
+        // ====================================
+        // end test
+    #endif
 
     RenderInstance* renderInstance = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
     renderInstance->scale = glm::vec3(0.2f);
