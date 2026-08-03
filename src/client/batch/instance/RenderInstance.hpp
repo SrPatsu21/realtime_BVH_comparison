@@ -63,7 +63,7 @@ private:
     void clearRegistrations();
 
 public:
-    const BLAS<DefaultBLASNode>* getBLAS() const
+    BLAS<DefaultBLASNode>* getBLAS() const
     {
         return blas.get();
     }

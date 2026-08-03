@@ -212,10 +212,13 @@ void Render::initVulkan(){
     );
 
     #ifndef NDEBUG
-        // VkPhysicalDeviceProperties deviceProperties;
-        // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(
+            coreVulkan->getPhysicalDevice(),
+            &deviceProperties
+        );
 
-        // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
+        std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
     #endif
 
     vkDeviceWaitIdle(coreVulkan->getDevice());
@@ -249,15 +252,9 @@ void Render::initInstances(){
         resourceManager->getMesh("models/Maxwell/Untitled.gltf")
     );
 
-    std::cout << "fault1" << std::endl;
     renderInstanceManager->removeRenderInstance(renderInstanceRegistration);
-    std::cout << "fault2" << std::endl;
     renderInstanceManager->removeRenderInstance(renderInstanceRegistration2);
-    std::cout << "fault3" << std::endl;
     renderInstanceRegistration = renderInstanceRegistration3;
-    std::cout << "fault4" << std::endl;
-
-
 
     // ====================================
     // end test
@@ -277,8 +274,14 @@ void Render::drawFrame(){
     vkWaitForFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult next_img_result = vkAcquireNextImageKHR(coreVulkan->getDevice(), this->swapchainManager->getSwapchain(),
-            UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult next_img_result = vkAcquireNextImageKHR(
+        coreVulkan->getDevice(),
+        this->swapchainManager->getSwapchain(),
+        UINT64_MAX,
+        this->imageAvailableSemaphores[this->currentFrame],
+        VK_NULL_HANDLE,
+        &imageIndex
+    );
 
     if (next_img_result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -378,7 +381,7 @@ void Render::drawFrame(){
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSemaphore signalSemaphores[] = { this->renderFinishedSemaphores[this->currentFrame] };
+    VkSemaphore signalSemaphores[] = { this->renderFinishedSemaphores[imageIndex] };
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -492,26 +495,52 @@ void Render::cleanup(){
     glfwTerminate();
 }
 
-void Render::createSyncObjects() {
-    this->imageAvailableSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
-    this->renderFinishedSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
-    this->inFlightFences.resize(Render::MAX_FRAMES_IN_FLIGHT);
+void Render::createSyncObjects()
+{
+    imageAvailableSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(Render::MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(swapchainManager->getImages().size());
 
-    VkSemaphoreCreateInfo semaphoreInfo{ };
+    VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    VkFenceCreateInfo fenceInfo{ };
+    VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start signaled so first frame doesn't block
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     VkDevice device = coreVulkan->getDevice();
-    for (uint32_t i = 0; i < Render::MAX_FRAMES_IN_FLIGHT; ++i) {
+
+    for (uint32_t i = 0; i < Render::MAX_FRAMES_IN_FLIGHT; ++i)
+    {
         if (
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &this->inFlightFences[i]) != VK_SUCCESS
-        ) {
-            throw std::runtime_error("failed to create per-frame sync objects!");
+            vkCreateSemaphore(
+                device,
+                &semaphoreInfo,
+                nullptr,
+                &imageAvailableSemaphores[i]
+            ) != VK_SUCCESS ||
+            vkCreateFence(
+                device,
+                &fenceInfo,
+                nullptr,
+                &inFlightFences[i]
+            ) != VK_SUCCESS
+        )
+        {
+            throw std::runtime_error("failed to create frame sync objects!");
+        }
+    }
+
+    for (uint32_t i = 0; i < renderFinishedSemaphores.size(); ++i)
+    {
+        if (vkCreateSemaphore(
+                device,
+                &semaphoreInfo,
+                nullptr,
+                &renderFinishedSemaphores[i]
+            ) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create renderFinished semaphore!");
         }
     }
 }

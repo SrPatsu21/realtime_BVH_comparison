@@ -77,5 +77,5 @@ public:
     };
 
     RenderInstanceManager(ResourceManager* resourceManager);
-    ~RenderInstanceManager() = default;
+    ~RenderInstanceManager();
 };

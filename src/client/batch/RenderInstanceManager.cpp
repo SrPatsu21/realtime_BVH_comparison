@@ -285,3 +285,16 @@ BatchKey RenderInstanceManager::findBatchKey(
         GraphicsPipeline::PIPE_BLEND;
     return key;
 }
+
+RenderInstanceManager::~RenderInstanceManager()
+{
+    VkDevice device = resourceManager->getBufferManager()->getDevice();
+    for (RenderInstance& i : instances)
+    {
+        i.getBLAS()->destroy(device);
+    }
+
+    batches_map.clear();
+    batches_sorted.clear();
+    instances.clear();
+}

@@ -261,6 +261,13 @@ public:    /**
      * @brief Destroys the BufferManager and releases internal resources.
      */
     ~BufferManager();
+
+    /*
+    * getters
+    */
+    VkDevice getDevice(){
+        return device;
+    }
 };
 
 template<typename T>

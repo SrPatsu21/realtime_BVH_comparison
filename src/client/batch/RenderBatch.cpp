@@ -45,15 +45,11 @@ void RenderBatch::removeInstance(
     RenderInstance* instance,
     size_t intregistrationsIndex
 ) {
-
-    std::cout << "removeInstance fault 1" << std::endl;
-
     auto& reg = instance->registrations[intregistrationsIndex];
 
     size_t index = reg.indexInBatch;
     size_t lastIndex = batchRegistrations.size() - 1;
 
-    std::cout << "removeInstance fault 2" << std::endl;
     if (index != lastIndex)
     {
         batchRegistrations[index] = batchRegistrations[lastIndex];
@@ -62,7 +58,6 @@ void RenderBatch::removeInstance(
         instancesData[index] = instancesData[lastIndex];
     }
 
-    std::cout << "removeInstance fault 3" << std::endl;
     batchRegistrations.pop_back();
     instancesData.pop_back();
 
