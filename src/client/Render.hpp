@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO create a global descriptor Manager
+
 #include "CoreVulkan.hpp"
 #include "CoreVulkan.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
@@ -9,7 +11,6 @@
 #include "graphics_pipeline/GraphicsPipeline.hpp"
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
-//todo fix mash name :)
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferGlobal.hpp"
 #include "image/ImageColor.hpp"

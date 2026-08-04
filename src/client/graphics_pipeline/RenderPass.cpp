@@ -32,7 +32,7 @@ RenderPass::RenderPass(
     if(useMSAA) {
         attachments.reserve(3);
     }else {
-            attachments.reserve(2);
+        attachments.reserve(2);
     }
     std::vector<SubpassDesc> subpasses;
     std::vector<VkSubpassDependency> dependencies;

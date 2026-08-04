@@ -123,6 +123,8 @@ void CommandManager::setViewportAndScissor(
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
+
+// TODO change to multirenderpass
 void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
