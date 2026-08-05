@@ -3,6 +3,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "../batch/RenderBatch.hpp"
 #include "../batch/instance/RenderInstance.hpp"
+#include "../render_pass/GeometryPass.hpp"
+#include "../render_pass/ParticlePass.hpp"
 
 CommandManager::CommandManager(
     VkDevice device,
@@ -135,7 +137,7 @@ void CommandManager::recordCommandBuffer(
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
-    RenderInstanceManager* RenderInstanceManager,
+    RenderInstanceManager* renderInstanceManager,
     const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -171,173 +173,27 @@ void CommandManager::recordCommandBuffer(
         scissorProviders
     );
 
-    // browse batches
-    VkPipelineLayout layout = VK_NULL_HANDLE;
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
-    VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
-    Mesh* lastMesh = nullptr;
-    Material* lastMaterial = nullptr;
-    GraphicsPipeline::PipelineFlags lastPipeline = 0;
-    uint32_t currentOffset = 0;
-    RenderInstanceManager->forEachBatch(
-        [&](RenderBatch& batch)
-        {
-            const BatchKey& key = batch.getKey();
-            const std::shared_ptr<Mesh>&  mesh = key.mesh;
-            const Mesh::SubMesh* submesh = key.subMesh;
-            const std::shared_ptr<Material> material = key.material;
-            const GraphicsPipeline::PipelineFlags pipelineFlags = key.pipelineFlags;
-            const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
-            uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
-
-
-            // Bind pipeline
-            if (lastPipeline != pipelineFlags)
-            {
-                lastPipeline = pipelineFlags;
-                layout = graphicsPipeline->getLayout(pipelineFlags & 0x3);
-                vkCmdBindPipeline(
-                    cmd,
-                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    graphicsPipeline->getPipeline(pipelineFlags)
-                );
-            }
-
-            // Bind mesh
-            if (mesh.get() != lastMesh)
-            {
-                lastMesh = mesh.get();
-
-                VkBuffer vertexBuffer = mesh->getVertexBuffer();
-                VkDeviceSize offsets[] = { 0 };
-                vkCmdBindVertexBuffers(
-                    cmd,
-                    0,
-                    1,
-                    &vertexBuffer,
-                    offsets
-                );
-
-                vkCmdBindIndexBuffer(
-                    cmd,
-                    mesh->getIndexBuffer(),
-                    0,
-                    VK_INDEX_TYPE_UINT32
-                );
-            }
-
-            // Bind descriptor sets (set 0 & 1)
-            if (material.get() != lastMaterial)
-            {
-                lastMaterial = material.get();
-                VkDescriptorSet descriptorSets[] = {
-                    globalSet,
-                    material->getDescriptorSet()
-                };
-
-                vkCmdBindDescriptorSets(
-                    cmd,
-                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    layout,
-                    0,
-                    2,
-                    descriptorSets,
-                    0,
-                    nullptr
-                );
-            }
-
-            // Update storage buffer of the current frame.
-            instanceDescriptorManager->update(
-                currentFrame,
-                currentOffset,
-                instancesData
-            );
-
-            // Bind descriptor set 2 (instances)
-            vkCmdBindDescriptorSets(
-                cmd,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                layout,
-                2, // set index
-                1,
-                &instanceSet,
-                0,
-                nullptr
-            );
-
-            // Draw instanciado
-            vkCmdDrawIndexed(
-                cmd,
-                submesh->indexCount,
-                instanceCount,
-                submesh->firstIndex,
-                submesh->vertexOffset,
-                currentOffset
-            );
-
-            currentOffset += instanceCount;
-        }
+    GeometryPass::record(
+        cmd,
+        currentFrame,
+        graphicsPipeline,
+        globalSet,
+        instanceDescriptorManager,
+        renderInstanceManager
     );
 
 //* === TEST PARTICLE ===
-    currentOffset = 0;
-    layout = graphicsPipeline->getLayout(GraphicsPipeline::PIPE_TOPO_POINTS);
 
-    // Bind particle pipeline
-    vkCmdBindPipeline(
+    ParticlePass::record(
         cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline(
-            GraphicsPipeline::PIPE_TOPO_POINTS |
-            GraphicsPipeline::PIPE_CULL_NONE |
-            GraphicsPipeline::PIPE_DEPTH_TEST |
-            GraphicsPipeline::PIPE_BLEND
-        )
-    );
-
-    // replicate viewport/scissor
-    setViewportAndScissor(
-        cmd,
-        graphicsPipeline,
-        viewportProviders,
-        scissorProviders
-    );
-
-    particleInstanceDescriptorManager->update(
         currentFrame,
-        currentOffset,
+        graphicsPipeline,
+        globalSet,
+        particleInstanceDescriptorManager,
         particles
     );
-
-    // set 0 = global UBO
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        layout,
-        0,
-        1,
-        &globalSet,
-        0,
-        nullptr
-    );
-
-    VkDescriptorSet particleSet = particleInstanceDescriptorManager->getDescriptorSets()[currentFrame];
-
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        layout,
-        1,
-        1,
-        &particleSet,
-        0,
-        nullptr
-    );
-
-    // Draw 1 vertex, 1 instance
-    vkCmdDraw(cmd, 1, particles.size(), 0, 0);
 
 //* Extra recorders (ImGui, debug, etc)
     for (auto* r : extraRecorders) {
