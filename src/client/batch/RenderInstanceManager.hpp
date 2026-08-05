@@ -4,7 +4,7 @@
 #include "instance/InstanceData.hpp"
 #include "instance/RenderInstance.hpp"
 #include "RenderBatch.hpp"
-#include "../graphics_pipeline/GraphicsPipeline.hpp"
+#include "../graphics_pipeline/GraphicsPipelineManager.hpp"
 #include "../raytracing/acceleration_structure/AccelerationStructure.hpp"
 #include "../raytracing/acceleration_structure/accelerationStructureConfig.hpp"
 #include "../raytracing/acceleration_structure/BVHNode.hpp"

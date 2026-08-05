@@ -3,7 +3,7 @@
 void GeometryPass::record(
     VkCommandBuffer cmd,
     uint32_t currentFrame,
-    GraphicsPipeline* graphicsPipeline,
+    GraphicsPipelineManager* graphicsPipeline,
     VkDescriptorSet globalSet,
     InstanceDescriptorManager* instanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager
@@ -13,7 +13,7 @@ void GeometryPass::record(
 
     Mesh* lastMesh = nullptr;
     Material* lastMaterial = nullptr;
-    GraphicsPipeline::PipelineFlags lastPipeline = 0;
+    GraphicsPipelineManager::PipelineFlags lastPipeline = 0;
     uint32_t currentOffset = 0;
 
     renderInstanceManager->forEachBatch(
@@ -23,7 +23,7 @@ void GeometryPass::record(
             const std::shared_ptr<Mesh>&  mesh = key.mesh;
             const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
-            const GraphicsPipeline::PipelineFlags pipelineFlags = key.pipelineFlags;
+            const GraphicsPipelineManager::PipelineFlags pipelineFlags = key.pipelineFlags;
             const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
             uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());

@@ -102,7 +102,7 @@ void CommandManager::beginRenderPass(
 
 void CommandManager::setViewportAndScissor(
     VkCommandBuffer cmd,
-    GraphicsPipeline* graphicsPipeline,
+    GraphicsPipelineManager* graphicsPipeline,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders
 ) {
@@ -131,7 +131,7 @@ void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
     VkRenderPass renderPass,
-    GraphicsPipeline* graphicsPipeline,
+    GraphicsPipelineManager* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent,
     GlobalDescriptorManager* globalDescriptorManager,

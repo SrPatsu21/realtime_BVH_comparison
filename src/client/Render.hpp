@@ -5,10 +5,10 @@
 #include "CoreVulkan.hpp"
 #include "CoreVulkan.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
-#include "graphics_pipeline/RenderPass.hpp"
+#include "render_pass/RenderPass.hpp"
 #include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
-#include "graphics_pipeline/GraphicsPipeline.hpp"
+#include "graphics_pipeline/GraphicsPipelineManager.hpp"
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
@@ -50,7 +50,7 @@ private:
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
     MaterialDescriptorManager* materialDescriptorManager;
-    GraphicsPipeline* graphicsPipeline;
+    GraphicsPipelineManager* graphicsPipeline;
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;

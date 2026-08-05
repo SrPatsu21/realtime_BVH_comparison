@@ -199,7 +199,7 @@ void Render::initVulkan(){
     );
 
     // Create graphics pipeline
-    graphicsPipeline = new GraphicsPipeline(
+    graphicsPipeline = new GraphicsPipelineManager(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
@@ -605,7 +605,7 @@ void Render::recreateSwapChain() {
     );
 
     // 4. Recreate pipeline (depends on render pass + extent)
-    graphicsPipeline = new GraphicsPipeline(
+    graphicsPipeline = new GraphicsPipelineManager(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),

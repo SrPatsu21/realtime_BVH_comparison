@@ -76,7 +76,7 @@ void RenderInstanceManager::addInstance(
             mesh,
             &meshes[i],
             resourceManager->getMaterialForSubMesh(*mesh.get(), meshes[i]),
-            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_NONE | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND
+            GraphicsPipelineManager::PIPE_TOPO_TRIANGLES | GraphicsPipelineManager::PIPE_CULL_NONE | GraphicsPipelineManager::PIPE_DEPTH_TEST | GraphicsPipelineManager::PIPE_DEPTH_WRITE | GraphicsPipelineManager::PIPE_BLEND
         };
 
         auto it = batches_map.find(key);
@@ -261,11 +261,11 @@ void RenderInstanceManager::findBatchKey(
     key.subMesh = &key.mesh->getSubMeshes()[subMeshIndex];
     key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.subMesh);
     key.pipelineFlags =
-        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
-        GraphicsPipeline::PIPE_CULL_NONE |
-        GraphicsPipeline::PIPE_DEPTH_TEST |
-        GraphicsPipeline::PIPE_DEPTH_WRITE |
-        GraphicsPipeline::PIPE_BLEND;
+        GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
+        GraphicsPipelineManager::PIPE_CULL_NONE |
+        GraphicsPipelineManager::PIPE_DEPTH_TEST |
+        GraphicsPipelineManager::PIPE_DEPTH_WRITE |
+        GraphicsPipelineManager::PIPE_BLEND;
 }
 
 BatchKey RenderInstanceManager::findBatchKey(
@@ -278,11 +278,11 @@ BatchKey RenderInstanceManager::findBatchKey(
     key.subMesh = &key.mesh->getSubMeshes()[subMeshIndex];
     key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.subMesh);
     key.pipelineFlags =
-        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
-        GraphicsPipeline::PIPE_CULL_NONE |
-        GraphicsPipeline::PIPE_DEPTH_TEST |
-        GraphicsPipeline::PIPE_DEPTH_WRITE |
-        GraphicsPipeline::PIPE_BLEND;
+        GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
+        GraphicsPipelineManager::PIPE_CULL_NONE |
+        GraphicsPipelineManager::PIPE_DEPTH_TEST |
+        GraphicsPipelineManager::PIPE_DEPTH_WRITE |
+        GraphicsPipelineManager::PIPE_BLEND;
     return key;
 }
 

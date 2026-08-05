@@ -3,24 +3,24 @@
 void ParticlePass::record(
     VkCommandBuffer cmd,
     uint32_t currentFrame,
-    GraphicsPipeline* graphicsPipeline,
+    GraphicsPipelineManager* graphicsPipeline,
     VkDescriptorSet globalSet,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     const std::vector<ParticleData>& particles
 )
 {
     uint32_t currentOffset = 0;
-    VkPipelineLayout layout = graphicsPipeline->getLayout(GraphicsPipeline::PIPE_TOPO_POINTS);
+    VkPipelineLayout layout = graphicsPipeline->getLayout(GraphicsPipelineManager::PIPE_TOPO_POINTS);
 
     // Bind particle pipeline
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         graphicsPipeline->getPipeline(
-            GraphicsPipeline::PIPE_TOPO_POINTS |
-            GraphicsPipeline::PIPE_CULL_NONE |
-            GraphicsPipeline::PIPE_DEPTH_TEST |
-            GraphicsPipeline::PIPE_BLEND
+            GraphicsPipelineManager::PIPE_TOPO_POINTS |
+            GraphicsPipelineManager::PIPE_CULL_NONE |
+            GraphicsPipelineManager::PIPE_DEPTH_TEST |
+            GraphicsPipelineManager::PIPE_BLEND
         )
     );
 

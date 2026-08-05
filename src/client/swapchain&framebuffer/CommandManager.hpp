@@ -2,7 +2,7 @@
 
 #include <bits/stdc++.h>
 #include "../CoreVulkan.hpp"
-#include "../graphics_pipeline/GraphicsPipeline.hpp"
+#include "../graphics_pipeline/GraphicsPipelineManager.hpp"
 #include "../batch/RenderInstanceManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
 #include "../batch/material/MaterialDescriptorManager.hpp"
@@ -152,7 +152,7 @@ private:
      */
     void setViewportAndScissor(
         VkCommandBuffer cmd,
-        GraphicsPipeline* graphicsPipeline,
+        GraphicsPipelineManager* graphicsPipeline,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders
     );
@@ -220,7 +220,7 @@ public:
         uint32_t imageIndex,
         uint32_t currentFrame,
         VkRenderPass renderPass,
-        GraphicsPipeline* graphicsPipeline,
+        GraphicsPipelineManager* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent,
         GlobalDescriptorManager* globalDescriptorManager,
