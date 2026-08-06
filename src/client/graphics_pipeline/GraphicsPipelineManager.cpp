@@ -56,12 +56,6 @@ bool GraphicsPipelineManager::createPipeline(
 ) {
     auto [it, inserted] = graphicsPipelines.try_emplace(flags, pipeline);
 
-    if (!inserted)
-    {
-        vkDestroyPipeline(device, it->second, nullptr);
-        it->second = pipeline;
-    }
-
     return inserted;
 }
 
@@ -70,12 +64,6 @@ bool GraphicsPipelineManager::createLayout(
     VkPipelineLayout layout
 ) {
     auto [it, inserted] = pipelineLayouts.try_emplace(flags, layout);
-
-    if (!inserted)
-    {
-        vkDestroyPipelineLayout(device, it->second, nullptr);
-        it->second = layout;
-    }
 
     return inserted;
 }
