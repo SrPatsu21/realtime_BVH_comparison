@@ -1,6 +1,7 @@
 #include "GraphicsPipelineManager.hpp"
 #include "pipelines/MeshPipelineProvider.hpp"
 #include "pipelines/ParticlePipelineProvider.hpp"
+#include "pipelines/LightingPipelineProvider.hpp"
 
 GraphicsPipelineManager::GraphicsPipelineManager(
     VkDevice device,
@@ -20,6 +21,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
 
     MeshPipelineProvider meshProvider;
     ParticlePipelineProvider particleProvider;
+    LightingPipelineProvider lightingProvider;
 
     PipelineCreationContext ctx{
         .device = device,
@@ -34,6 +36,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
 
     meshProvider.createPipelines(*this, ctx);
     particleProvider.createPipelines(*this, ctx);
+    lightingProvider.createPipelines(*this, ctx);
 }
 
 GraphicsPipelineManager::~GraphicsPipelineManager() {

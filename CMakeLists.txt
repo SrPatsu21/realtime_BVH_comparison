@@ -162,6 +162,8 @@ set(SHADERS
     triangle.vert.glsl
     particle.frag.glsl
     particle.vert.glsl
+    lighting_fullscreen.frag.glsl
+    lighting_fullscreen.vert.glsl
 )
 
 set(SHADER_OUTPUTS "")

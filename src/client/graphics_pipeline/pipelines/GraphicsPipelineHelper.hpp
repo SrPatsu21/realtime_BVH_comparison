@@ -76,4 +76,7 @@ public:
         VkPipeline& out
     );
 
+    static void createEmptyVertexInputState(
+        VkPipelineVertexInputStateCreateInfo& vertexInputState
+    );
 };

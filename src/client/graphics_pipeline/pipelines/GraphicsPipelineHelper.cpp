@@ -206,3 +206,14 @@ void GraphicsPipelineHelper::createPipeline(
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 }
+
+void GraphicsPipelineHelper::createEmptyVertexInputState(
+    VkPipelineVertexInputStateCreateInfo& vertexInputState
+) {
+    vertexInputState = {};
+    vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputState.vertexBindingDescriptionCount = 0;
+    vertexInputState.pVertexBindingDescriptions = nullptr;
+    vertexInputState.vertexAttributeDescriptionCount = 0;
+    vertexInputState.pVertexAttributeDescriptions = nullptr;
+}

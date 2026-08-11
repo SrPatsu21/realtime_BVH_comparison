@@ -5,6 +5,7 @@
 #include "../batch/instance/RenderInstance.hpp"
 #include "../render_pass/GeometryPass.hpp"
 #include "../render_pass/ParticlePass.hpp"
+#include "../render_pass/LightingPass.hpp"
 
 CommandManager::CommandManager(
     VkDevice device,
@@ -182,6 +183,12 @@ void CommandManager::recordCommandBuffer(
         globalSet,
         instanceDescriptorManager,
         renderInstanceManager
+    );
+
+//* === TEST LIGHT ===
+    LightingPass::record(
+        cmd,
+        graphicsPipeline
     );
 
 //* === TEST PARTICLE ===
