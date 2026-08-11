@@ -6,7 +6,7 @@
 #include "../batch/RenderInstanceManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
 
-class GeometryPass
+class ForwardRenderingPass
 {
 public:
 
@@ -19,3 +19,4 @@ public:
         RenderInstanceManager* renderInstanceManager
     );
 };
+
