@@ -94,6 +94,7 @@ void GraphicsPipelineHelper::createRasterizerState(
     VkPolygonMode polygonMode,
     VkPipelineRasterizationStateCreateInfo& rasterizer
 ) {
+    rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
@@ -198,8 +199,21 @@ void GraphicsPipelineHelper::createPipeline(
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.basePipelineIndex = -1;
 
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
+}
+
+void GraphicsPipelineHelper::createEmptyVertexInputState(
+    VkPipelineVertexInputStateCreateInfo& vertexInputState
+) {
+    vertexInputState = {};
+    vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputState.vertexBindingDescriptionCount = 0;
+    vertexInputState.pVertexBindingDescriptions = nullptr;
+    vertexInputState.vertexAttributeDescriptionCount = 0;
+    vertexInputState.pVertexAttributeDescriptions = nullptr;
 }

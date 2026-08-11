@@ -1,6 +1,7 @@
 #include "GraphicsPipelineManager.hpp"
 #include "pipelines/MeshPipelineProvider.hpp"
 #include "pipelines/ParticlePipelineProvider.hpp"
+#include "pipelines/LightingPipelineProvider.hpp"
 
 GraphicsPipelineManager::GraphicsPipelineManager(
     VkDevice device,
@@ -20,6 +21,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
 
     MeshPipelineProvider meshProvider;
     ParticlePipelineProvider particleProvider;
+    LightingPipelineProvider lightingProvider;
 
     PipelineCreationContext ctx{
         .device = device,
@@ -34,6 +36,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
 
     meshProvider.createPipelines(*this, ctx);
     particleProvider.createPipelines(*this, ctx);
+    lightingProvider.createPipelines(*this, ctx);
 }
 
 GraphicsPipelineManager::~GraphicsPipelineManager() {
@@ -56,12 +59,6 @@ bool GraphicsPipelineManager::createPipeline(
 ) {
     auto [it, inserted] = graphicsPipelines.try_emplace(flags, pipeline);
 
-    if (!inserted)
-    {
-        vkDestroyPipeline(device, it->second, nullptr);
-        it->second = pipeline;
-    }
-
     return inserted;
 }
 
@@ -70,12 +67,6 @@ bool GraphicsPipelineManager::createLayout(
     VkPipelineLayout layout
 ) {
     auto [it, inserted] = pipelineLayouts.try_emplace(flags, layout);
-
-    if (!inserted)
-    {
-        vkDestroyPipelineLayout(device, it->second, nullptr);
-        it->second = layout;
-    }
 
     return inserted;
 }
