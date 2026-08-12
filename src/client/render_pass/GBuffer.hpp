@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include <array>
 
 class GBuffer
 {
@@ -32,6 +33,9 @@ public:
 
     VkExtent2D getExtent() const;
     VkSampleCountFlagBits getSamples() const;
+
+    std::array<VkImageView, 4> getColorViews() const;
+    VkImageView getDepthView() const;
 
 private:
 

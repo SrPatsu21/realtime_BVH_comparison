@@ -2,7 +2,6 @@
 
 #include "../CoreVulkan.hpp"
 #include "../graphics_pipeline/GraphicsPipelineManager.hpp"
-#include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../batch/RenderInstanceManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
 

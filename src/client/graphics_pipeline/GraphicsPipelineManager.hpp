@@ -26,8 +26,11 @@ public:
         PIPE_DEPTH_TEST = 1 << 4,
         PIPE_DEPTH_WRITE = 1 << 5,
         PIPE_BLEND = 1 << 6,
-        PIPE_LIGHTING = 1 << 7
-        //next 8-15
+
+        // type
+        PIPE_GEOMETRY = 1 << 7,
+        PIPE_LIGHTING = 1 << 8
+        //next 9-15
     };
 
 private:

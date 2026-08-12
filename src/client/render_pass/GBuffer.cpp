@@ -197,3 +197,18 @@ VkSampleCountFlagBits GBuffer::getSamples() const
 {
     return samples;
 }
+
+std::array<VkImageView, 4> GBuffer::getColorViews() const
+{
+    return {
+        position.view,
+        normal.view,
+        albedo.view,
+        material.view
+    };
+}
+
+VkImageView GBuffer::getDepthView() const
+{
+    return depth.view;
+}

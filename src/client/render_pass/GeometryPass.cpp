@@ -7,9 +7,12 @@ void GeometryPass::record(
     VkDescriptorSet globalSet,
     InstanceDescriptorManager* instanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager
-){
+)
+{
     VkPipelineLayout layout = VK_NULL_HANDLE;
-    VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
+
+    VkDescriptorSet instanceSet =
+        instanceDescriptorManager->getDescriptorSets()[currentFrame];
 
     Mesh* lastMesh = nullptr;
     Material* lastMaterial = nullptr;
@@ -20,16 +23,15 @@ void GeometryPass::record(
         [&](RenderBatch& batch)
         {
             const BatchKey& key = batch.getKey();
-            const std::shared_ptr<Mesh>&  mesh = key.mesh;
+
+            const std::shared_ptr<Mesh>& mesh = key.mesh;
             const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
             const GraphicsPipelineManager::PipelineFlags pipelineFlags = key.pipelineFlags;
             const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
-            uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
+            const uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
 
-
-            // Bind pipeline
             if (lastPipeline != pipelineFlags)
             {
                 lastPipeline = pipelineFlags;
@@ -41,7 +43,6 @@ void GeometryPass::record(
                 );
             }
 
-            // Bind mesh
             if (mesh.get() != lastMesh)
             {
                 lastMesh = mesh.get();
@@ -64,7 +65,6 @@ void GeometryPass::record(
                 );
             }
 
-            // Bind descriptor sets (set 0 & 1)
             if (material.get() != lastMaterial)
             {
                 lastMaterial = material.get();
@@ -85,26 +85,25 @@ void GeometryPass::record(
                 );
             }
 
-            // Update storage buffer of the current frame.
+            // Instance data
             instanceDescriptorManager->update(
                 currentFrame,
                 currentOffset,
                 instancesData
             );
 
-            // Bind descriptor set 2 (instances)
             vkCmdBindDescriptorSets(
                 cmd,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 layout,
-                2, // set index
+                2,
                 1,
                 &instanceSet,
                 0,
                 nullptr
             );
 
-            // Draw instanciado
+            // Draw
             vkCmdDrawIndexed(
                 cmd,
                 submesh->indexCount,
@@ -117,4 +116,4 @@ void GeometryPass::record(
             currentOffset += instanceCount;
         }
     );
-};
+}
