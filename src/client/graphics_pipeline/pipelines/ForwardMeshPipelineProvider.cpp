@@ -1,10 +1,10 @@
-#include "MeshPipelineProvider.hpp"
+#include "ForwardMeshPipelineProvider.hpp"
 #include "../GraphicsPipelineManager.hpp"
 #include "GraphicsPipelineHelper.hpp"
 #include "MeshPipelineLayoutProvider.hpp"
 
 
-void MeshPipelineProvider::createPipelines(
+void ForwardMeshPipelineProvider::createPipelines(
     GraphicsPipelineManager& manager,
     const PipelineCreationContext& ctx
 ) {
@@ -127,7 +127,9 @@ void MeshPipelineProvider::createPipelines(
         GraphicsPipelineManager::PIPE_CULL_NONE |
         GraphicsPipelineManager::PIPE_DEPTH_TEST |
         GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-        GraphicsPipelineManager::PIPE_BLEND,
+        GraphicsPipelineManager::PIPE_BLEND |
+        GraphicsPipelineManager::PIPE_GEOMETRY |
+        GraphicsPipelineManager::PIPE_LIGHTING,
         graphicsPipeline_TRIANGLE_CULL_NONE
     );
 
@@ -159,7 +161,9 @@ void MeshPipelineProvider::createPipelines(
         GraphicsPipelineManager::PIPE_CULL_BACK |
         GraphicsPipelineManager::PIPE_DEPTH_TEST |
         GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-        GraphicsPipelineManager::PIPE_BLEND,
+        GraphicsPipelineManager::PIPE_BLEND |
+        GraphicsPipelineManager::PIPE_GEOMETRY |
+        GraphicsPipelineManager::PIPE_LIGHTING,
         graphicsPipeline_TRIANGLE_CULL_BACK
     );
 
@@ -191,7 +195,9 @@ void MeshPipelineProvider::createPipelines(
         GraphicsPipelineManager::PIPE_CULL_FRONT |
         GraphicsPipelineManager::PIPE_DEPTH_TEST |
         GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-        GraphicsPipelineManager::PIPE_BLEND,
+        GraphicsPipelineManager::PIPE_BLEND |
+        GraphicsPipelineManager::PIPE_GEOMETRY |
+        GraphicsPipelineManager::PIPE_LIGHTING,
         graphicsPipeline_TRIANGLE_CULL_FRONT
     );
 
@@ -228,7 +234,9 @@ void MeshPipelineProvider::createPipelines(
         GraphicsPipelineManager::PIPE_CULL_NONE |
         GraphicsPipelineManager::PIPE_DEPTH_TEST |
         GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-        GraphicsPipelineManager::PIPE_BLEND,
+        GraphicsPipelineManager::PIPE_BLEND |
+        GraphicsPipelineManager::PIPE_GEOMETRY |
+        GraphicsPipelineManager::PIPE_LIGHTING,
         graphicsPipeline_LINES_CULL_NONE
     );
 

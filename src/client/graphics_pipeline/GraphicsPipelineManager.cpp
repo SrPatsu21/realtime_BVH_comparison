@@ -2,6 +2,7 @@
 #include "pipelines/MeshPipelineProvider.hpp"
 #include "pipelines/ParticlePipelineProvider.hpp"
 #include "pipelines/LightingPipelineProvider.hpp"
+#include "pipelines/ForwardMeshPipelineProvider.hpp"
 
 GraphicsPipelineManager::GraphicsPipelineManager(
     VkDevice device,
@@ -22,6 +23,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     MeshPipelineProvider meshProvider;
     ParticlePipelineProvider particleProvider;
     LightingPipelineProvider lightingProvider;
+    ForwardMeshPipelineProvider forwardMeshPipelineProvider;
 
     PipelineCreationContext ctx{
         .device = device,
@@ -37,6 +39,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     meshProvider.createPipelines(*this, ctx);
     particleProvider.createPipelines(*this, ctx);
     lightingProvider.createPipelines(*this, ctx);
+    forwardMeshPipelineProvider.createPipelines(*this, ctx);
 }
 
 GraphicsPipelineManager::~GraphicsPipelineManager() {
@@ -69,4 +72,14 @@ bool GraphicsPipelineManager::createLayout(
     auto [it, inserted] = pipelineLayouts.try_emplace(flags, layout);
 
     return inserted;
+}
+
+bool GraphicsPipelineManager::hasLayout(PipelineFlags flags) const
+{
+    return pipelineLayouts.find(flags) != pipelineLayouts.end();
+}
+
+bool GraphicsPipelineManager::hasPipeline(PipelineFlags flags) const
+{
+    return graphicsPipelines.find(flags) != graphicsPipelines.end();
 }

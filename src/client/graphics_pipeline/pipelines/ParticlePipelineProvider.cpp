@@ -60,12 +60,13 @@ void ParticlePipelineProvider::createPipelines(
 
     //* dynamic states
     VkPipelineDynamicStateCreateInfo dynamicState;
+    std::vector<VkDynamicState> dynamicStates =
+    {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
     GraphicsPipelineHelper::createDynamicState(
-        {
-            VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR,
-            VK_DYNAMIC_STATE_LINE_WIDTH
-        },
+        dynamicStates,
         dynamicState
     );
 

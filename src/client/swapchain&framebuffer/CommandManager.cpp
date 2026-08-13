@@ -6,6 +6,8 @@
 #include "../render_pass/GeometryPass.hpp"
 #include "../render_pass/ParticlePass.hpp"
 #include "../render_pass/LightingPass.hpp"
+#include "../render_pass/ForwardRenderingPass.hpp"
+
 
 CommandManager::CommandManager(
     VkDevice device,
@@ -176,7 +178,7 @@ void CommandManager::recordCommandBuffer(
 
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
 
-    GeometryPass::record(
+    ForwardRenderingPass::record(
         cmd,
         currentFrame,
         graphicsPipeline,
@@ -185,22 +187,22 @@ void CommandManager::recordCommandBuffer(
         renderInstanceManager
     );
 
-//* === TEST LIGHT ===
-    LightingPass::record(
-        cmd,
-        graphicsPipeline
-    );
+// //* === TEST LIGHT ===
+//     LightingPass::record(
+//         cmd,
+//         graphicsPipeline
+//     );
 
 //* === TEST PARTICLE ===
 
-    ParticlePass::record(
-        cmd,
-        currentFrame,
-        graphicsPipeline,
-        globalSet,
-        particleInstanceDescriptorManager,
-        particles
-    );
+    // ParticlePass::record(
+    //     cmd,
+    //     currentFrame,
+    //     graphicsPipeline,
+    //     globalSet,
+    //     particleInstanceDescriptorManager,
+    //     particles
+    // );
 
 //* Extra recorders (ImGui, debug, etc)
     for (auto* r : extraRecorders) {

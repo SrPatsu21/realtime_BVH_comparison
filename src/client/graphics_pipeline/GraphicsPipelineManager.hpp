@@ -67,6 +67,9 @@ public:
         VkPipelineLayout layout
     );
 
+    bool hasLayout(PipelineFlags flags) const;
+    bool hasPipeline(PipelineFlags flags) const;
+
     VkPipeline getPipeline(PipelineFlags flags) const { return graphicsPipelines.at(flags); }
     VkPipelineLayout getLayout(PipelineFlags flags) const { return pipelineLayouts.at(flags); }
 

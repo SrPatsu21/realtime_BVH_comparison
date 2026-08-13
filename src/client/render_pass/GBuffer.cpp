@@ -174,20 +174,6 @@ VkFormat GBuffer::getFormat(Attachment attachment) const
     return VK_FORMAT_UNDEFINED;
 }
 
-VkFormat GBuffer::getFormat(Attachment attachment) const
-{
-    switch (attachment)
-    {
-        case Attachment::Position: return position.format;
-        case Attachment::Normal:   return normal.format;
-        case Attachment::Albedo:   return albedo.format;
-        case Attachment::Material: return material.format;
-        case Attachment::Depth:    return depth.format;
-    }
-
-    return VK_FORMAT_UNDEFINED;
-}
-
 VkExtent2D GBuffer::getExtent() const
 {
     return extent;

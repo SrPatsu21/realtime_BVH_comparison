@@ -76,7 +76,13 @@ void RenderInstanceManager::addInstance(
             mesh,
             &meshes[i],
             resourceManager->getMaterialForSubMesh(*mesh.get(), meshes[i]),
-            GraphicsPipelineManager::PIPE_TOPO_TRIANGLES | GraphicsPipelineManager::PIPE_CULL_NONE | GraphicsPipelineManager::PIPE_DEPTH_TEST | GraphicsPipelineManager::PIPE_DEPTH_WRITE | GraphicsPipelineManager::PIPE_BLEND
+            GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
+            GraphicsPipelineManager::PIPE_CULL_NONE |
+            GraphicsPipelineManager::PIPE_DEPTH_TEST |
+            GraphicsPipelineManager::PIPE_DEPTH_WRITE |
+            GraphicsPipelineManager::PIPE_BLEND |
+            GraphicsPipelineManager::PIPE_GEOMETRY |
+            GraphicsPipelineManager::PIPE_LIGHTING,
         };
 
         auto it = batches_map.find(key);
