@@ -13,6 +13,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     VkDescriptorSetLayout instanceLayout,
     VkDescriptorSetLayout particleLayout,
     VkSampleCountFlagBits msaaSamples,
+    const Config::ConfigTable& config,
     VkPhysicalDeviceVulkan12Features supportedFeatures12
 ) :
     device(device)
@@ -36,10 +37,25 @@ GraphicsPipelineManager::GraphicsPipelineManager(
         .supportedFeatures12 = supportedFeatures12
     };
 
-    meshProvider.createPipelines(*this, ctx);
+    switch (config.render.mode)
+    {
+        case Config::RenderMode::Forward:
+            forwardMeshPipelineProvider.createPipelines(*this, ctx);
+            lightingProvider.createPipelines(*this, ctx);
+            break;
+        case Config::RenderMode::GeometryGbuffer:
+            meshProvider.createPipelines(*this, ctx);
+            break;
+        case Config::RenderMode::RayTracing:
+            throw std::runtime_error("Ray tracing pipeline not yet supported");
+            break;
+        default:
+            throw std::runtime_error(
+                "Unknown render mode"
+            );
+    }
+
     particleProvider.createPipelines(*this, ctx);
-    lightingProvider.createPipelines(*this, ctx);
-    forwardMeshPipelineProvider.createPipelines(*this, ctx);
 }
 
 GraphicsPipelineManager::~GraphicsPipelineManager() {

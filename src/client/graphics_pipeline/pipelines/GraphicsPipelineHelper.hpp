@@ -52,6 +52,10 @@ public:
         VkPipelineColorBlendAttachmentState& colorBlendAttachment,
         VkPipelineColorBlendStateCreateInfo& out
     );
+    static void createColorBlendState(
+        const std::array<VkPipelineColorBlendAttachmentState, 4>& colorBlendAttachments,
+        VkPipelineColorBlendStateCreateInfo& out
+    );
 
     static void createPipelineLayout(
         VkDevice device,

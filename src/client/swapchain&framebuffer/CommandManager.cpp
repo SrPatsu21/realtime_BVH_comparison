@@ -195,14 +195,14 @@ void CommandManager::recordCommandBuffer(
 
 //* === TEST PARTICLE ===
 
-    // ParticlePass::record(
-    //     cmd,
-    //     currentFrame,
-    //     graphicsPipeline,
-    //     globalSet,
-    //     particleInstanceDescriptorManager,
-    //     particles
-    // );
+    ParticlePass::record(
+        cmd,
+        currentFrame,
+        graphicsPipeline,
+        globalSet,
+        particleInstanceDescriptorManager,
+        particles
+    );
 
 //* Extra recorders (ImGui, debug, etc)
     for (auto* r : extraRecorders) {

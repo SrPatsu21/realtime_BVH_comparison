@@ -169,6 +169,27 @@ void GraphicsPipelineHelper::createColorBlendState(
     colorBlending.blendConstants[3] = 0.0f;
 }
 
+void GraphicsPipelineHelper::createColorBlendState(
+    const std::array<VkPipelineColorBlendAttachmentState, 4>& colorBlendAttachments,
+    VkPipelineColorBlendStateCreateInfo& colorBlending
+)
+{
+    colorBlending = {};
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;
+
+    colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachments.size());
+    colorBlending.pAttachments = colorBlendAttachments.data();
+
+    colorBlending.blendConstants[0] = 0.0f;
+    colorBlending.blendConstants[1] = 0.0f;
+    colorBlending.blendConstants[2] = 0.0f;
+    colorBlending.blendConstants[3] = 0.0f;
+}
+
+
 void GraphicsPipelineHelper::createPipeline(
     VkDevice device,
     const VkRenderPass renderPass,

@@ -8,7 +8,9 @@ TextureImage::DefaultTextures Render::defaultTextures =
     nullptr
 };
 
-Render::Render(){};
+Render::Render(){
+    config.render.mode = Config::RenderMode::Forward;
+};
 
 int Render::run(){
     //GLFW things
@@ -81,6 +83,7 @@ void Render::initVulkan(){
         swapchainManager->getImageFormat(),
         coreVulkan->getMsaaSamples(),
         coreVulkan->getDepthFormat(),
+        config,
         {}
     );
 
@@ -208,6 +211,7 @@ void Render::initVulkan(){
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
         coreVulkan->getMsaaSamples(),
+        config,
         coreVulkan->getSupportedFeatures12()
     );
 
@@ -601,6 +605,7 @@ void Render::recreateSwapChain() {
         swapchainManager->getImageFormat(),
         coreVulkan->getMsaaSamples(),
         coreVulkan->getDepthFormat(),
+        config,
         {}
     );
 
@@ -614,6 +619,7 @@ void Render::recreateSwapChain() {
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
         coreVulkan->getMsaaSamples(),
+        config,
         coreVulkan->getSupportedFeatures12()
     );
 

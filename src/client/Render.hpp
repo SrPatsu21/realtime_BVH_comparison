@@ -21,12 +21,14 @@
 #include "batch/instance/RenderInstance.hpp"
 #include "batch/instance/InstanceDescriptorManager.hpp"
 #include "particle/ParticleInstanceDescriptorManager.hpp"
+#include "ConfigTable.hpp"
 
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
     static TextureImage::DefaultTextures defaultTextures;
     bool framebufferResized = false;
+    Config::ConfigTable config;
 
     Render();
     int run();

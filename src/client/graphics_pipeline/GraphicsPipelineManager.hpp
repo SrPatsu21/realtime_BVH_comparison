@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include "../ConfigTable.hpp"
 #include "ShaderLoader.hpp"
 #include "../batch/instance/InstanceData.hpp"
 #include "../particle/ParticleData.hpp"
@@ -52,6 +53,7 @@ public:
         VkDescriptorSetLayout instanceLayout,
         VkDescriptorSetLayout particleLayout,
         VkSampleCountFlagBits msaaSamples,
+        const Config::ConfigTable& config,
         VkPhysicalDeviceVulkan12Features supportedFeatures12
     );
 

@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0
 
 #include "./Render.hpp"
-
 int main() {
     Render* render = new Render();
 
