@@ -7,8 +7,7 @@ namespace Config
     enum class RenderMode : uint32_t
     {
         Forward = 0,
-        GeometryGbuffer = 1,
-        RayTracing = 2
+        GeometryGbuffer = 1
     };
 
 
@@ -25,7 +24,8 @@ namespace Config
     enum LightingBits : uint64_t
     {
         Shadows = 1ull << 0,
-        SSAO    = 1ull << 1
+        SSAO    = 1ull << 1,
+        RayTracing = 1ull << 2
     };
 
 
@@ -110,12 +110,6 @@ namespace Config
                 case RenderMode::GeometryGbuffer:
                 {
                     render.flags |= Bit(RenderBits::UseGbuffer);
-                    break;
-                }
-
-                case RenderMode::RayTracing:
-                {
-                    render.flags &= ~Bit(RenderBits::UseGbuffer);
                     break;
                 }
             }

@@ -1,61 +1,85 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
-#include "SwapchainManager.hpp"
-#include "DepthBufferManager.hpp"
-#include <cstring>
+#include "../ConfigTable.hpp"
 
-/**
- * @brief Manages framebuffer creation for each swapchain image.
- *
- * FramebufferManager creates one VkFramebuffer per swapchain image,
- * binding together:
- * - The multisampled color attachment
- * - The depth (and optional stencil) attachment
- * - The resolve / presentation swapchain image
- *
- * The framebuffer configuration must exactly match the attachments
- * declared in the associated render pass.
- *
- * This class owns all created framebuffers and is responsible for
- * their lifetime.
- */
 class FramebufferManager
 {
+public:
+
+    struct ForwardAttachments
+    {
+        // MSAA color attachment.
+        //
+        // Required when msaaSamples != VK_SAMPLE_COUNT_1_BIT.
+        // Ignored when msaaSamples == VK_SAMPLE_COUNT_1_BIT.
+        VkImageView color = VK_NULL_HANDLE;
+
+        // Depth attachment.
+        VkImageView depth = VK_NULL_HANDLE;
+    };
+
+    struct GBufferAttachments
+    {
+        VkImageView albedo = VK_NULL_HANDLE;
+        VkImageView normal = VK_NULL_HANDLE;
+        VkImageView material = VK_NULL_HANDLE;
+        VkImageView depth = VK_NULL_HANDLE;
+    };
+
 private:
-    VkDevice device;
-    std::vector<VkFramebuffer> swapchainFramebuffers;
+
+    VkDevice device = VK_NULL_HANDLE;
+
+    std::vector<VkFramebuffer> framebuffers;
 
 public:
-    /**
-     * @brief Creates a framebuffer for each swapchain image.
-     *
-     * Attachment order must match the render pass attachment order:
-     * 0 - Multisampled color attachment
-     * 1 - Depth (or depth-stencil) attachment
-     * 2 - Resolve / swapchain image
-     *
-     * @param device Logical Vulkan device.
-     * @param renderPass Render pass compatible with the attachments.
-     * @param swapchainImageViews Image views of the swapchain images.
-     * @param colorImageView Multisampled color image view.
-     * @param depthImageView Depth (or depth-stencil) image view.
-     * @param swapChainExtent Framebuffer dimensions.
-     */
+
     FramebufferManager(
         VkDevice device,
         VkRenderPass renderPass,
-        std::vector<VkImageView> swapchainImageViews,
-        const VkImageView colorImageView,
-        const VkImageView depthImageView,
-        const VkExtent2D swapChainExtent,
-        bool useMSAA
+        const std::vector<VkImageView>& swapchainImageViews,
+        VkExtent2D swapchainExtent,
+        const Config::ConfigTable& config,
+        VkSampleCountFlagBits msaaSamples,
+        const ForwardAttachments& forwardAttachments,
+        const GBufferAttachments& gbufferAttachments
     );
 
-    /**
-     * @brief Destroys all framebuffers.
-     */
     ~FramebufferManager();
 
-    const std::vector<VkFramebuffer>& getFramebuffers() const { return this->swapchainFramebuffers; }
+    FramebufferManager(const FramebufferManager&) = delete;
+    FramebufferManager& operator=(const FramebufferManager&) = delete;
+
+    VkFramebuffer get(size_t index) const noexcept
+    {
+        return framebuffers[index];
+    }
+
+    const std::vector<VkFramebuffer>& getFramebuffers() const noexcept
+    {
+        return framebuffers;
+    }
+
+private:
+
+    static std::vector<VkImageView> buildForwardAttachments(
+        const std::vector<VkImageView>& swapchainImageViews,
+        size_t index,
+        const ForwardAttachments& attachments,
+        VkSampleCountFlagBits msaaSamples
+    );
+
+    static std::vector<VkImageView> buildGBufferAttachments(
+        const GBufferAttachments& attachments
+    );
+
+    static void validateForwardAttachments(
+        const ForwardAttachments& attachments,
+        VkSampleCountFlagBits msaaSamples
+    );
+
+    static void validateGBufferAttachments(
+        const GBufferAttachments& attachments
+    );
 };

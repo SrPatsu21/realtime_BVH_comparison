@@ -104,13 +104,6 @@ RenderPass::Description RenderPass::buildDescription(
                 depthFormat
             );
 
-        case Config::RenderMode::RayTracing:
-            return buildRayTracing(
-                swapchainImageFormat,
-                msaaSamples,
-                depthFormat
-            );
-
         default:
             throw std::runtime_error(
                 "Unknown render mode"
@@ -295,28 +288,6 @@ RenderPass::Description RenderPass::buildGeometryGbuffer(
     );
 
     return description;
-}
-
-// ================================================================
-// Ray Tracing
-// ================================================================
-
-RenderPass::Description RenderPass::buildRayTracing(
-    VkFormat,
-    VkSampleCountFlagBits,
-    VkFormat
-)
-{
-    /*
-     * Ray tracing does not require a traditional VkRenderPass.
-     *
-     * Keep this explicit instead of silently creating an invalid
-     * or meaningless render pass.
-     */
-
-    throw std::runtime_error(
-        "RayTracing does not use a traditional VkRenderPass"
-    );
 }
 
 // ================================================================

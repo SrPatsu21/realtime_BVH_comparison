@@ -10,6 +10,10 @@ TextureImage::DefaultTextures Render::defaultTextures =
 
 Render::Render(){
     config.render.mode = Config::RenderMode::Forward;
+
+    config.lighting.flags =
+        Config::ConfigTable::Bit(Config::LightingBits::Shadows) |
+        Config::ConfigTable::Bit(Config::LightingBits::RayTracing);
 };
 
 int Render::run(){
@@ -149,14 +153,39 @@ void Render::initVulkan(){
     );
 
     //Create framebuffers
+    FramebufferManager::ForwardAttachments forwardAttachments{
+        .color = VK_NULL_HANDLE,
+        .depth = VK_NULL_HANDLE
+    };
+    FramebufferManager::GBufferAttachments gbufferAttachments{
+        .albedo = VK_NULL_HANDLE,
+        .normal = VK_NULL_HANDLE,
+        .material = VK_NULL_HANDLE,
+        .depth = VK_NULL_HANDLE
+    };
+    if (config.render.mode == Config::RenderMode::Forward)
+    {
+        forwardAttachments.color = imageColor->getColorImageView();
+        forwardAttachments.depth = depthBufferManager->getDepthImageView();
+
+    } else if (config.render.mode == Config::RenderMode::GeometryGbuffer)
+    {
+        //TODO
+        gbufferAttachments.albedo = VK_NULL_HANDLE;
+        gbufferAttachments.normal = VK_NULL_HANDLE;
+        gbufferAttachments.material = VK_NULL_HANDLE;
+        gbufferAttachments.depth = VK_NULL_HANDLE;
+    }
+
     framebufferManager = new FramebufferManager(
         coreVulkan->getDevice(),
         renderPass->get(),
         swapchainManager->getImageViews(),
-        imageColor->getColorImageView(),
-        depthBufferManager->getDepthImageView(),
         swapchainManager->getExtent(),
-        (coreVulkan->getMsaaSamples() != VK_SAMPLE_COUNT_1_BIT)
+        config,
+        coreVulkan->getMsaaSamples(),
+        forwardAttachments,
+        gbufferAttachments
     );
 
     // create semaphore and fence
@@ -643,14 +672,40 @@ void Render::recreateSwapChain() {
     );
 
     // 7. Recreate framebuffers
+
+    FramebufferManager::ForwardAttachments forwardAttachments{
+        .color = VK_NULL_HANDLE,
+        .depth = VK_NULL_HANDLE
+    };
+    FramebufferManager::GBufferAttachments gbufferAttachments{
+        .albedo = VK_NULL_HANDLE,
+        .normal = VK_NULL_HANDLE,
+        .material = VK_NULL_HANDLE,
+        .depth = VK_NULL_HANDLE
+    };
+    if (config.render.mode == Config::RenderMode::Forward)
+    {
+        forwardAttachments.color = imageColor->getColorImageView();
+        forwardAttachments.depth = depthBufferManager->getDepthImageView();
+
+    } else if (config.render.mode == Config::RenderMode::GeometryGbuffer)
+    {
+        //TODO
+        gbufferAttachments.albedo = VK_NULL_HANDLE;
+        gbufferAttachments.normal = VK_NULL_HANDLE;
+        gbufferAttachments.material = VK_NULL_HANDLE;
+        gbufferAttachments.depth = VK_NULL_HANDLE;
+    }
+
     framebufferManager = new FramebufferManager(
         coreVulkan->getDevice(),
         renderPass->get(),
         swapchainManager->getImageViews(),
-        imageColor->getColorImageView(),
-        depthBufferManager->getDepthImageView(),
         swapchainManager->getExtent(),
-        (coreVulkan->getMsaaSamples() != VK_SAMPLE_COUNT_1_BIT)
+        config,
+        coreVulkan->getMsaaSamples(),
+        forwardAttachments,
+        gbufferAttachments
     );
 
     // 8. Recreate command buffers

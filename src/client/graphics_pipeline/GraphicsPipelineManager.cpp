@@ -1,5 +1,5 @@
 #include "GraphicsPipelineManager.hpp"
-#include "pipelines/MeshPipelineProvider.hpp"
+#include "pipelines/GeometryMeshPipelineProvider.hpp"
 #include "pipelines/ParticlePipelineProvider.hpp"
 #include "pipelines/LightingPipelineProvider.hpp"
 #include "pipelines/ForwardMeshPipelineProvider.hpp"
@@ -21,7 +21,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     viewport = {0.0f, 0.0f, static_cast<float>(swapchainExtent.width), static_cast<float>(swapchainExtent.height), 0.0f, 1.0f};
     scissor = { {0, 0}, swapchainExtent };
 
-    MeshPipelineProvider meshProvider;
+    GeometryMeshPipelineProvider geometryMeshPipelineProvider;
     ParticlePipelineProvider particleProvider;
     LightingPipelineProvider lightingProvider;
     ForwardMeshPipelineProvider forwardMeshPipelineProvider;
@@ -44,10 +44,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
             lightingProvider.createPipelines(*this, ctx);
             break;
         case Config::RenderMode::GeometryGbuffer:
-            meshProvider.createPipelines(*this, ctx);
-            break;
-        case Config::RenderMode::RayTracing:
-            throw std::runtime_error("Ray tracing pipeline not yet supported");
+            geometryMeshPipelineProvider.createPipelines(*this, ctx);
             break;
         default:
             throw std::runtime_error(

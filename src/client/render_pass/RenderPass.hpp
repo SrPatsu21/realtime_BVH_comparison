@@ -77,11 +77,6 @@ private:
         VkFormat depthFormat
     );
 
-    static Description buildRayTracing(
-        VkFormat swapchainImageFormat,
-        VkSampleCountFlagBits msaaSamples,
-        VkFormat depthFormat
-    );
 
     // ------------------------------------------------------------
     // Description construction
