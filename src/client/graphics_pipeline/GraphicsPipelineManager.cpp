@@ -41,10 +41,10 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     {
         case Config::RenderMode::Forward:
             forwardMeshPipelineProvider.createPipelines(*this, ctx);
-            lightingProvider.createPipelines(*this, ctx);
             break;
         case Config::RenderMode::GeometryGbuffer:
             geometryMeshPipelineProvider.createPipelines(*this, ctx);
+            lightingProvider.createPipelines(*this, ctx);
             break;
         default:
             throw std::runtime_error(

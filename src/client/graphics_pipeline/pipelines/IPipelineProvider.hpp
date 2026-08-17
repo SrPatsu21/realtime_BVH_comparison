@@ -12,8 +12,14 @@ struct PipelineCreationContext
     VkDescriptorSetLayout particleLayout;
     VkDescriptorSetLayout instanceLayout;
 
+    VkDescriptorSetLayout gbufferLayout;
+    VkDescriptorSetLayout lightingLayout;
+
     VkSampleCountFlagBits msaa;
+
     VkPhysicalDeviceVulkan12Features supportedFeatures12;
+
+    const Config::ConfigTable* config;
 };
 
 struct IPipelineProvider

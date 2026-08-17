@@ -9,6 +9,7 @@ TextureImage::DefaultTextures Render::defaultTextures =
 };
 
 Render::Render(){
+    // config.render.mode = Config::RenderMode::GeometryGbuffer;
     config.render.mode = Config::RenderMode::Forward;
 
     config.lighting.flags =
@@ -410,7 +411,8 @@ void Render::drawFrame(){
         {},
         {},
         {},
-        {}
+        {},
+        config
     );
 
     // --- Submit work ---

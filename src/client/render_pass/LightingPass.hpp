@@ -9,6 +9,9 @@ public:
 
     static void record(
         VkCommandBuffer cmd,
-        GraphicsPipelineManager* graphicsPipeline
+        GraphicsPipelineManager* graphicsPipeline,
+        VkDescriptorSet globalSet,
+        VkDescriptorSet gbufferSet,
+        const Config::ConfigTable& config
     );
 };

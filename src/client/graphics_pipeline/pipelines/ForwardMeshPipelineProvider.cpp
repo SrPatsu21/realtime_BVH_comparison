@@ -1,7 +1,7 @@
 #include "ForwardMeshPipelineProvider.hpp"
 #include "../GraphicsPipelineManager.hpp"
 #include "GraphicsPipelineHelper.hpp"
-#include "MeshPipelineLayoutProvider.hpp"
+#include "../layouts/MeshPipelineLayoutProvider.hpp"
 
 
 void ForwardMeshPipelineProvider::createPipelines(

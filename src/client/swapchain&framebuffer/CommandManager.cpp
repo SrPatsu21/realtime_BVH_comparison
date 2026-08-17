@@ -145,7 +145,8 @@ void CommandManager::recordCommandBuffer(
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
-    const std::vector<ICommandBufferRecorder*>& extraRecorders
+    const std::vector<ICommandBufferRecorder*>& extraRecorders,
+    const Config::ConfigTable& config
 ) {
 #ifndef NDEBUG
     assert(imageIndex < commandBuffers.size());
@@ -178,14 +179,37 @@ void CommandManager::recordCommandBuffer(
 
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
 
-    ForwardRenderingPass::record(
-        cmd,
-        currentFrame,
-        graphicsPipeline,
-        globalSet,
-        instanceDescriptorManager,
-        renderInstanceManager
-    );
+    if (config.render.mode == Config::RenderMode::Forward)
+    {
+        ForwardRenderingPass::record(
+            cmd,
+            currentFrame,
+            graphicsPipeline,
+            globalSet,
+            instanceDescriptorManager,
+            renderInstanceManager
+        );
+    }else if (config.render.mode == Config::RenderMode::GeometryGbuffer)
+    {
+        GeometryPass::record(
+            cmd,
+            currentFrame,
+            graphicsPipeline,
+            globalSet,
+            instanceDescriptorManager,
+            renderInstanceManager
+        );
+// TODO
+        // LightingPass::record(
+        //     cmd,
+        //     graphicsPipeline,
+        //     globalSet,
+        //     ,
+        //     config
+        // );
+    }
+
+
 
 // //* === TEST LIGHT ===
 //     LightingPass::record(

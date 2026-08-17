@@ -1,5 +1,5 @@
 #include "MeshPipelineLayoutProvider.hpp"
-#include "GraphicsPipelineHelper.hpp"
+#include "../pipelines/GraphicsPipelineHelper.hpp"
 
 GraphicsPipelineManager::PipelineFlags MeshPipelineLayoutProvider::createPipelineLayouts(
     GraphicsPipelineManager& manager,

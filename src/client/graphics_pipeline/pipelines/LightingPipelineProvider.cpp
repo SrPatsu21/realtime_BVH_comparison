@@ -2,12 +2,20 @@
 
 #include "../GraphicsPipelineManager.hpp"
 #include "GraphicsPipelineHelper.hpp"
+#include "../layouts/LightingPipelineLayoutProvider.hpp"
 
 void LightingPipelineProvider::createPipelines(
     GraphicsPipelineManager& manager,
     const PipelineCreationContext& ctx
 )
 {
+    #ifndef NDEBUG
+        if (ctx.config == nullptr)
+            throw std::runtime_error(
+                "LightingPipelineProvider requires ConfigTable"
+            );
+    #endif
+
     ShaderLoader shader(
         ctx.device,
         "shaders/lighting_fullscreen.vert.glsl.spv",
@@ -24,20 +32,23 @@ void LightingPipelineProvider::createPipelines(
         shaderStages[1]
     );
 
-    //* layout
-    VkPipelineLayout pipelineLayout;
-    GraphicsPipelineHelper::createPipelineLayout(
-        ctx.device,
-        0,
-        {},
-        pipelineLayout
-    );
-    manager.createLayout(
-        GraphicsPipelineManager::PIPE_LIGHTING,
-        pipelineLayout
-    );
+    // ============================================================
+    // Pipeline layout
+    // ============================================================
 
-    //* create info
+    LightingPipelineLayoutProvider lightingPipelineLayoutProvider;
+
+    VkPipelineLayout pipelineLayout =
+        manager.getLayout(
+            lightingPipelineLayoutProvider.createPipelineLayouts(
+                manager,
+                ctx
+            )
+        );
+
+    // ============================================================
+    // Create info
+    // ============================================================
     VkPipelineVertexInputStateCreateInfo vertexInput;
     GraphicsPipelineHelper::createEmptyVertexInputState(
         vertexInput
@@ -52,7 +63,7 @@ void LightingPipelineProvider::createPipelines(
 
     VkPipelineMultisampleStateCreateInfo multisampling;
     GraphicsPipelineHelper::createMultisampleState(
-        ctx.msaa,
+        VK_SAMPLE_COUNT_1_BIT,
         multisampling
     );
 
@@ -98,7 +109,10 @@ void LightingPipelineProvider::createPipelines(
         rasterizationState
     );
 
-    //* Pipeline TRIANGLE_CULL_NONE
+    // ============================================================
+    // Pipeline
+    // ============================================================
+
     VkPipeline lightingPipeline;
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
@@ -116,9 +130,17 @@ void LightingPipelineProvider::createPipelines(
         lightingPipeline
     );
 
-    manager.createPipeline(
+    // ============================================================
+    // Pipeline flags
+    // ============================================================
+
+    GraphicsPipelineManager::PipelineFlags lightingFlags =
+        GraphicsPipelineManager::PIPE_LIGHTING |
         GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
-        GraphicsPipelineManager::PIPE_CULL_NONE,
+        GraphicsPipelineManager::PIPE_CULL_NONE;
+
+    manager.createPipeline(
+        lightingFlags,
         lightingPipeline
     );
 }

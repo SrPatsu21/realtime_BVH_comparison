@@ -231,7 +231,8 @@ public:
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders,
-        const std::vector<ICommandBufferRecorder*>& extraRecorders
+        const std::vector<ICommandBufferRecorder*>& extraRecorders,
+        const Config::ConfigTable& config
     );
 
     VkCommandPool getCommandPool() const { return commandPool; }

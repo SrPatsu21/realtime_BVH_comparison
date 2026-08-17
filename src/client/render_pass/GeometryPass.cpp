@@ -11,8 +11,7 @@ void GeometryPass::record(
 {
     VkPipelineLayout layout = VK_NULL_HANDLE;
 
-    VkDescriptorSet instanceSet =
-        instanceDescriptorManager->getDescriptorSets()[currentFrame];
+    VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
 
     Mesh* lastMesh = nullptr;
     Material* lastMaterial = nullptr;

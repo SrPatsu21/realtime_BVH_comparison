@@ -1,0 +1,35 @@
+#include "LightingPipelineLayoutProvider.hpp"
+#include "../pipelines/GraphicsPipelineHelper.hpp"
+
+GraphicsPipelineManager::PipelineFlags
+LightingPipelineLayoutProvider::createPipelineLayouts(
+    GraphicsPipelineManager& manager,
+    const PipelineCreationContext& ctx
+)
+{
+    constexpr auto layoutFlags = GraphicsPipelineManager::PIPE_LIGHTING;
+
+    if (manager.hasLayout(layoutFlags))
+        return layoutFlags;
+
+    VkPipelineLayout pipelineLayout;
+
+    std::vector<VkDescriptorSetLayout> descriptorLayouts = {
+        ctx.globalLayout,
+        ctx.gbufferLayout
+    };
+
+    GraphicsPipelineHelper::createPipelineLayout(
+        ctx.device,
+        0,
+        descriptorLayouts,
+        pipelineLayout
+    );
+
+    manager.createLayout(
+        layoutFlags,
+        pipelineLayout
+    );
+
+    return layoutFlags;
+}
