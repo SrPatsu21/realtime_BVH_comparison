@@ -1,11 +1,8 @@
-#pragma once
+#include "../graphics_pipeline/pipelines/IPipelineProvider.hpp"
 
-#include "IPipelineProvider.hpp"
-
-class LightingPipelineProvider : public IPipelineProvider
+class ForwardMeshPipelineProvider : public IPipelineProvider
 {
 public:
-
     void createPipelines(
         GraphicsPipelineManager& manager,
         const PipelineCreationContext& ctx

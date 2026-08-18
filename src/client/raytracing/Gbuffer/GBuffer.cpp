@@ -1,5 +1,5 @@
 #include "GBuffer.hpp"
-#include "../image/VulkanImageUtils.hpp"
+#include "../../image/VulkanImageUtils.hpp"
 
 void GBuffer::create(
     VkDevice device,

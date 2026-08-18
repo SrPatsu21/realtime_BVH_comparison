@@ -3,10 +3,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "../batch/RenderBatch.hpp"
 #include "../batch/instance/RenderInstance.hpp"
-#include "../render_pass/GeometryPass.hpp"
-#include "../render_pass/ParticlePass.hpp"
-#include "../render_pass/LightingPass.hpp"
-#include "../render_pass/ForwardRenderingPass.hpp"
+#include "../forward_render/ForwardRecord.hpp"
+#include "../particle/ParticleRecord.hpp"
+#include "../raytracing/record/GeometryRecord.hpp"
+#include "../raytracing/record/LightingRecord.hpp"
+
 
 
 CommandManager::CommandManager(
@@ -181,7 +182,7 @@ void CommandManager::recordCommandBuffer(
 
     if (config.render.mode == Config::RenderMode::Forward)
     {
-        ForwardRenderingPass::record(
+        ForwardRecord::record(
             cmd,
             currentFrame,
             graphicsPipeline,
@@ -191,7 +192,7 @@ void CommandManager::recordCommandBuffer(
         );
     }else if (config.render.mode == Config::RenderMode::GeometryGbuffer)
     {
-        GeometryPass::record(
+        GeometryRecord::record(
             cmd,
             currentFrame,
             graphicsPipeline,
@@ -200,7 +201,7 @@ void CommandManager::recordCommandBuffer(
             renderInstanceManager
         );
 // TODO
-        // LightingPass::record(
+        // LightingRecord::record(
         //     cmd,
         //     graphicsPipeline,
         //     globalSet,
@@ -212,14 +213,14 @@ void CommandManager::recordCommandBuffer(
 
 
 // //* === TEST LIGHT ===
-//     LightingPass::record(
+//     LightingRecord::record(
 //         cmd,
 //         graphicsPipeline
 //     );
 
 //* === TEST PARTICLE ===
 
-    ParticlePass::record(
+    ParticleRecord::record(
         cmd,
         currentFrame,
         graphicsPipeline,

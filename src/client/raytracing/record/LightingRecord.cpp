@@ -1,6 +1,6 @@
-#include "LightingPass.hpp"
+#include "LightingRecord.hpp"
 
-void LightingPass::record(
+void LightingRecord::record(
     VkCommandBuffer cmd,
     GraphicsPipelineManager* graphicsPipeline,
     VkDescriptorSet globalSet,

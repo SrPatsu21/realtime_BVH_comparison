@@ -1,16 +1,14 @@
-#include "GeometryPass.hpp"
+#include "ForwardRecord.hpp"
 
-void GeometryPass::record(
+void ForwardRecord::record(
     VkCommandBuffer cmd,
     uint32_t currentFrame,
     GraphicsPipelineManager* graphicsPipeline,
     VkDescriptorSet globalSet,
     InstanceDescriptorManager* instanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager
-)
-{
+){
     VkPipelineLayout layout = VK_NULL_HANDLE;
-
     VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
 
     Mesh* lastMesh = nullptr;
@@ -22,15 +20,16 @@ void GeometryPass::record(
         [&](RenderBatch& batch)
         {
             const BatchKey& key = batch.getKey();
-
-            const std::shared_ptr<Mesh>& mesh = key.mesh;
+            const std::shared_ptr<Mesh>&  mesh = key.mesh;
             const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
             const GraphicsPipelineManager::PipelineFlags pipelineFlags = key.pipelineFlags;
             const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
-            const uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
+            uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
 
+
+            // Bind pipeline
             if (lastPipeline != pipelineFlags)
             {
                 lastPipeline = pipelineFlags;
@@ -42,6 +41,7 @@ void GeometryPass::record(
                 );
             }
 
+            // Bind mesh
             if (mesh.get() != lastMesh)
             {
                 lastMesh = mesh.get();
@@ -64,6 +64,7 @@ void GeometryPass::record(
                 );
             }
 
+            // Bind descriptor sets (set 0 & 1)
             if (material.get() != lastMaterial)
             {
                 lastMaterial = material.get();
@@ -84,25 +85,26 @@ void GeometryPass::record(
                 );
             }
 
-            // Instance data
+            // Update storage buffer of the current frame.
             instanceDescriptorManager->update(
                 currentFrame,
                 currentOffset,
                 instancesData
             );
 
+            // Bind descriptor set 2 (instances)
             vkCmdBindDescriptorSets(
                 cmd,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 layout,
-                2,
+                2, // set index
                 1,
                 &instanceSet,
                 0,
                 nullptr
             );
 
-            // Draw
+            // Draw instanciado
             vkCmdDrawIndexed(
                 cmd,
                 submesh->indexCount,
@@ -115,4 +117,4 @@ void GeometryPass::record(
             currentOffset += instanceCount;
         }
     );
-}
+};

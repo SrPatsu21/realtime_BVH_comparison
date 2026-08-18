@@ -1,6 +1,6 @@
-#include "ParticlePass.hpp"
+#include "ParticleRecord.hpp"
 
-void ParticlePass::record(
+void ParticleRecord::record(
     VkCommandBuffer cmd,
     uint32_t currentFrame,
     GraphicsPipelineManager* graphicsPipeline,

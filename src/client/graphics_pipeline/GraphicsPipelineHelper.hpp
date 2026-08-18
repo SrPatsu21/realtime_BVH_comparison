@@ -1,5 +1,5 @@
 #pragma once
-#include "../../CoreVulkan.hpp"
+#include "../CoreVulkan.hpp"
 #include <array>
 
 class GraphicsPipelineHelper {

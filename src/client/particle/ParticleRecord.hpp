@@ -8,7 +8,7 @@
 
 // TODO improve
 
-class ParticlePass
+class ParticleRecord
 {
 public:
 

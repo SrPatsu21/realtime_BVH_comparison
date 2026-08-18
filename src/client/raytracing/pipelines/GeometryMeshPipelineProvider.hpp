@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IPipelineProvider.hpp"
+#include "../../graphics_pipeline/pipelines/IPipelineProvider.hpp"
 
 class GeometryMeshPipelineProvider final
     : public IPipelineProvider

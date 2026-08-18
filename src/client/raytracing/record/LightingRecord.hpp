@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../CoreVulkan.hpp"
-#include "../graphics_pipeline/GraphicsPipelineManager.hpp"
+#include "../../CoreVulkan.hpp"
+#include "../../graphics_pipeline/GraphicsPipelineManager.hpp"
 
-class LightingPass
+class LightingRecord
 {
 public:
 

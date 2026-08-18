@@ -1,6 +1,6 @@
 #include "ParticlePipelineProvider.hpp"
-#include "../GraphicsPipelineManager.hpp"
-#include "GraphicsPipelineHelper.hpp"
+#include "../graphics_pipeline/GraphicsPipelineManager.hpp"
+#include "../graphics_pipeline/GraphicsPipelineHelper.hpp"
 
 void ParticlePipelineProvider::createPipelines(
     GraphicsPipelineManager& manager,

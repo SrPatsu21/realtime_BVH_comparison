@@ -1,8 +1,8 @@
 #include "GraphicsPipelineManager.hpp"
-#include "pipelines/GeometryMeshPipelineProvider.hpp"
-#include "pipelines/ParticlePipelineProvider.hpp"
-#include "pipelines/LightingPipelineProvider.hpp"
-#include "pipelines/ForwardMeshPipelineProvider.hpp"
+#include "../forward_render/ForwardMeshPipelineProvider.hpp"
+#include "../particle/ParticlePipelineProvider.hpp"
+#include "../raytracing/pipelines/GeometryMeshPipelineProvider.hpp"
+#include "../raytracing/pipelines/LightingPipelineProvider.hpp"
 
 GraphicsPipelineManager::GraphicsPipelineManager(
     VkDevice device,

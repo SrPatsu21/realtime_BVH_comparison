@@ -1,5 +1,5 @@
 #include "LightingPipelineLayoutProvider.hpp"
-#include "../pipelines/GraphicsPipelineHelper.hpp"
+#include "../../graphics_pipeline/GraphicsPipelineHelper.hpp"
 
 GraphicsPipelineManager::PipelineFlags
 LightingPipelineLayoutProvider::createPipelineLayouts(

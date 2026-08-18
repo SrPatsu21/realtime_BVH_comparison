@@ -1,6 +1,8 @@
-#include "IPipelineProvider.hpp"
+#pragma once
 
-class ForwardMeshPipelineProvider : public IPipelineProvider
+#include "../graphics_pipeline/pipelines/IPipelineProvider.hpp"
+
+class ParticlePipelineProvider : public IPipelineProvider
 {
 public:
     void createPipelines(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IPipelineLayoutProvider.hpp"
+#include "../../graphics_pipeline/layouts/IPipelineLayoutProvider.hpp"
 
 class LightingPipelineLayoutProvider final
     : public IPipelineLayoutProvider

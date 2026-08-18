@@ -1,8 +1,7 @@
 #include "LightingPipelineProvider.hpp"
-
-#include "../GraphicsPipelineManager.hpp"
-#include "GraphicsPipelineHelper.hpp"
-#include "../layouts/LightingPipelineLayoutProvider.hpp"
+#include "../../graphics_pipeline/GraphicsPipelineManager.hpp"
+#include "../../graphics_pipeline/GraphicsPipelineHelper.hpp"
+#include "../pipeline_layouts/LightingPipelineLayoutProvider.hpp"
 
 void LightingPipelineProvider::createPipelines(
     GraphicsPipelineManager& manager,
