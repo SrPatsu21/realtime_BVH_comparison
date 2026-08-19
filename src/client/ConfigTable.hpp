@@ -7,7 +7,7 @@ namespace Config
     enum class RenderMode : uint32_t
     {
         Forward = 0,
-        GeometryGbuffer = 1
+        GeometryGBuffer = 1
     };
 
 
@@ -107,7 +107,7 @@ namespace Config
                     break;
                 }
 
-                case RenderMode::GeometryGbuffer:
+                case RenderMode::GeometryGBuffer:
                 {
                     render.flags |= Bit(RenderBits::UseGbuffer);
                     break;

@@ -98,7 +98,7 @@ RenderPass::Description RenderPass::buildDescription(
                 depthFormat
             );
 
-        case Config::RenderMode::GeometryGbuffer:
+        case Config::RenderMode::GeometryGBuffer:
             return buildGeometryGbuffer(
                 msaaSamples,
                 depthFormat

@@ -8,7 +8,7 @@ void LightingRecord::record(
     const Config::ConfigTable& config
 )
 {
-    if (config.render.mode != Config::RenderMode::GeometryGbuffer)
+    if (config.render.mode != Config::RenderMode::GeometryGBuffer)
         return;
 
     const auto pipelineFlags =

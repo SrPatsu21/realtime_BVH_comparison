@@ -21,6 +21,7 @@ public:
 
     struct GBufferAttachments
     {
+        VkImageView position = VK_NULL_HANDLE;
         VkImageView albedo = VK_NULL_HANDLE;
         VkImageView normal = VK_NULL_HANDLE;
         VkImageView material = VK_NULL_HANDLE;
@@ -43,7 +44,7 @@ public:
         const Config::ConfigTable& config,
         VkSampleCountFlagBits msaaSamples,
         const ForwardAttachments& forwardAttachments,
-        const GBufferAttachments& gbufferAttachments
+        const GBufferAttachments& gBufferAttachments
     );
 
     ~FramebufferManager();

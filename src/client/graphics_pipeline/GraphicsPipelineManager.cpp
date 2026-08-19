@@ -25,7 +25,7 @@ GraphicsPipelineManager::GraphicsPipelineManager(
         case Config::RenderMode::Forward:
             forwardMeshPipelineProvider.createPipelines(*this, ctx);
             break;
-        case Config::RenderMode::GeometryGbuffer:
+        case Config::RenderMode::GeometryGBuffer:
             geometryMeshPipelineProvider.createPipelines(*this, ctx);
             lightingProvider.createPipelines(*this, ctx);
             break;

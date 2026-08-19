@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
-#include "VulkanImageUtils.hpp"
+#include "../image/VulkanImageUtils.hpp"
 #include "../BufferManager.hpp"
 
 /**

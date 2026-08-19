@@ -11,7 +11,7 @@ FramebufferManager::FramebufferManager(
     const Config::ConfigTable& config,
     VkSampleCountFlagBits msaaSamples,
     const ForwardAttachments& forwardAttachments,
-    const GBufferAttachments& gbufferAttachments
+    const GBufferAttachments& gBufferAttachments
 )
     : device(device)
 {
@@ -72,10 +72,10 @@ FramebufferManager::FramebufferManager(
             // Geometry / GBuffer
             // ----------------------------------------------------
 
-            case Config::RenderMode::GeometryGbuffer:
+            case Config::RenderMode::GeometryGBuffer:
             {
                 attachments = buildGBufferAttachments(
-                    gbufferAttachments
+                    gBufferAttachments
                 );
 
                 break;
@@ -201,15 +201,17 @@ FramebufferManager::buildGBufferAttachments(
 
     /*
         GBuffer attachment order MUST match
-        RenderPass::buildGeometryGbuffer():
+        RenderPass::buildGeometryGBuffer():
 
-            attachment 0 -> albedo
-            attachment 1 -> normal
-            attachment 2 -> material
-            attachment 3 -> depth
+            attachment 0 -> position
+            attachment 1 -> albedo
+            attachment 2 -> normal
+            attachment 3 -> material
+            attachment 4 -> depth
     */
 
     return {
+        attachments.position,
         attachments.albedo,
         attachments.normal,
         attachments.material,
@@ -255,6 +257,14 @@ void FramebufferManager::validateGBufferAttachments(
     const GBufferAttachments& attachments
 )
 {
+    if (attachments.position == VK_NULL_HANDLE)
+    {
+        throw std::runtime_error(
+            "FramebufferManager: "
+            "GBuffer position image view is invalid"
+        );
+    }
+
     if (attachments.albedo == VK_NULL_HANDLE)
     {
         throw std::runtime_error(

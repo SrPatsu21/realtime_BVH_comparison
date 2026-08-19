@@ -12,7 +12,7 @@ struct PipelineCreationContext
     VkDescriptorSetLayout particleLayout;
     VkDescriptorSetLayout instanceLayout;
 
-    VkDescriptorSetLayout gbufferLayout;
+    VkDescriptorSetLayout gBufferLayout;
     VkDescriptorSetLayout lightingLayout;
 
     VkSampleCountFlagBits msaa;

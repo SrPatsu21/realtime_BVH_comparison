@@ -190,7 +190,7 @@ void CommandManager::recordCommandBuffer(
             instanceDescriptorManager,
             renderInstanceManager
         );
-    }else if (config.render.mode == Config::RenderMode::GeometryGbuffer)
+    }else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
     {
         GeometryRecord::record(
             cmd,

@@ -1,7 +1,5 @@
 #pragma once
 
-// TODO create a global descriptor Manager
-
 #include "CoreVulkan.hpp"
 #include "CoreVulkan.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
@@ -9,11 +7,11 @@
 #include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
 #include "graphics_pipeline/GraphicsPipelineManager.hpp"
-#include "swapchain&framebuffer/DepthBufferManager.hpp"
+#include "forward_render/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferGlobal.hpp"
-#include "image/ImageColor.hpp"
+#include "forward_render/ImageColor.hpp"
 #include "batch/material/MaterialDescriptorManager.hpp"
 #include "batch/RenderInstanceManager.hpp"
 #include "batch/instance/RenderInstanceRegistration.hpp"
