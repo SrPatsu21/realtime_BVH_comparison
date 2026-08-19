@@ -6,6 +6,7 @@
 #include "../batch/instance/InstanceData.hpp"
 #include "../particle/ParticleData.hpp"
 #include "../batch/mesh/Vertex.hpp"
+#include "pipelines/PipelineCreationContext.hpp"
 #include <unordered_map>
 
 class GraphicsPipelineManager {
@@ -47,14 +48,8 @@ public:
     GraphicsPipelineManager(
         VkDevice device,
         VkExtent2D swapchainExtent,
-        VkRenderPass renderPass,
-        VkDescriptorSetLayout globalLayout,
-        VkDescriptorSetLayout materialLayout,
-        VkDescriptorSetLayout instanceLayout,
-        VkDescriptorSetLayout particleLayout,
-        VkSampleCountFlagBits msaaSamples,
-        const Config::ConfigTable& config,
-        VkPhysicalDeviceVulkan12Features supportedFeatures12
+        const PipelineCreationContext& ctx,
+        const Config::ConfigTable& config
     );
 
     ~GraphicsPipelineManager();

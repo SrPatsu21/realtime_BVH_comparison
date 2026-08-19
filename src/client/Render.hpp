@@ -22,6 +22,8 @@
 #include "batch/instance/InstanceDescriptorManager.hpp"
 #include "particle/ParticleInstanceDescriptorManager.hpp"
 #include "ConfigTable.hpp"
+#include "raytracing/buffers/GBufferDescriptorManager.hpp"
+#include "raytracing/buffers/LightingDescriptorManager.hpp"
 
 class Render {
 public:
@@ -51,6 +53,9 @@ private:
     RenderPass* renderPass;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
+    GBuffer* gBuffer;
+    GBufferDescriptorManager* gBufferDescriptorManager;
+    // LightingDescriptorManager* lightingDescriptorManager;
     MaterialDescriptorManager* materialDescriptorManager;
     GraphicsPipelineManager* graphicsPipeline;
     ImageColor* imageColor;

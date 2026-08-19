@@ -39,6 +39,8 @@ private:
 
     VkExtent2D extent{};
 
+    VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
+
 public:
 
     void create(
@@ -56,6 +58,7 @@ public:
     VkSampler getSample(Attachment attachment) const;
 
     VkExtent2D getExtent() const;
+    VkSampleCountFlagBits getSamples() const;
 
     std::array<VkImageView, 4> getColorViews() const;
     VkImageView getDepthView() const;
@@ -76,5 +79,4 @@ private:
         VkDevice device,
         Image& attachment
     );
-
 };

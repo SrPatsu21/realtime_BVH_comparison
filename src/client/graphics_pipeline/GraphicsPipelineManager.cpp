@@ -7,14 +7,8 @@
 GraphicsPipelineManager::GraphicsPipelineManager(
     VkDevice device,
     VkExtent2D swapchainExtent,
-    VkRenderPass renderPass,
-    VkDescriptorSetLayout globalLayout,
-    VkDescriptorSetLayout materialLayout,
-    VkDescriptorSetLayout instanceLayout,
-    VkDescriptorSetLayout particleLayout,
-    VkSampleCountFlagBits msaaSamples,
-    const Config::ConfigTable& config,
-    VkPhysicalDeviceVulkan12Features supportedFeatures12
+    const PipelineCreationContext& ctx,
+    const Config::ConfigTable& config
 ) :
     device(device)
 {
@@ -25,17 +19,6 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     ParticlePipelineProvider particleProvider;
     LightingPipelineProvider lightingProvider;
     ForwardMeshPipelineProvider forwardMeshPipelineProvider;
-
-    PipelineCreationContext ctx{
-        .device = device,
-        .renderPass = renderPass,
-        .globalLayout = globalLayout,
-        .materialLayout = materialLayout,
-        .particleLayout = particleLayout,
-        .instanceLayout = instanceLayout,
-        .msaa = msaaSamples,
-        .supportedFeatures12 = supportedFeatures12
-    };
 
     switch (config.render.mode)
     {

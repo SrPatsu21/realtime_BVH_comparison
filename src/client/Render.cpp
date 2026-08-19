@@ -1,4 +1,5 @@
 #include "Render.hpp"
+#include "graphics_pipeline/pipelines/IPipelineProvider.hpp"
 #include <chrono>
 
 TextureImage::DefaultTextures Render::defaultTextures =
@@ -202,18 +203,32 @@ void Render::initVulkan(){
         this->framebufferManager->getFramebuffers()
     );
 
-    // Create descript
+
+    // pipeline Context
+
+    PipelineCreationContext pipelineContext{
+        .device = coreVulkan->getDevice(),
+        .renderPass = renderPass->get(),
+        .msaa = coreVulkan->getMsaaSamples(),
+        .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
+        .config = &config
+    };
+
+    // Create descriptor
+
     globalDescriptorManager = new GlobalDescriptorManager(
         coreVulkan->getDevice(),
         this->cameraBufferManager,
         Render::MAX_FRAMES_IN_FLIGHT
     );
+    pipelineContext.globalLayout = globalDescriptorManager->getLayout();
 
     materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
         maxMaterials,
         {}
     );
+    pipelineContext.materialLayout = materialDescriptorManager->getLayout();
 
     instanceDescriptorManager = new InstanceDescriptorManager(
         coreVulkan->getDevice(),
@@ -222,6 +237,7 @@ void Render::initVulkan(){
         Render::MAX_FRAMES_IN_FLIGHT,
         maxInstances
     );
+    pipelineContext.instanceLayout = instanceDescriptorManager->getLayout();
 
     particleInstanceDescriptorManager = new ParticleInstanceDescriptorManager(
         coreVulkan->getDevice(),
@@ -230,19 +246,47 @@ void Render::initVulkan(){
         Render::MAX_FRAMES_IN_FLIGHT,
         maxInstances
     );
+    pipelineContext.particleLayout = particleInstanceDescriptorManager->getLayout();
+
+    switch (config.render.mode)
+    {
+        case Config::RenderMode::Forward:
+            gBufferDescriptorManager = nullptr;
+            // lightingDescriptorManager = nullptr;
+
+            pipelineContext.gbufferLayout = VK_NULL_HANDLE;
+            pipelineContext.lightingLayout = VK_NULL_HANDLE;
+            break;
+        case Config::RenderMode::GeometryGbuffer:
+            gBuffer = new GBuffer;
+            gBuffer->create(
+                coreVulkan->getDevice(),
+                coreVulkan->getPhysicalDevice(),
+                swapchainManager->getExtent(),
+                coreVulkan->getMsaaSamples()
+            );
+
+            gBufferDescriptorManager = new GBufferDescriptorManager(
+                coreVulkan->getDevice(),
+                gBuffer
+            );
+            // lightingDescriptorManager = new LightingDescriptorManager();
+
+            pipelineContext.gbufferLayout = gBufferDescriptorManager->getLayout();
+            pipelineContext.lightingLayout = VK_NULL_HANDLE;
+            break;
+        default:
+            throw std::runtime_error(
+                "Unknown render mode"
+            );
+    }
 
     // Create graphics pipeline
     graphicsPipeline = new GraphicsPipelineManager(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
-        renderPass->get(),
-        globalDescriptorManager->getLayout(),
-        materialDescriptorManager->getLayout(),
-        instanceDescriptorManager->getLayout(),
-        particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples(),
-        config,
-        coreVulkan->getSupportedFeatures12()
+        pipelineContext,
+        config
     );
 
     #ifndef NDEBUG
@@ -641,17 +685,41 @@ void Render::recreateSwapChain() {
     );
 
     // 4. Recreate pipeline (depends on render pass + extent)
+
+    // pipeline Context
+    PipelineCreationContext pipelineContext{
+        .device = coreVulkan->getDevice(),
+        .renderPass = renderPass->get(),
+        .msaa = coreVulkan->getMsaaSamples(),
+        .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
+        .config = &config
+    };
+    pipelineContext.globalLayout = globalDescriptorManager->getLayout();
+    pipelineContext.materialLayout = materialDescriptorManager->getLayout();
+    pipelineContext.instanceLayout = instanceDescriptorManager->getLayout();
+    pipelineContext.particleLayout = particleInstanceDescriptorManager->getLayout();
+
+    switch (config.render.mode)
+    {
+        case Config::RenderMode::Forward:
+            pipelineContext.gbufferLayout = VK_NULL_HANDLE;
+            pipelineContext.lightingLayout = VK_NULL_HANDLE;
+            break;
+        case Config::RenderMode::GeometryGbuffer:
+            pipelineContext.gbufferLayout = gBufferDescriptorManager->getLayout();
+            pipelineContext.lightingLayout = VK_NULL_HANDLE;
+            break;
+        default:
+            throw std::runtime_error(
+                "Unknown render mode"
+            );
+    }
+
     graphicsPipeline = new GraphicsPipelineManager(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
-        renderPass->get(),
-        globalDescriptorManager->getLayout(),
-        materialDescriptorManager->getLayout(),
-        instanceDescriptorManager->getLayout(),
-        particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples(),
-        config,
-        coreVulkan->getSupportedFeatures12()
+        pipelineContext,
+        config
     );
 
     // 5. Recreate Multisampling

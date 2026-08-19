@@ -1,6 +1,8 @@
 #include "GBuffer.hpp"
 #include "../../image/VulkanImageUtils.hpp"
 
+#include <stdexcept>
+
 void GBuffer::create(
     VkDevice device,
     VkPhysicalDevice physicalDevice,
@@ -9,6 +11,7 @@ void GBuffer::create(
 )
 {
     this->extent = extent;
+    this->samples = samples;
 
     createAttachment(
         device,
@@ -105,6 +108,46 @@ void GBuffer::createAttachment(
         attachment.aspect,
         1
     );
+
+    // ------------------------------------------------------------
+    // Sampler
+    // ------------------------------------------------------------
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+    samplerInfo.magFilter = VK_FILTER_NEAREST;
+    samplerInfo.minFilter = VK_FILTER_NEAREST;
+
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxAnisotropy = 1.0f;
+
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+    if (vkCreateSampler(
+            device,
+            &samplerInfo,
+            nullptr,
+            &attachment.sampler
+        ) != VK_SUCCESS)
+    {
+        throw std::runtime_error(
+            "Failed to create GBuffer attachment sampler"
+        );
+    }
 }
 
 void GBuffer::destroy(VkDevice device)
@@ -121,6 +164,12 @@ void GBuffer::destroyAttachment(
     Image& attachment
 )
 {
+    if (attachment.sampler != VK_NULL_HANDLE)
+    {
+        vkDestroySampler(device, attachment.sampler, nullptr);
+        attachment.sampler = VK_NULL_HANDLE;
+    }
+
     if (attachment.view != VK_NULL_HANDLE) {
         vkDestroyImageView(device, attachment.view, nullptr);
         attachment.view = VK_NULL_HANDLE;
@@ -189,12 +238,18 @@ VkSampler GBuffer::getSample(Attachment attachment) const
         case Attachment::Material: return material.sampler;
         case Attachment::Depth:    return depth.sampler;
     }
-}
 
+    return VK_NULL_HANDLE;
+}
 
 VkExtent2D GBuffer::getExtent() const
 {
     return extent;
+}
+
+VkSampleCountFlagBits GBuffer::getSamples() const
+{
+    return samples;
 }
 
 std::array<VkImageView, 4> GBuffer::getColorViews() const
