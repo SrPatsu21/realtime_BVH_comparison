@@ -9,13 +9,13 @@ void GBuffer::create(
 )
 {
     this->extent = extent;
-    this->samples = samples;
 
     createAttachment(
         device,
         physicalDevice,
         position,
         VK_FORMAT_R16G16B16A16_SFLOAT,
+        samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
         VK_IMAGE_USAGE_SAMPLED_BIT |
         VK_IMAGE_USAGE_STORAGE_BIT,
@@ -27,6 +27,7 @@ void GBuffer::create(
         physicalDevice,
         normal,
         VK_FORMAT_R16G16B16A16_SFLOAT,
+        samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
         VK_IMAGE_USAGE_SAMPLED_BIT |
         VK_IMAGE_USAGE_STORAGE_BIT,
@@ -38,6 +39,7 @@ void GBuffer::create(
         physicalDevice,
         albedo,
         VK_FORMAT_R8G8B8A8_UNORM,
+        samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
         VK_IMAGE_USAGE_SAMPLED_BIT |
         VK_IMAGE_USAGE_STORAGE_BIT,
@@ -49,6 +51,7 @@ void GBuffer::create(
         physicalDevice,
         material,
         VK_FORMAT_R8G8B8A8_UNORM,
+        samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
         VK_IMAGE_USAGE_SAMPLED_BIT |
         VK_IMAGE_USAGE_STORAGE_BIT,
@@ -60,6 +63,7 @@ void GBuffer::create(
         physicalDevice,
         depth,
         VK_FORMAT_D32_SFLOAT,
+        samples,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
         VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_DEPTH_BIT
@@ -71,6 +75,7 @@ void GBuffer::createAttachment(
     VkPhysicalDevice physicalDevice,
     Image& attachment,
     VkFormat format,
+    VkSampleCountFlagBits samples,
     VkImageUsageFlags usage,
     VkImageAspectFlags aspect
 )
@@ -174,14 +179,22 @@ VkFormat GBuffer::getFormat(Attachment attachment) const
     return VK_FORMAT_UNDEFINED;
 }
 
+VkSampler GBuffer::getSample(Attachment attachment) const
+{
+    switch (attachment)
+    {
+        case Attachment::Position: return position.sampler;
+        case Attachment::Normal:   return normal.sampler;
+        case Attachment::Albedo:   return albedo.sampler;
+        case Attachment::Material: return material.sampler;
+        case Attachment::Depth:    return depth.sampler;
+    }
+}
+
+
 VkExtent2D GBuffer::getExtent() const
 {
     return extent;
-}
-
-VkSampleCountFlagBits GBuffer::getSamples() const
-{
-    return samples;
 }
 
 std::array<VkImageView, 4> GBuffer::getColorViews() const
