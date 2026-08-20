@@ -182,6 +182,7 @@ void Render::initVulkan(){
             coreVulkan->getDevice(),
             coreVulkan->getPhysicalDevice(),
             swapchainManager->getExtent(),
+            coreVulkan->getDepthFormat(),
             coreVulkan->getMsaaSamples()
         );
         gBufferAttachments.position = gBuffer->getView(GBuffer::Attachment::Position);
@@ -764,6 +765,7 @@ void Render::recreateSwapChain()
             coreVulkan->getDevice(),
             coreVulkan->getPhysicalDevice(),
             swapchainManager->getExtent(),
+            coreVulkan->getDepthFormat(),
             coreVulkan->getMsaaSamples()
         );
 

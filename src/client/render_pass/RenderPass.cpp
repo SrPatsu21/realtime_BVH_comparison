@@ -227,7 +227,7 @@ RenderPass::Description RenderPass::buildGeometryGBuffer(
     const uint32_t albedo =
         addColorAttachment(
             description,
-            VK_FORMAT_R8G8B8A8_SRGB,
+            VK_FORMAT_R8G8B8A8_UNORM,
             msaaSamples
         );
 
@@ -254,8 +254,7 @@ RenderPass::Description RenderPass::buildGeometryGBuffer(
     // Subpass
     // ------------------------------------------------------------
 
-    const uint32_t subpass =
-        addSubpass(description);
+    const uint32_t subpass = addSubpass(description);
 
     addColorAttachment(
         description,
@@ -538,7 +537,7 @@ void RenderPass::validate(
     if (description.subpasses.empty())
     {
         throw std::runtime_error(
-            "Render pass contains no subpasses"
+            "Render pass contains no subPasses"
         );
     }
 
@@ -662,14 +661,14 @@ void RenderPass::validateResolveAttachments(
             }
 
             // ----------------------------------------------------
-            // Source must be multisampled.
+            // Source must be multiSampled.
             // ----------------------------------------------------
 
             if (color.samples ==
                 VK_SAMPLE_COUNT_1_BIT)
             {
                 throw std::runtime_error(
-                    "Resolve source must be multisampled"
+                    "Resolve source must be multiSampled"
                 );
             }
         }
@@ -930,7 +929,7 @@ RenderPass::createVkSubpasses(
 
 VkRenderPassCreateInfo RenderPass::createCreateInfo(
     const std::vector<VkAttachmentDescription>& attachments,
-    const std::vector<VkSubpassDescription>& subpasses,
+    const std::vector<VkSubpassDescription>& subPasses,
     const std::vector<VkSubpassDependency>& dependencies
 )
 {
@@ -954,13 +953,13 @@ VkRenderPassCreateInfo RenderPass::createCreateInfo(
 
     info.subpassCount =
         static_cast<uint32_t>(
-            subpasses.size()
+            subPasses.size()
         );
 
     info.pSubpasses =
-        subpasses.empty()
+        subPasses.empty()
             ? nullptr
-            : subpasses.data();
+            : subPasses.data();
 
     info.dependencyCount =
         static_cast<uint32_t>(

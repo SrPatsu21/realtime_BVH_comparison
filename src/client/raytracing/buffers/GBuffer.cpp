@@ -7,6 +7,7 @@ void GBuffer::create(
     VkDevice device,
     VkPhysicalDevice physicalDevice,
     VkExtent2D extent,
+    VkFormat depthFormat,
     VkSampleCountFlagBits samples
 )
 {
@@ -20,8 +21,7 @@ void GBuffer::create(
         VK_FORMAT_R16G16B16A16_SFLOAT,
         samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-        VK_IMAGE_USAGE_SAMPLED_BIT |
-        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT
     );
 
@@ -32,8 +32,7 @@ void GBuffer::create(
         VK_FORMAT_R16G16B16A16_SFLOAT,
         samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-        VK_IMAGE_USAGE_SAMPLED_BIT |
-        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT
     );
 
@@ -44,8 +43,7 @@ void GBuffer::create(
         VK_FORMAT_R8G8B8A8_UNORM,
         samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-        VK_IMAGE_USAGE_SAMPLED_BIT |
-        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT
     );
 
@@ -56,8 +54,7 @@ void GBuffer::create(
         VK_FORMAT_R8G8B8A8_UNORM,
         samples,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-        VK_IMAGE_USAGE_SAMPLED_BIT |
-        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT
     );
 
@@ -65,7 +62,7 @@ void GBuffer::create(
         device,
         physicalDevice,
         depth,
-        VK_FORMAT_D32_SFLOAT,
+        depthFormat,
         samples,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
         VK_IMAGE_USAGE_SAMPLED_BIT,

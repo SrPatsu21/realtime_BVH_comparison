@@ -47,6 +47,7 @@ public:
         VkDevice device,
         VkPhysicalDevice physicalDevice,
         VkExtent2D extent,
+        VkFormat depthFormat,
         VkSampleCountFlagBits samples
     );
 

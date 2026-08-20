@@ -15,34 +15,36 @@ FramebufferManager::FramebufferManager(
 )
     : device(device)
 {
-    if (device == VK_NULL_HANDLE)
-    {
-        throw std::runtime_error(
-            "FramebufferManager: invalid Vulkan device"
-        );
-    }
+    #ifndef NDEBUG
+        if (device == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: invalid Vulkan device"
+            );
+        }
 
-    if (renderPass == VK_NULL_HANDLE)
-    {
-        throw std::runtime_error(
-            "FramebufferManager: invalid render pass"
-        );
-    }
+        if (renderPass == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: invalid render pass"
+            );
+        }
 
-    if (swapchainImageViews.empty())
-    {
-        throw std::runtime_error(
-            "FramebufferManager: no swapchain image views"
-        );
-    }
+        if (swapchainImageViews.empty())
+        {
+            throw std::runtime_error(
+                "FramebufferManager: no swapchain image views"
+            );
+        }
 
-    if (swapchainExtent.width == 0 ||
-        swapchainExtent.height == 0)
-    {
-        throw std::runtime_error(
-            "FramebufferManager: invalid framebuffer extent"
-        );
-    }
+        if (swapchainExtent.width == 0 ||
+            swapchainExtent.height == 0)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: invalid framebuffer extent"
+            );
+        }
+    #endif
 
     framebuffers.resize(swapchainImageViews.size());
 
@@ -193,16 +195,16 @@ FramebufferManager::buildGBufferAttachments(
         RenderPass::buildGeometryGBuffer():
 
             attachment 0 -> position
-            attachment 1 -> albedo
-            attachment 2 -> normal
+            attachment 1 -> normal
+            attachment 2 -> albedo
             attachment 3 -> material
             attachment 4 -> depth
     */
 
     return {
         attachments.position,
-        attachments.albedo,
         attachments.normal,
+        attachments.albedo,
         attachments.material,
         attachments.depth
     };

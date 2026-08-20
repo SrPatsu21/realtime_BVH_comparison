@@ -383,16 +383,26 @@ VkSampleCountFlagBits CoreVulkan::findMaxLimitedUsableSampleCount(
 
     VkSampleCountFlags supported =
         props.limits.framebufferColorSampleCounts &
-        props.limits.framebufferDepthSampleCounts &
-        maxDesiredSamples;
+        props.limits.framebufferDepthSampleCounts;
 
-    if (supported == 0) {
-        return VK_SAMPLE_COUNT_1_BIT;
+    VkSampleCountFlagBits candidates[] = {
+        VK_SAMPLE_COUNT_64_BIT,
+        VK_SAMPLE_COUNT_32_BIT,
+        VK_SAMPLE_COUNT_16_BIT,
+        VK_SAMPLE_COUNT_8_BIT,
+        VK_SAMPLE_COUNT_4_BIT,
+        VK_SAMPLE_COUNT_2_BIT,
+        VK_SAMPLE_COUNT_1_BIT
+    };
+
+    for (VkSampleCountFlagBits count : candidates) {
+        if (count <= maxDesiredSamples &&
+            (supported & count) != 0) {
+            return count;
+        }
     }
 
-    return static_cast<VkSampleCountFlagBits>(
-        1u << (31 - __builtin_clz(supported)) // get the max desired
-    );
+    return VK_SAMPLE_COUNT_1_BIT;
 }
 
 VkDeviceSize CoreVulkan::takeAtomSize(
