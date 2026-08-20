@@ -130,7 +130,7 @@ void CommandManager::setViewportAndScissor(
 }
 
 
-// TODO change to multirenderpass
+// TODO change to multi renderpass
 void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
@@ -142,6 +142,7 @@ void CommandManager::recordCommandBuffer(
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager,
+    GBufferDescriptorManager* gBufferDescriptorManager,
     const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -200,14 +201,14 @@ void CommandManager::recordCommandBuffer(
             instanceDescriptorManager,
             renderInstanceManager
         );
-// TODO
-        // LightingRecord::record(
-        //     cmd,
-        //     graphicsPipeline,
-        //     globalSet,
-        //     ,
-        //     config
-        // );
+        VkDescriptorSet gBufferSet = gBufferDescriptorManager->getDescriptorSet();
+        LightingRecord::record(
+            cmd,
+            graphicsPipeline,
+            globalSet,
+            gBufferSet,
+            config
+        );
     }
 
 

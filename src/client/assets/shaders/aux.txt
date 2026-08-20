@@ -1,0 +1,79 @@
+#version 450
+
+layout(location = 0) in vec2 fragUV;
+
+layout(location = 0) out vec4 outColor;
+
+// ============================================================
+// GBuffer - set 1
+// ============================================================
+
+layout(set = 1, binding = 0) uniform sampler2DMS gPosition;
+layout(set = 1, binding = 1) uniform sampler2DMS gNormal;
+layout(set = 1, binding = 2) uniform sampler2DMS gAlbedo;
+layout(set = 1, binding = 3) uniform sampler2DMS gMaterial;
+layout(set = 1, binding = 4) uniform sampler2DMS gDepth;
+
+void main()
+{
+    ivec2 pixel = ivec2(
+        gl_FragCoord.xy
+    );
+
+    vec3 position = texelFetch(
+        gPosition,
+        pixel,
+        0
+    ).xyz;
+
+    vec3 normal = texelFetch(
+        gNormal,
+        pixel,
+        0
+    ).xyz;
+
+    vec4 albedo = texelFetch(
+        gAlbedo,
+        pixel,
+        0
+    );
+
+    vec4 material = texelFetch(
+        gMaterial,
+        pixel,
+        0
+    );
+
+    float depth = texelFetch(
+        gDepth,
+        pixel,
+        0
+    ).r;
+
+    // ========================================================
+    // DEBUG
+    // ========================================================
+    vec3 color = albedo.rgb;
+
+    vec3 normalColor = normal * 0.5 + 0.5;
+
+    color *= normalColor;
+
+    float positionFactor = clamp(
+        length(position) * 0.02,
+        0.0,
+        1.0
+    );
+
+    color = mix(
+        color,
+        color * (0.5 + positionFactor),
+        0.25
+    );
+
+    color += material.rgb * 0.05;
+
+    color *= 0.5 + depth * 0.5;
+
+    outColor = vec4(color, 1.0);
+}

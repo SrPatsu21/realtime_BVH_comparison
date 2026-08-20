@@ -72,7 +72,7 @@ private:
         VkFormat depthFormat
     );
 
-    static Description buildGeometryGbuffer(
+    static Description buildGeometryGBuffer(
         VkSampleCountFlagBits msaaSamples,
         VkFormat depthFormat
     );

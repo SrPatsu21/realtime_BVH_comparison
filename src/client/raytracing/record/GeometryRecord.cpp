@@ -26,7 +26,14 @@ void GeometryRecord::record(
             const std::shared_ptr<Mesh>& mesh = key.mesh;
             const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
-            const GraphicsPipelineManager::PipelineFlags pipelineFlags = key.pipelineFlags;
+            //TODO fix it
+            const GraphicsPipelineManager::PipelineFlags pipelineFlags =
+                GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
+            GraphicsPipelineManager::PIPE_CULL_FRONT |
+            GraphicsPipelineManager::PIPE_DEPTH_TEST |
+            GraphicsPipelineManager::PIPE_DEPTH_WRITE |
+            GraphicsPipelineManager::PIPE_GEOMETRY;
+
             const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
             const uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());

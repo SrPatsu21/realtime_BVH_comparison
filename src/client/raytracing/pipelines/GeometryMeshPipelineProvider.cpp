@@ -12,8 +12,8 @@ void GeometryMeshPipelineProvider::createPipelines(
 {
     ShaderLoader shader(
         ctx.device,
-        "shaders/gbuffer.vert.glsl.spv",
-        "shaders/gbuffer.frag.glsl.spv"
+        "shaders/geometry_mesh.vert.glsl.spv",
+        "shaders/geometry_mesh.frag.glsl.spv"
     );
 
     VkPipelineShaderStageCreateInfo shaderStages[2];

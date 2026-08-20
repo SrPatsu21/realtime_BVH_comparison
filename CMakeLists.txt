@@ -162,8 +162,10 @@ set(SHADERS
     triangle.vert.glsl
     particle.frag.glsl
     particle.vert.glsl
-    lighting_fullscreen.frag.glsl
-    lighting_fullscreen.vert.glsl
+    deferred_lighting.frag.glsl
+    deferred_lighting.vert.glsl
+    geometry_mesh.frag.glsl
+    geometry_mesh.vert.glsl
 )
 
 set(SHADER_OUTPUTS "")

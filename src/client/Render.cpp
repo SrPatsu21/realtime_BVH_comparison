@@ -11,7 +11,7 @@ TextureImage::DefaultTextures Render::defaultTextures =
 
 Render::Render(){
     // config.render.mode = Config::RenderMode::GeometryGBuffer;
-    config.render.mode = Config::RenderMode::Forward;
+    config.render.mode = Config::RenderMode::GeometryGBuffer;
 
     config.lighting.flags =
         Config::ConfigTable::Bit(Config::LightingBits::Shadows) |
@@ -450,6 +450,7 @@ void Render::drawFrame(){
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
         renderInstanceManager,
+        gBufferDescriptorManager,
         {particle, particle1},
         // {},
         {},

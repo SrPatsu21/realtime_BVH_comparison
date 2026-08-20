@@ -99,7 +99,7 @@ RenderPass::Description RenderPass::buildDescription(
             );
 
         case Config::RenderMode::GeometryGBuffer:
-            return buildGeometryGbuffer(
+            return buildGeometryGBuffer(
                 msaaSamples,
                 depthFormat
             );
@@ -199,7 +199,7 @@ RenderPass::Description RenderPass::buildForward(
 // Geometry / GBuffer
 // ================================================================
 
-RenderPass::Description RenderPass::buildGeometryGbuffer(
+RenderPass::Description RenderPass::buildGeometryGBuffer(
     VkSampleCountFlagBits msaaSamples,
     VkFormat depthFormat
 )

@@ -10,17 +10,25 @@ void LightingPipelineProvider::createPipelines(
 {
     #ifndef NDEBUG
         if (ctx.config == nullptr)
+        {
             throw std::runtime_error(
-                "LightingPipelineProvider requires ConfigTable"
+                "DeferredLightingPipelineProvider requires ConfigTable"
             );
+        }
+
+        if (ctx.gBufferLayout == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error(
+                "DeferredLightingPipelineProvider requires GBuffer layout"
+            );
+        }
     #endif
 
     ShaderLoader shader(
         ctx.device,
-        "shaders/lighting_fullscreen.vert.glsl.spv",
-        "shaders/lighting_fullscreen.frag.glsl.spv"
+        "shaders/deferred_lighting.vert.glsl.spv",
+        "shaders/deferred_lighting.frag.glsl.spv"
     );
-
     VkPipelineShaderStageCreateInfo shaderStages[2];
     GraphicsPipelineHelper::createVertexStage(
         shader.getVertModule(),

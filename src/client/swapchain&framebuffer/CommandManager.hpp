@@ -8,6 +8,7 @@
 #include "../batch/material/MaterialDescriptorManager.hpp"
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
+#include "../raytracing/buffers/GBufferDescriptorManager.hpp"
 
 
 /**
@@ -226,7 +227,8 @@ public:
         GlobalDescriptorManager* globalDescriptorManager,
         InstanceDescriptorManager* instanceDescriptorManager,
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
-        RenderInstanceManager* RenderInstanceManager,
+        RenderInstanceManager* renderInstanceManager,
+        GBufferDescriptorManager* gBufferDescriptorManager,
         const std::vector<ParticleData>& particles,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

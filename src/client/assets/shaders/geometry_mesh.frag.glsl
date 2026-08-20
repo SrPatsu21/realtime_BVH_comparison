@@ -17,16 +17,13 @@ layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outAlbedo;
 layout(location = 3) out vec4 outMaterial;
 
-
 void main()
 {
     // --------------------------------------------------
     // Albedo
     // --------------------------------------------------
 
-    vec4 albedo =
-        texture(albedoTex, fragTexCoord);
-
+    vec4 albedo = texture(albedoTex, fragTexCoord);
 
     // --------------------------------------------------
     // Normal map
@@ -41,7 +38,7 @@ void main()
     // Re-orthogonalize T against N.
     T = normalize(T - N * dot(N, T));
 
-    vec3 B =normalize(cross(N, T) * fragTangent.w);
+    vec3 B = normalize(cross(N, T) * fragTangent.w);
 
     mat3 TBN = mat3(T, B, N);
 
@@ -56,7 +53,6 @@ void main()
     float metallic = mr.b;
     float roughness = mr.g;
 
-
     // --------------------------------------------------
     // GBuffer
     // --------------------------------------------------
@@ -67,11 +63,10 @@ void main()
 
     outAlbedo = albedo;
 
-    outMaterial =
-        vec4(
-            metallic,
-            roughness,
-            0.0,
-            1.0
-        );
+    outMaterial = vec4(
+        metallic,
+        roughness,
+        0.0,
+        1.0
+    );
 }

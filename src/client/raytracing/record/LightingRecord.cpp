@@ -4,7 +4,7 @@ void LightingRecord::record(
     VkCommandBuffer cmd,
     GraphicsPipelineManager* graphicsPipeline,
     VkDescriptorSet globalSet,
-    VkDescriptorSet gbufferSet,
+    VkDescriptorSet gBufferSet,
     const Config::ConfigTable& config
 )
 {
@@ -37,7 +37,7 @@ void LightingRecord::record(
 
     VkDescriptorSet descriptorSets[] = {
         globalSet,
-        gbufferSet
+        gBufferSet
     };
 
     vkCmdBindDescriptorSets(
