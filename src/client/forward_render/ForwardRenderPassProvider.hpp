@@ -7,7 +7,8 @@ class ForwardRenderPassProvider
 {
 public:
 
-    static RenderPassManager::Description build(
+    static void build(
+        RenderPassManager::Description& description,
         VkFormat swapchainImageFormat,
         VkSampleCountFlagBits msaaSamples,
         VkFormat depthFormat

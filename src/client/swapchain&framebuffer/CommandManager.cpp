@@ -133,6 +133,7 @@ void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
     VkRenderPass renderPass,
+    VkRenderPass lightRenderPass,
     GraphicsPipelineManager* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent,
@@ -218,24 +219,16 @@ void CommandManager::recordCommandBuffer(
         );
     }
 
-
-
-// //* === TEST LIGHT ===
-//     LightingRecord::record(
-//         cmd,
-//         graphicsPipeline
-//     );
-
 //* === TEST PARTICLE ===
 
-    ParticleRecord::record(
-        cmd,
-        currentFrame,
-        graphicsPipeline,
-        globalSet,
-        particleInstanceDescriptorManager,
-        particles
-    );
+    // ParticleRecord::record(
+    //     cmd,
+    //     currentFrame,
+    //     graphicsPipeline,
+    //     globalSet,
+    //     particleInstanceDescriptorManager,
+    //     particles
+    // );
 
 //* Extra recorders (ImGui, debug, etc)
     for (auto* r : extraRecorders) {

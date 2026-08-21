@@ -1,7 +1,10 @@
 #include "Render.hpp"
 #include "graphics_pipeline/pipelines/IPipelineProvider.hpp"
 #include "raytracing/render_pass/GeometryGBufferRenderPassProvider.hpp"
+#include "raytracing/render_pass/LightingRenderPassProvider.hpp"
+#include "raytracing/frame_buffer/GBufferFramebufferProvider.hpp"
 #include "forward_render/ForwardRenderPassProvider.hpp"
+#include "forward_render/ForwardFramebufferProvider.hpp"
 #include <chrono>
 
 TextureImage::DefaultTextures Render::defaultTextures =
@@ -86,29 +89,47 @@ void Render::initVulkan(){
     );
 
     // Create render pass
-    RenderPassManager::Description description;
+    RenderPassManager::Description description1, description2;
     switch (config.render.mode)
     {
         case Config::RenderMode::Forward:
-            description =
                 ForwardRenderPassProvider::build(
+                    description1,
                     swapchainManager->getImageFormat(),
                     coreVulkan->getMsaaSamples(),
                     coreVulkan->getDepthFormat()
                 );
+            renderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description1)
+            );
+
+            lightRenderPassManager = nullptr;
+
+            break;
 
         case Config::RenderMode::GeometryGBuffer:
-            description =
-                GeometryGBufferRenderPassProvider::build(
-                    coreVulkan->getMsaaSamples(),
-                    coreVulkan->getDepthFormat()
-                );
-    }
+            GeometryGBufferRenderPassProvider::build(
+                description1,
+                coreVulkan->getMsaaSamples(),
+                coreVulkan->getDepthFormat()
+            );
+            renderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description1)
+            );
 
-    renderPassManager = new RenderPassManager(
-        coreVulkan->getDevice(),
-        std::move(description)
-    );
+            LightingRenderPassProvider::build(
+                description2,
+                swapchainManager->getImageFormat()
+            );
+            lightRenderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description2)
+            );
+
+            break;
+    }
 
     // Create camera buff with uniformBuffer
     iCameraProvider = new CameraBufferManager::DefaultCameraProvider();
@@ -154,16 +175,7 @@ void Render::initVulkan(){
     );
 
     //Create framebuffers
-    FramebufferManager::ForwardAttachments forwardAttachments{
-        .color = VK_NULL_HANDLE,
-        .depth = VK_NULL_HANDLE
-    };
-    FramebufferManager::GBufferAttachments gBufferAttachments{
-        .albedo = VK_NULL_HANDLE,
-        .normal = VK_NULL_HANDLE,
-        .material = VK_NULL_HANDLE,
-        .depth = VK_NULL_HANDLE
-    };
+    std::vector<std::vector<VkImageView>> attachmentsVector;
     if (config.render.mode == Config::RenderMode::Forward)
     {
         depthBufferManager = new DepthBufferManager(
@@ -185,8 +197,28 @@ void Render::initVulkan(){
 
         gBuffer = nullptr;
 
-        forwardAttachments.color = imageColor->getColorImageView();
-        forwardAttachments.depth = depthBufferManager->getDepthImageView();
+        ForwardFramebufferProvider::ForwardAttachments forwardAttachments{
+            .color = imageColor->getColorImageView(),
+            .depth = depthBufferManager->getDepthImageView()
+        };
+
+        ForwardFramebufferProvider::build(
+            forwardAttachments,
+            swapchainManager->getImageViews(),
+            swapchainManager->getImageViews().size(),
+            coreVulkan->getMsaaSamples(),
+            attachmentsVector
+        );
+
+        framebufferManager = new FramebufferManager(
+            coreVulkan->getDevice(),
+            renderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
+        );
+
+        lightingFramebufferManager = nullptr;
 
     } else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
     {
@@ -202,23 +234,37 @@ void Render::initVulkan(){
             coreVulkan->getDepthFormat(),
             coreVulkan->getMsaaSamples()
         );
-        gBufferAttachments.position = gBuffer->getView(GBuffer::Attachment::Position);
-        gBufferAttachments.albedo = gBuffer->getView(GBuffer::Attachment::Albedo);
-        gBufferAttachments.normal = gBuffer->getView(GBuffer::Attachment::Normal);
-        gBufferAttachments.material = gBuffer->getView(GBuffer::Attachment::Material);
-        gBufferAttachments.depth = gBuffer->getView(GBuffer::Attachment::Depth);
-    }
 
-    framebufferManager = new FramebufferManager(
-        coreVulkan->getDevice(),
-        renderPassManager->get(),
-        swapchainManager->getImageViews(),
-        swapchainManager->getExtent(),
-        config,
-        coreVulkan->getMsaaSamples(),
-        forwardAttachments,
-        gBufferAttachments
-    );
+        GBufferFramebufferProvider::GBufferAttachments gBufferAttachments{
+            .position = gBuffer->getView(GBuffer::Attachment::Position),
+            .albedo = gBuffer->getView(GBuffer::Attachment::Albedo),
+            .normal = gBuffer->getView(GBuffer::Attachment::Normal),
+            .material = gBuffer->getView(GBuffer::Attachment::Material),
+            .depth = gBuffer->getView(GBuffer::Attachment::Depth)
+        };
+
+        GBufferFramebufferProvider::build(
+            gBufferAttachments,
+            swapchainManager->getImageViews().size(),
+            attachmentsVector
+        );
+
+        framebufferManager = new FramebufferManager(
+            coreVulkan->getDevice(),
+            renderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
+        );
+
+        // lightingFramebufferManager = new FramebufferManager(
+        //     coreVulkan->getDevice(),
+        //     renderPassManager->get(),
+        //     swapchainManager->getImageViews().size(),
+        //     swapchainManager->getExtent(),
+        //     attachmentsVector
+        // );
+    }
 
     // create semaphore and fence
     createSyncObjects();
@@ -263,6 +309,7 @@ void Render::initVulkan(){
     PipelineCreationContext pipelineContext{
         .device = coreVulkan->getDevice(),
         .renderPass = renderPassManager->get(),
+        .lightRenderPass = lightRenderPassManager->get(),
         .msaa = coreVulkan->getMsaaSamples(),
         .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
         .config = &config
@@ -461,6 +508,7 @@ void Render::drawFrame(){
         imageIndex,
         currentFrame,
         this->renderPassManager->get(),
+        this->lightRenderPassManager->get(),
         this->graphicsPipeline,
         this->framebufferManager->getFramebuffers(),
         this->swapchainManager->getExtent(),
@@ -556,6 +604,7 @@ void Render::cleanup(){
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+        if (this->lightingFramebufferManager){ delete this->lightingFramebufferManager; this->lightingFramebufferManager = nullptr; }
         if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
         if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
@@ -569,6 +618,7 @@ void Render::cleanup(){
         if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
+        if (this->lightRenderPassManager){ delete this->lightRenderPassManager; this->lightRenderPassManager = nullptr; }
         if ( bufferManager ){ delete bufferManager; bufferManager = nullptr; }
 
         // Swapchain and resources that own VkSwapchainKHR should be last among managers.
@@ -663,6 +713,7 @@ void Render::cleanupSwapChain() {
     );
 
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+    if (this->lightingFramebufferManager){ delete this->lightingFramebufferManager; this->lightingFramebufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
@@ -670,6 +721,8 @@ void Render::cleanupSwapChain() {
     // if (this->lightingDescriptorManager) { delete this->lightingDescriptorManager; this->lightingDescriptorManager = nullptr; }
     if (this->gBuffer) { delete this->gBuffer; this->gBuffer = nullptr; }
     if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
+    if (this->lightRenderPassManager){ delete this->lightRenderPassManager; this->lightRenderPassManager = nullptr; }
+
 }
 
 void Render::recreateSwapChain()
@@ -721,47 +774,53 @@ void Render::recreateSwapChain()
     // 3. Recreate render pass
     // ------------------------------------------------------------
 
-    RenderPassManager::Description description;
+    RenderPassManager::Description description1, description2;
     switch (config.render.mode)
     {
         case Config::RenderMode::Forward:
-            description =
                 ForwardRenderPassProvider::build(
+                    description1,
                     swapchainManager->getImageFormat(),
                     coreVulkan->getMsaaSamples(),
                     coreVulkan->getDepthFormat()
                 );
+            renderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description1)
+            );
+
+            lightRenderPassManager = nullptr;
+
+            break;
 
         case Config::RenderMode::GeometryGBuffer:
-            description =
-                GeometryGBufferRenderPassProvider::build(
-                    coreVulkan->getMsaaSamples(),
-                    coreVulkan->getDepthFormat()
-                );
-    }
+            GeometryGBufferRenderPassProvider::build(
+                description1,
+                coreVulkan->getMsaaSamples(),
+                coreVulkan->getDepthFormat()
+            );
+            renderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description1)
+            );
 
-    renderPassManager = new RenderPassManager(
-        coreVulkan->getDevice(),
-        std::move(description)
-    );
+            LightingRenderPassProvider::build(
+                description2,
+                swapchainManager->getImageFormat()
+            );
+            lightRenderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description2)
+            );
+
+            break;
+    }
 
     // ------------------------------------------------------------
     // 4. Recreate render resources
     // ------------------------------------------------------------
 
-    FramebufferManager::ForwardAttachments forwardAttachments{
-        .color = VK_NULL_HANDLE,
-        .depth = VK_NULL_HANDLE
-    };
-
-    FramebufferManager::GBufferAttachments gBufferAttachments{
-        .position = VK_NULL_HANDLE,
-        .albedo = VK_NULL_HANDLE,
-        .normal = VK_NULL_HANDLE,
-        .material = VK_NULL_HANDLE,
-        .depth = VK_NULL_HANDLE
-    };
-
+    std::vector<std::vector<VkImageView>> attachmentsVector;
     if (config.render.mode == Config::RenderMode::Forward)
     {
         depthBufferManager = new DepthBufferManager(
@@ -782,14 +841,34 @@ void Render::recreateSwapChain()
         );
 
         gBuffer = nullptr;
-        gBufferDescriptorManager = nullptr;
 
-        forwardAttachments.color = imageColor->getColorImageView();
-        forwardAttachments.depth = depthBufferManager->getDepthImageView();
-    }
-    else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
+        ForwardFramebufferProvider::ForwardAttachments forwardAttachments{
+            .color = imageColor->getColorImageView(),
+            .depth = depthBufferManager->getDepthImageView()
+        };
+
+        ForwardFramebufferProvider::build(
+            forwardAttachments,
+            swapchainManager->getImageViews(),
+            swapchainManager->getImageViews().size(),
+            coreVulkan->getMsaaSamples(),
+            attachmentsVector
+        );
+
+        framebufferManager = new FramebufferManager(
+            coreVulkan->getDevice(),
+            renderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
+        );
+
+        lightingFramebufferManager = nullptr;
+
+    } else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
     {
         imageColor = nullptr;
+
         depthBufferManager = nullptr;
 
         gBuffer = new GBuffer;
@@ -801,22 +880,35 @@ void Render::recreateSwapChain()
             coreVulkan->getMsaaSamples()
         );
 
-        gBufferDescriptorManager = new GBufferDescriptorManager(
-            coreVulkan->getDevice(),
-            gBuffer
+        GBufferFramebufferProvider::GBufferAttachments gBufferAttachments{
+            .position = gBuffer->getView(GBuffer::Attachment::Position),
+            .albedo = gBuffer->getView(GBuffer::Attachment::Albedo),
+            .normal = gBuffer->getView(GBuffer::Attachment::Normal),
+            .material = gBuffer->getView(GBuffer::Attachment::Material),
+            .depth = gBuffer->getView(GBuffer::Attachment::Depth)
+        };
+
+        GBufferFramebufferProvider::build(
+            gBufferAttachments,
+            swapchainManager->getImageViews().size(),
+            attachmentsVector
         );
 
-        gBufferAttachments.position = gBuffer->getView(GBuffer::Attachment::Position);
-        gBufferAttachments.albedo = gBuffer->getView(GBuffer::Attachment::Albedo);
-        gBufferAttachments.normal = gBuffer->getView(GBuffer::Attachment::Normal);
-        gBufferAttachments.material = gBuffer->getView(GBuffer::Attachment::Material);
-        gBufferAttachments.depth = gBuffer->getView(GBuffer::Attachment::Depth);
-    }
-    else
-    {
-        throw std::runtime_error(
-            "Unknown render mode"
+        framebufferManager = new FramebufferManager(
+            coreVulkan->getDevice(),
+            renderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
         );
+
+        // lightingFramebufferManager = new FramebufferManager(
+        //     coreVulkan->getDevice(),
+        //     renderPassManager->get(),
+        //     swapchainManager->getImageViews().size(),
+        //     swapchainManager->getExtent(),
+        //     attachmentsVector
+        // );
     }
 
     // ------------------------------------------------------------
@@ -826,6 +918,7 @@ void Render::recreateSwapChain()
     PipelineCreationContext pipelineContext{
         .device = coreVulkan->getDevice(),
         .renderPass = renderPassManager->get(),
+        .lightRenderPass = lightRenderPassManager->get(),
         .msaa = coreVulkan->getMsaaSamples(),
         .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
         .config = &config
@@ -855,21 +948,6 @@ void Render::recreateSwapChain()
         swapchainManager->getExtent(),
         pipelineContext,
         config
-    );
-
-    // ------------------------------------------------------------
-    // 8. Recreate framebuffers
-    // ------------------------------------------------------------
-
-    framebufferManager = new FramebufferManager(
-        coreVulkan->getDevice(),
-        renderPassManager->get(),
-        swapchainManager->getImageViews(),
-        swapchainManager->getExtent(),
-        config,
-        coreVulkan->getMsaaSamples(),
-        forwardAttachments,
-        gBufferAttachments
     );
 
     // ------------------------------------------------------------

@@ -221,6 +221,7 @@ public:
         uint32_t imageIndex,
         uint32_t currentFrame,
         VkRenderPass renderPass,
+        VkRenderPass lightRenderPass,
         GraphicsPipelineManager* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent,

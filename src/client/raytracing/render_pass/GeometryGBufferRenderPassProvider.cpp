@@ -1,14 +1,13 @@
 #include "GeometryGBufferRenderPassProvider.hpp"
 #include "../../render_pass/RenderPassHelper.hpp"
 
-RenderPassManager::Description
+void
 GeometryGBufferRenderPassProvider::build(
+    RenderPassManager::Description& description,
     VkSampleCountFlagBits msaaSamples,
     VkFormat depthFormat
 )
 {
-    RenderPassManager::Description description;
-
     // ============================================================
     // GBuffer
     // ============================================================
@@ -100,6 +99,4 @@ GeometryGBufferRenderPassProvider::build(
         description,
         subpass
     );
-
-    return description;
 }

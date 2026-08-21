@@ -123,7 +123,7 @@ void LightingPipelineProvider::createPipelines(
     VkPipeline lightingPipeline;
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
-        ctx.renderPass,
+        ctx.lightRenderPass,
         pipelineLayout,
         shaderStages,
         vertexInput,

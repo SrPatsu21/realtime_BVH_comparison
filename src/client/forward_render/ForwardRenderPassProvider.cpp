@@ -1,15 +1,13 @@
 #include "ForwardRenderPassProvider.hpp"
 #include "../render_pass/RenderPassHelper.hpp"
 
-RenderPassManager::Description
-ForwardRenderPassProvider::build(
+void ForwardRenderPassProvider::build(
+    RenderPassManager::Description& description,
     VkFormat swapchainImageFormat,
     VkSampleCountFlagBits msaaSamples,
     VkFormat depthFormat
 )
 {
-    RenderPassManager::Description description;
-
     const bool useMSAA =
         msaaSamples != VK_SAMPLE_COUNT_1_BIT;
 
@@ -90,6 +88,4 @@ ForwardRenderPassProvider::build(
         description,
         subpass
     );
-
-    return description;
 }

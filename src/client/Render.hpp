@@ -48,7 +48,7 @@ private:
     CoreVulkan* coreVulkan;
     SwapchainManager* swapchainManager;
 
-    RenderPassManager* renderPassManager;
+    RenderPassManager* renderPassManager, *lightRenderPassManager;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
     GBuffer* gBuffer;
@@ -58,7 +58,7 @@ private:
     GraphicsPipelineManager* graphicsPipeline;
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
-    FramebufferManager* framebufferManager;
+    FramebufferManager* framebufferManager, *lightingFramebufferManager;
     CommandManager* commandManager;
     CameraBufferManager::ICameraProvider* iCameraProvider;
     std::vector<VkSemaphore> imageAvailableSemaphores;

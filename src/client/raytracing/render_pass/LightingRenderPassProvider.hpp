@@ -3,13 +3,11 @@
 #include "../../CoreVulkan.hpp"
 #include "../../render_pass/RenderPassManager.hpp"
 
-class GeometryGBufferRenderPassProvider
+class LightingRenderPassProvider
 {
 public:
-
     static void build(
         RenderPassManager::Description& description,
-        VkSampleCountFlagBits msaaSamples,
-        VkFormat depthFormat
+        VkFormat swapchainImageFormat
     );
 };
