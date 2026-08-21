@@ -127,8 +127,7 @@ void CommandManager::setViewportAndScissor(
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
-
-// TODO change to multi renderpass
+// TODO change to multi RenderPass
 void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
@@ -136,6 +135,7 @@ void CommandManager::recordCommandBuffer(
     VkRenderPass lightRenderPass,
     GraphicsPipelineManager* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
+    const std::vector<VkFramebuffer>&  lightingFramebuffers,
     VkExtent2D extent,
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
@@ -204,8 +204,8 @@ void CommandManager::recordCommandBuffer(
 
         beginRenderPass(
             cmd,
-            renderPass,
-            framebuffers[imageIndex],
+            lightRenderPass,
+            lightingFramebuffers[imageIndex],
             extent,
             clearValues
         );

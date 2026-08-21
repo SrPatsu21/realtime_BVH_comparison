@@ -224,6 +224,7 @@ public:
         VkRenderPass lightRenderPass,
         GraphicsPipelineManager* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
+        const std::vector<VkFramebuffer>&  lightingFramebuffers,
         VkExtent2D extent,
         GlobalDescriptorManager* globalDescriptorManager,
         InstanceDescriptorManager* instanceDescriptorManager,

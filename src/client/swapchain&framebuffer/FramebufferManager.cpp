@@ -27,7 +27,7 @@ FramebufferManager::FramebufferManager(
             );
         }
 
-        if (swapchainImageViewsSize)
+        if (swapchainImageViewsSize == 0)
         {
             throw std::runtime_error(
                 "FramebufferManager: no swapchain image views"
@@ -39,6 +39,13 @@ FramebufferManager::FramebufferManager(
         {
             throw std::runtime_error(
                 "FramebufferManager: invalid framebuffer extent"
+            );
+        }
+
+        if (attachmentsVector.size() != swapchainImageViewsSize)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: attachment vector size does not match swapchain image count"
             );
         }
     #endif

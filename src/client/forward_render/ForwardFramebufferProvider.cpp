@@ -19,13 +19,14 @@ void ForwardFramebufferProvider::build(
 
     for (size_t i = 0; i < swapchainImageViewsSize; i++)
     {
-
+        #ifndef NDEBUG
         if (swapchainImageViews[i] == VK_NULL_HANDLE)
         {
             throw std::runtime_error(
                 "ForwardFramebufferProvider: invalid swapchain image view"
             );
         }
+        #endif
 
             /*
                 Forward without MSAA:

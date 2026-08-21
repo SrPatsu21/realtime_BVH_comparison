@@ -85,9 +85,18 @@ private:
     void drawFrame();
     void cleanup();
 
+    void createCoreVulkan();
+    void createSwapchain();
+    void createCameraAndSamplers();
+    void createDescriptorManagers();
+    void createCommandAndSyncObjects();
+    void createRenderPasses();
+    void createSwapchainDependentResources();
+    void createGraphicsPipelineObjects();
     void createSyncObjects();
+
     void initImagesInFlight(uint32_t swapchainImageCount);
 
-    void cleanupSwapChain();
+    void destroySwapchainDependentResources();
     void recreateSwapChain();
 };
