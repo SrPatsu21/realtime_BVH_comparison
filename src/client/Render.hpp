@@ -3,7 +3,7 @@
 #include "CoreVulkan.hpp"
 #include "CoreVulkan.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
-#include "render_pass/RenderPass.hpp"
+#include "render_pass/RenderPassManager.hpp"
 #include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
 #include "graphics_pipeline/GraphicsPipelineManager.hpp"
@@ -48,7 +48,7 @@ private:
     CoreVulkan* coreVulkan;
     SwapchainManager* swapchainManager;
 
-    RenderPass* renderPass;
+    RenderPassManager* renderPassManager;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
     GBuffer* gBuffer;

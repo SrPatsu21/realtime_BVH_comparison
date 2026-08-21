@@ -60,10 +60,10 @@ void GeometryMeshPipelineProvider::createPipelines(
         viewportState
     );
 
-    VkPipelineMultisampleStateCreateInfo multisampling;
+    VkPipelineMultisampleStateCreateInfo multiSampling;
     GraphicsPipelineHelper::createMultisampleState(
         ctx.msaa,
-        multisampling
+        multiSampling
     );
 
     std::vector<VkDynamicState> dynamicStates =
@@ -138,7 +138,7 @@ void GeometryMeshPipelineProvider::createPipelines(
         inputAssemblyState,
         viewportState,
         rasterizationState,
-        multisampling,
+        multiSampling,
         depthStencil,
         colorBlending,
         dynamicState,
@@ -176,7 +176,7 @@ void GeometryMeshPipelineProvider::createPipelines(
         inputAssemblyState,
         viewportState,
         rasterizationState,
-        multisampling,
+        multiSampling,
         depthStencil,
         colorBlending,
         dynamicState,
@@ -214,7 +214,7 @@ void GeometryMeshPipelineProvider::createPipelines(
         inputAssemblyState,
         viewportState,
         rasterizationState,
-        multisampling,
+        multiSampling,
         depthStencil,
         colorBlending,
         dynamicState,

@@ -68,10 +68,10 @@ void LightingPipelineProvider::createPipelines(
         viewportState
     );
 
-    VkPipelineMultisampleStateCreateInfo multisampling;
+    VkPipelineMultisampleStateCreateInfo multiSampling;
     GraphicsPipelineHelper::createMultisampleState(
-        VK_SAMPLE_COUNT_1_BIT,
-        multisampling
+        ctx.msaa,
+        multiSampling
     );
 
     std::vector<VkDynamicState> dynamicStates = {
@@ -130,7 +130,7 @@ void LightingPipelineProvider::createPipelines(
         inputAssembly,
         viewportState,
         rasterizationState,
-        multisampling,
+        multiSampling,
         depthStencil,
         colorBlending,
         dynamicState,

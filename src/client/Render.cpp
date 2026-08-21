@@ -1,5 +1,7 @@
 #include "Render.hpp"
 #include "graphics_pipeline/pipelines/IPipelineProvider.hpp"
+#include "raytracing/render_pass/GeometryGBufferRenderPassProvider.hpp"
+#include "forward_render/ForwardRenderPassProvider.hpp"
 #include <chrono>
 
 TextureImage::DefaultTextures Render::defaultTextures =
@@ -84,13 +86,28 @@ void Render::initVulkan(){
     );
 
     // Create render pass
-    renderPass = new RenderPass(
+    RenderPassManager::Description description;
+    switch (config.render.mode)
+    {
+        case Config::RenderMode::Forward:
+            description =
+                ForwardRenderPassProvider::build(
+                    swapchainManager->getImageFormat(),
+                    coreVulkan->getMsaaSamples(),
+                    coreVulkan->getDepthFormat()
+                );
+
+        case Config::RenderMode::GeometryGBuffer:
+            description =
+                GeometryGBufferRenderPassProvider::build(
+                    coreVulkan->getMsaaSamples(),
+                    coreVulkan->getDepthFormat()
+                );
+    }
+
+    renderPassManager = new RenderPassManager(
         coreVulkan->getDevice(),
-        swapchainManager->getImageFormat(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat(),
-        config,
-        {}
+        std::move(description)
     );
 
     // Create camera buff with uniformBuffer
@@ -194,7 +211,7 @@ void Render::initVulkan(){
 
     framebufferManager = new FramebufferManager(
         coreVulkan->getDevice(),
-        renderPass->get(),
+        renderPassManager->get(),
         swapchainManager->getImageViews(),
         swapchainManager->getExtent(),
         config,
@@ -245,7 +262,7 @@ void Render::initVulkan(){
     // pipeline Context
     PipelineCreationContext pipelineContext{
         .device = coreVulkan->getDevice(),
-        .renderPass = renderPass->get(),
+        .renderPass = renderPassManager->get(),
         .msaa = coreVulkan->getMsaaSamples(),
         .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
         .config = &config
@@ -443,7 +460,7 @@ void Render::drawFrame(){
     this->commandManager->recordCommandBuffer(
         imageIndex,
         currentFrame,
-        this->renderPass->get(),
+        this->renderPassManager->get(),
         this->graphicsPipeline,
         this->framebufferManager->getFramebuffers(),
         this->swapchainManager->getExtent(),
@@ -551,7 +568,7 @@ void Render::cleanup(){
         if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
         if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
-        if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
+        if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
         if ( bufferManager ){ delete bufferManager; bufferManager = nullptr; }
 
         // Swapchain and resources that own VkSwapchainKHR should be last among managers.
@@ -652,7 +669,7 @@ void Render::cleanupSwapChain() {
     if (this->gBufferDescriptorManager) { delete this->gBufferDescriptorManager; this->gBufferDescriptorManager = nullptr; }
     // if (this->lightingDescriptorManager) { delete this->lightingDescriptorManager; this->lightingDescriptorManager = nullptr; }
     if (this->gBuffer) { delete this->gBuffer; this->gBuffer = nullptr; }
-    if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
+    if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
 }
 
 void Render::recreateSwapChain()
@@ -704,13 +721,28 @@ void Render::recreateSwapChain()
     // 3. Recreate render pass
     // ------------------------------------------------------------
 
-    this->renderPass = new RenderPass(
+    RenderPassManager::Description description;
+    switch (config.render.mode)
+    {
+        case Config::RenderMode::Forward:
+            description =
+                ForwardRenderPassProvider::build(
+                    swapchainManager->getImageFormat(),
+                    coreVulkan->getMsaaSamples(),
+                    coreVulkan->getDepthFormat()
+                );
+
+        case Config::RenderMode::GeometryGBuffer:
+            description =
+                GeometryGBufferRenderPassProvider::build(
+                    coreVulkan->getMsaaSamples(),
+                    coreVulkan->getDepthFormat()
+                );
+    }
+
+    renderPassManager = new RenderPassManager(
         coreVulkan->getDevice(),
-        swapchainManager->getImageFormat(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat(),
-        config,
-        {}
+        std::move(description)
     );
 
     // ------------------------------------------------------------
@@ -793,7 +825,7 @@ void Render::recreateSwapChain()
 
     PipelineCreationContext pipelineContext{
         .device = coreVulkan->getDevice(),
-        .renderPass = renderPass->get(),
+        .renderPass = renderPassManager->get(),
         .msaa = coreVulkan->getMsaaSamples(),
         .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
         .config = &config
@@ -831,7 +863,7 @@ void Render::recreateSwapChain()
 
     framebufferManager = new FramebufferManager(
         coreVulkan->getDevice(),
-        renderPass->get(),
+        renderPassManager->get(),
         swapchainManager->getImageViews(),
         swapchainManager->getExtent(),
         config,

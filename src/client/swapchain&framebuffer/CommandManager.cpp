@@ -8,8 +8,6 @@
 #include "../raytracing/record/GeometryRecord.hpp"
 #include "../raytracing/record/LightingRecord.hpp"
 
-
-
 CommandManager::CommandManager(
     VkDevice device,
     uint32_t graphicsQueueFamily,
@@ -200,6 +198,15 @@ void CommandManager::recordCommandBuffer(
             globalSet,
             instanceDescriptorManager,
             renderInstanceManager
+        );
+        vkCmdEndRenderPass(cmd);
+
+        beginRenderPass(
+            cmd,
+            renderPass,
+            framebuffers[imageIndex],
+            extent,
+            clearValues
         );
         VkDescriptorSet gBufferSet = gBufferDescriptorManager->getDescriptorSet();
         LightingRecord::record(
