@@ -17,7 +17,7 @@ TextureImage::DefaultTextures Render::defaultTextures =
 
 Render::Render(){
     // config.render.mode = Config::RenderMode::GeometryGBuffer;
-    config.render.mode = Config::RenderMode::Forward;
+    config.render.mode = Config::RenderMode::GeometryGBuffer;
 
     config.lighting.flags =
         Config::ConfigTable::Bit(Config::LightingBits::Shadows) |
@@ -27,17 +27,30 @@ Render::Render(){
 int Render::run(){
     //GLFW things
     initWindow();
-
     // Basic all vulkan setup
     initVulkan();
-
     // The 3D objects
     initInstances();
 
+    const double targetFPS = 60.0;
+    const double targetFrameTime = 1.0 / targetFPS;
 
-    //main loop
+    double lastFrameTime = glfwGetTime();
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        double currentTime = glfwGetTime();
+        double elapsed = currentTime - lastFrameTime;
+
+        if (elapsed < targetFrameTime) {
+            std::this_thread::sleep_for(
+                std::chrono::duration<double>(targetFrameTime - elapsed)
+            );
+        }
+
+        lastFrameTime = glfwGetTime();
+
         drawFrame();
     }
 
@@ -350,7 +363,7 @@ void Render::createSwapchainDependentResources(){
 
         lightingFramebufferManager = new FramebufferManager(
             coreVulkan->getDevice(),
-            renderPassManager->get(),
+            lightRenderPassManager->get(),
             swapchainManager->getImageViews().size(),
             swapchainManager->getExtent(),
             attachmentsVector

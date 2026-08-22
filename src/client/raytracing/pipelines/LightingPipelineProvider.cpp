@@ -70,7 +70,7 @@ void LightingPipelineProvider::createPipelines(
 
     VkPipelineMultisampleStateCreateInfo multiSampling;
     GraphicsPipelineHelper::createMultisampleState(
-        ctx.msaa,
+        VK_SAMPLE_COUNT_1_BIT,
         multiSampling
     );
 

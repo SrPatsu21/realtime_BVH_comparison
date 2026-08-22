@@ -21,7 +21,7 @@ CoreVulkan::CoreVulkan(
 
     // device extensions
     pickPhysicalDevice(physicalDeviceSelectors);
-    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
+    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_4_BIT, physicalDevice);
     atomSize = takeAtomSize(physicalDevice);
     #ifndef NDEBUG
         std::cout << "Sample Count: " << msaaSamples << std::endl;
