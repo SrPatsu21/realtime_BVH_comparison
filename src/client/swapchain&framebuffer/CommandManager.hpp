@@ -119,6 +119,14 @@ private:
         std::vector<VkClearValue>& clearValues
     );
 
+    void buildGBufferClearValues(
+        std::vector<VkClearValue>& clearValues
+    );
+
+    void buildLightingClearValues(
+        std::vector<VkClearValue>& clearValues
+    );
+
     /**
      * @brief Begins a render pass on the given command buffer.
      *

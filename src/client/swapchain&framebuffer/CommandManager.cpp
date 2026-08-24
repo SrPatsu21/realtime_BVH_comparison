@@ -83,6 +83,36 @@ void CommandManager::buildClearValues(
     }
 }
 
+void CommandManager::buildGBufferClearValues(
+    std::vector<VkClearValue>& clearValues
+) {
+    clearValues.resize(5);
+
+    VkClearValue color{};
+    color.color = {{1.0f, 1.0f, 1.0f, 1.0f}};
+
+    clearValues[0] = color; // position
+    clearValues[1] = color; // normal
+    clearValues[2] = color; // albedo
+    clearValues[3] = color; // material
+
+    VkClearValue depth{};
+    depth.depthStencil = {1.0f, 0};
+
+    clearValues[4] = depth;
+}
+
+void CommandManager::buildLightingClearValues(
+    std::vector<VkClearValue>& clearValues
+) {
+    clearValues.resize(1);
+
+    VkClearValue color{};
+    color.color = {{0.4f, 1.0f, 1.0f, 1.0f}};
+
+    clearValues[0] = color;
+}
+
 void CommandManager::beginRenderPass(
     VkCommandBuffer cmd,
     VkRenderPass renderPass,
@@ -157,31 +187,30 @@ void CommandManager::recordCommandBuffer(
     VkCommandBuffer cmd = commandBuffers[imageIndex];
     beginCommandBuffer(cmd);
 
-    std::vector<VkClearValue> clearValues;
-    buildClearValues(
-        clearProviders,
-        clearValues
-    );
-
-    beginRenderPass(
-        cmd,
-        renderPass,
-        framebuffers[imageIndex],
-        extent,
-        clearValues
-    );
-
-    setViewportAndScissor(
-        cmd,
-        graphicsPipeline,
-        viewportProviders,
-        scissorProviders
-    );
-
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
+    std::vector<VkClearValue> clearValues;
+
 
     if (config.render.mode == Config::RenderMode::Forward)
     {
+        buildClearValues(
+            clearProviders,
+            clearValues
+        );
+        beginRenderPass(
+            cmd,
+            renderPass,
+            framebuffers[imageIndex],
+            extent,
+            clearValues
+        );
+        setViewportAndScissor(
+            cmd,
+            graphicsPipeline,
+            viewportProviders,
+            scissorProviders
+        );
+
         ForwardRecord::record(
             cmd,
             currentFrame,
@@ -192,6 +221,27 @@ void CommandManager::recordCommandBuffer(
         );
     }else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
     {
+
+        // ----------------------------------
+        // GBuffer
+        // ----------------------------------
+        buildGBufferClearValues(
+            clearValues
+        );
+        beginRenderPass(
+            cmd,
+            renderPass,
+            framebuffers[imageIndex],
+            extent,
+            clearValues
+        );
+        setViewportAndScissor(
+            cmd,
+            graphicsPipeline,
+            viewportProviders,
+            scissorProviders
+        );
+
         GeometryRecord::record(
             cmd,
             currentFrame,
@@ -202,6 +252,15 @@ void CommandManager::recordCommandBuffer(
         );
         vkCmdEndRenderPass(cmd);
 
+
+        // ----------------------------------
+        // Lighting
+        // ----------------------------------
+
+        clearValues.clear();
+        buildLightingClearValues(
+            clearValues
+        );
         beginRenderPass(
             cmd,
             lightRenderPass,
@@ -209,6 +268,13 @@ void CommandManager::recordCommandBuffer(
             extent,
             clearValues
         );
+        setViewportAndScissor(
+            cmd,
+            graphicsPipeline,
+            viewportProviders,
+            scissorProviders
+        );
+
         VkDescriptorSet gBufferSet = gBufferDescriptorManager->getDescriptorSet();
         LightingRecord::record(
             cmd,

@@ -167,6 +167,7 @@ void SwapchainManager::createImageViews() {
         swapchainImageViews[i] = createImageView(device, swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
+
 void SwapchainManager::recreate(
     const QueueFamilyIndices& queueFamilies,
     const SwapchainSupportDetails& swapchainSupportDetails,

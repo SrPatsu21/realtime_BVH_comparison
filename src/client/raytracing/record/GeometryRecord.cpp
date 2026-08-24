@@ -29,7 +29,7 @@ void GeometryRecord::record(
             //TODO fix it
             const GraphicsPipelineManager::PipelineFlags pipelineFlags =
                 GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
-            GraphicsPipelineManager::PIPE_CULL_FRONT |
+            GraphicsPipelineManager::PIPE_CULL_BACK |
             GraphicsPipelineManager::PIPE_DEPTH_TEST |
             GraphicsPipelineManager::PIPE_DEPTH_WRITE |
             GraphicsPipelineManager::PIPE_GEOMETRY;

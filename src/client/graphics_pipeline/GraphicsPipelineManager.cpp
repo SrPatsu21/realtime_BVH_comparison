@@ -34,8 +34,8 @@ GraphicsPipelineManager::GraphicsPipelineManager(
                 "Unknown render mode"
             );
     }
-
-    particleProvider.createPipelines(*this, ctx);
+    //! culpado
+    // particleProvider.createPipelines(*this, ctx);
 }
 
 GraphicsPipelineManager::~GraphicsPipelineManager() {

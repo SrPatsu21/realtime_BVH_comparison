@@ -93,11 +93,11 @@ void GeometryMeshPipelineProvider::createPipelines(
     // --------------------------------------------------
 
     std::array<VkPipelineColorBlendAttachmentState, 4> colorBlendAttachments;
-    for (auto& attachment : colorBlendAttachments)
+    for (size_t i = 0; i < 4; i++)
     {
-        attachment = {};
-        attachment.blendEnable = VK_FALSE;
-        attachment.colorWriteMask =
+        colorBlendAttachments[i] = {};
+        colorBlendAttachments[i].blendEnable = VK_FALSE;
+        colorBlendAttachments[i].colorWriteMask =
             VK_COLOR_COMPONENT_R_BIT |
             VK_COLOR_COMPONENT_G_BIT |
             VK_COLOR_COMPONENT_B_BIT |

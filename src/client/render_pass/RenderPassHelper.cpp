@@ -257,8 +257,7 @@ void RenderPassHelper::validate(
         );
     }
 
-    const size_t attachmentCount =
-        description.attachments.size();
+    const size_t attachmentCount = description.attachments.size();
 
     for (const auto& subpass : description.subpasses)
     {
