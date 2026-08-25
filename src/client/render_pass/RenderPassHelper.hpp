@@ -15,17 +15,16 @@ public:
         RenderPassManager::Description& description,
         VkFormat format,
         VkSampleCountFlagBits samples,
-        VkAttachmentStoreOp storeOp =
-            VK_ATTACHMENT_STORE_OP_STORE
+        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        VkImageLayout finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     );
-
 
     static uint32_t addDepthAttachment(
         RenderPassManager::Description& description,
         VkFormat format,
         VkSampleCountFlagBits samples,
-        VkAttachmentStoreOp storeOp =
-            VK_ATTACHMENT_STORE_OP_DONT_CARE
+        VkAttachmentStoreOp storeOp,
+    VkImageLayout finalLayout
     );
 
 

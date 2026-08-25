@@ -22,6 +22,9 @@ void ForwardRenderPassProvider::build(
             useMSAA
                 ? msaaSamples
                 : VK_SAMPLE_COUNT_1_BIT
+                ,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         );
 
     // ============================================================
@@ -32,7 +35,9 @@ void ForwardRenderPassProvider::build(
         RenderPassHelper::addDepthAttachment(
             description,
             depthFormat,
-            msaaSamples
+            msaaSamples,
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
         );
 
     // ============================================================

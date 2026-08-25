@@ -21,7 +21,9 @@ void LightingRenderPassProvider::build(
         RenderPassHelper::addColorAttachment(
             description,
             swapchainImageFormat,
-            VK_SAMPLE_COUNT_1_BIT
+            VK_SAMPLE_COUNT_1_BIT,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
         );
 
     // ------------------------------------------------------------

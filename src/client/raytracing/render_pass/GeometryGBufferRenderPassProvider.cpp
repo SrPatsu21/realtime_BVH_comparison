@@ -16,28 +16,36 @@ GeometryGBufferRenderPassProvider::build(
         RenderPassHelper::addColorAttachment(
             description,
             VK_FORMAT_R16G16B16A16_SFLOAT,
-            msaaSamples
+            msaaSamples,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
     const uint32_t normal =
         RenderPassHelper::addColorAttachment(
             description,
             VK_FORMAT_R16G16B16A16_SFLOAT,
-            msaaSamples
+            msaaSamples,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
     const uint32_t albedo =
         RenderPassHelper::addColorAttachment(
             description,
             VK_FORMAT_R8G8B8A8_UNORM,
-            msaaSamples
+            msaaSamples,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
     const uint32_t material =
         RenderPassHelper::addColorAttachment(
             description,
             VK_FORMAT_R8G8B8A8_UNORM,
-            msaaSamples
+            msaaSamples,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
     // ============================================================
@@ -49,7 +57,8 @@ GeometryGBufferRenderPassProvider::build(
             description,
             depthFormat,
             msaaSamples,
-            VK_ATTACHMENT_STORE_OP_STORE
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
         );
 
     // ============================================================

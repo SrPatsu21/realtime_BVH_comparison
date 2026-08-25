@@ -11,7 +11,8 @@ uint32_t RenderPassHelper::addColorAttachment(
     RenderPassManager::Description& description,
     VkFormat format,
     VkSampleCountFlagBits samples,
-    VkAttachmentStoreOp storeOp
+    VkAttachmentStoreOp storeOp,
+    VkImageLayout finalLayout
 )
 {
     const uint32_t index =
@@ -25,18 +26,18 @@ uint32_t RenderPassHelper::addColorAttachment(
         VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp,
         VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        finalLayout
     );
 
     return index;
 }
 
-
 uint32_t RenderPassHelper::addDepthAttachment(
     RenderPassManager::Description& description,
     VkFormat format,
     VkSampleCountFlagBits samples,
-    VkAttachmentStoreOp storeOp
+    VkAttachmentStoreOp storeOp,
+    VkImageLayout finalLayout
 )
 {
     const uint32_t index =
@@ -50,7 +51,7 @@ uint32_t RenderPassHelper::addDepthAttachment(
         VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp,
         VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        finalLayout
     );
 
     return index;
@@ -391,20 +392,15 @@ RenderPassHelper::createAttachments(
     const RenderPassManager::Description& description
 )
 {
-    std::vector<VkAttachmentDescription>
-        vkAttachments;
+    std::vector<VkAttachmentDescription> vkAttachments;
 
     vkAttachments.reserve(
         description.attachments.size()
     );
 
-    for (
-        const auto& attachment :
-        description.attachments
-    )
+    for (const auto& attachment :description.attachments)
     {
         VkAttachmentDescription vkAttachment{};
-
         vkAttachment.flags = 0;
         vkAttachment.format = attachment.format;
         vkAttachment.samples = attachment.samples;
@@ -413,17 +409,10 @@ RenderPassHelper::createAttachments(
 
         // This abstraction currently does not expose
         // stencil-specific load/store operations.
-        vkAttachment.stencilLoadOp =
-            VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-
-        vkAttachment.stencilStoreOp =
-            VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-        vkAttachment.initialLayout =
-            attachment.initialLayout;
-
-        vkAttachment.finalLayout =
-            attachment.finalLayout;
+        vkAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        vkAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        vkAttachment.initialLayout = attachment.initialLayout;
+        vkAttachment.finalLayout = attachment.finalLayout;
 
         vkAttachments.push_back(
             vkAttachment
@@ -594,9 +583,7 @@ VkRenderPass RenderPassHelper::create(
     // Attachments
     // ------------------------------------------------------------
 
-    std::vector<VkAttachmentDescription>
-        vkAttachments =
-            createAttachments(description);
+    std::vector<VkAttachmentDescription> vkAttachments = createAttachments(description);
 
     // ------------------------------------------------------------
     // Subpasses
@@ -606,14 +593,11 @@ VkRenderPass RenderPassHelper::create(
     // VkSubpassDescription contains pointers into them.
     // ------------------------------------------------------------
 
-    std::vector<std::vector<VkAttachmentReference>>
-        colorRefs;
+    std::vector<std::vector<VkAttachmentReference>> colorRefs;
 
-    std::vector<std::vector<VkAttachmentReference>>
-        resolveRefs;
+    std::vector<std::vector<VkAttachmentReference>> resolveRefs;
 
-    std::vector<VkAttachmentReference>
-        depthRefs;
+    std::vector<VkAttachmentReference> depthRefs;
 
     std::vector<VkSubpassDescription>
         vkSubpasses =
@@ -630,34 +614,23 @@ VkRenderPass RenderPassHelper::create(
 
     VkRenderPassCreateInfo info{};
 
-    info.sType =
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-
+    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     info.pNext = nullptr;
     info.flags = 0;
 
-    info.attachmentCount =
-        static_cast<uint32_t>(
+    info.attachmentCount = static_cast<uint32_t>(
             vkAttachments.size()
         );
 
-    info.pAttachments =
-        vkAttachments.empty()
-            ? nullptr
-            : vkAttachments.data();
+    info.pAttachments = vkAttachments.empty() ? nullptr : vkAttachments.data();
 
-    info.subpassCount =
-        static_cast<uint32_t>(
+    info.subpassCount = static_cast<uint32_t>(
             vkSubpasses.size()
         );
 
-    info.pSubpasses =
-        vkSubpasses.empty()
-            ? nullptr
-            : vkSubpasses.data();
+    info.pSubpasses = vkSubpasses.empty() ? nullptr : vkSubpasses.data();
 
-    info.dependencyCount =
-        static_cast<uint32_t>(
+    info.dependencyCount =  static_cast<uint32_t>(
             description.dependencies.size()
         );
 
@@ -670,8 +643,7 @@ VkRenderPass RenderPassHelper::create(
     // Vulkan object
     // ------------------------------------------------------------
 
-    VkRenderPass renderPass =
-        VK_NULL_HANDLE;
+    VkRenderPass renderPass = VK_NULL_HANDLE;
 
     const VkResult result =
         vkCreateRenderPass(
