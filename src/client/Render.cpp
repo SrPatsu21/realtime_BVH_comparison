@@ -785,7 +785,11 @@ void Render::destroySwapchainDependentResources() {
     if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
     if (this->gBufferDescriptorManager) { delete this->gBufferDescriptorManager; this->gBufferDescriptorManager = nullptr; }
-    if (this->gBuffer) { delete this->gBuffer; this->gBuffer = nullptr; }
+    if (this->gBuffer) {
+        gBuffer->destroy(coreVulkan->getDevice());
+        delete this->gBuffer;
+        this->gBuffer = nullptr;
+    }
     if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
     if (this->lightRenderPassManager){ delete this->lightRenderPassManager; this->lightRenderPassManager = nullptr; }
 
