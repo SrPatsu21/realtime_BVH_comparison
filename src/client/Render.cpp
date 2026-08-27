@@ -461,6 +461,25 @@ void Render::initInstances(){
     renderInstance->scale = glm::vec3(0.2f);
     renderInstance->position += glm::vec3(1.5f, 0, 0);
 
+    //* light
+    lightInstanceManager = new LightInstanceManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        coreVulkan->getAtomSize(),
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxInstances
+    );
+    lightInstanceManager->createLight({
+        .position = glm::vec3(0.0f),
+        .intensity = 0.5f,
+        .color = glm::vec3(1.0f),
+        .radius = 0.5f,
+        .type = (Config::LightType::Point),
+        .range = 5.0f,
+
+        ._pad0 = 0.0f,
+        ._pad1 = 0.0f
+    });
 }
 
 void Render::drawFrame(){
@@ -507,6 +526,7 @@ void Render::drawFrame(){
         swapchainManager->getExtent()
     );
     this->cameraBufferManager->update(currentFrame, ubg);
+    this->lightInstanceManager->update(currentFrame);
 
     std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
     std::size_t renderInstancesSize = renderInstances.size();
@@ -674,6 +694,8 @@ void Render::cleanup(){
 
         // 3) Managers: destroy in strict reverse-creation order.
         if (renderInstanceManager){ delete renderInstanceManager; renderInstanceManager = nullptr; }
+        if (lightInstanceManager){ delete lightInstanceManager; lightInstanceManager = nullptr; }
+
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
         if (defaultTextures.metallic)
         {

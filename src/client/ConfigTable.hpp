@@ -12,8 +12,8 @@ namespace Config
 
     enum class LightType : uint32_t
     {
-        Point = 0,
-        Area = 1
+        Point = 0U,
+        Area = 1U
     };
 
     enum RenderBits : uint64_t

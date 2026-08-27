@@ -2,6 +2,28 @@
 
 #include <utility>
 
+LightInstanceManager::LightInstanceManager(
+    VkDevice device,
+    BufferManager *bufferManager,
+    VkDeviceSize nonCoherentAtomSize,
+    uint32_t maxFramesInFlight,
+    uint32_t maxLights
+)
+{
+    descriptorManager = new LightDescriptorManager(
+        device,
+        bufferManager,
+        nonCoherentAtomSize,
+        maxFramesInFlight,
+        maxLights
+    );
+
+    needUpdate.resize(maxFramesInFlight);
+    for (size_t i = 0; i < needUpdate.size(); i++)
+        needUpdate[i] = true;
+
+}
+
 LightInstance*
 LightInstanceManager::createLight(
     const LightData& data
@@ -16,6 +38,8 @@ LightInstanceManager::createLight(
 
     lightsData.emplace_back(data);
     registrations.emplace_back(registration);
+
+    markDirty();
 
     return new LightInstance(registration);
 }
@@ -53,7 +77,35 @@ bool LightInstanceManager::removeLight(
 
     delete light;
 
+    markDirty();
+
     return true;
+}
+
+void LightInstanceManager::update(
+    uint32_t frameIndex
+)
+{
+#ifndef NDEBUG
+    if (frameIndex >= needUpdate.size())
+        throw std::runtime_error("update fail! frameIndex >= needUpdate.size()");
+#endif
+
+    if (!needUpdate[frameIndex])
+        return;
+
+    descriptorManager->update(
+        frameIndex,
+        lightsData
+    );
+
+    needUpdate[frameIndex] = false;
+}
+
+void LightInstanceManager::markDirty()
+{
+    for (size_t i = 0; i < needUpdate.size(); i++)
+        needUpdate[i] = true;
 }
 
 LightInstanceManager::~LightInstanceManager()
@@ -65,4 +117,7 @@ LightInstanceManager::~LightInstanceManager()
 
     registrations.clear();
     lightsData.clear();
+    needUpdate.clear();
+
+    delete descriptorManager;
 }

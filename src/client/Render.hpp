@@ -22,6 +22,7 @@
 #include "ConfigTable.hpp"
 #include "raytracing/buffers/GBufferDescriptorManager.hpp"
 #include "raytracing/buffers/LightingDescriptorManager.hpp"
+#include "light/LightInstanceManager.hpp"
 
 class Render {
 public:
@@ -66,6 +67,7 @@ private:
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
     RenderInstanceManager* renderInstanceManager;
+    LightInstanceManager* lightInstanceManager;
     ResourceManager* resourceManager;
     RenderInstanceRegistration* renderInstanceRegistration;
     BufferManager* bufferManager;
@@ -76,6 +78,7 @@ private:
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;
     uint32_t maxInstances = 21080;
+    uint32_t maxLightInstances = 32;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
