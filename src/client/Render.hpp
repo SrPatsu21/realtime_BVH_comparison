@@ -9,7 +9,7 @@
 #include "graphics_pipeline/GraphicsPipelineManager.hpp"
 #include "forward_render/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
-#include "swapchain&framebuffer/CommandManager.hpp"
+#include "command_buffer/CommandManager.hpp"
 #include "camera/UniformBufferGlobal.hpp"
 #include "forward_render/ImageColor.hpp"
 #include "batch/material/MaterialDescriptorManager.hpp"
