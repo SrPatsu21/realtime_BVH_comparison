@@ -10,6 +10,11 @@ namespace Config
         GeometryGBuffer = 1
     };
 
+    enum class LightType : uint32_t
+    {
+        Point = 0,
+        Area = 1
+    };
 
     enum RenderBits : uint64_t
     {
@@ -52,6 +57,8 @@ namespace Config
 
     struct LightingConfig
     {
+        LightType type = LightType::Point;
+
         uint64_t flags = 0;
 
         bool has(LightingBits bit) const
