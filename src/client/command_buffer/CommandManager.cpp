@@ -172,7 +172,7 @@ void CommandManager::recordCommandBuffer(
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager,
     GBufferDescriptorManager* gBufferDescriptorManager,
-    const std::vector<ParticleData>& particles,
+    const std::vector<ParticleData>& particlesData,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
@@ -293,7 +293,7 @@ void CommandManager::recordCommandBuffer(
     //     graphicsPipeline,
     //     globalSet,
     //     particleInstanceDescriptorManager,
-    //     particles
+    //     particlesData
     // );
 
 //* Extra recorders (ImGui, debug, etc)

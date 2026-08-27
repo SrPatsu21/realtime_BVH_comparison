@@ -91,13 +91,6 @@ void GeometryRecord::record(
                 );
             }
 
-            // Instance data
-            instanceDescriptorManager->update(
-                currentFrame,
-                currentOffset,
-                instancesData
-            );
-
             vkCmdBindDescriptorSets(
                 cmd,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,

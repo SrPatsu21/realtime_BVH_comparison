@@ -75,6 +75,8 @@ private:
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
     SamplerManager* samplerManagerForStaticTextures;
 
+    std::vector<ParticleData> particlesData = {};
+
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;
     uint32_t maxInstances = 21080;
@@ -99,6 +101,11 @@ private:
     void createSyncObjects();
 
     void initImagesInFlight(uint32_t swapchainImageCount);
+
+    void updateInstances(
+        double time,
+        double deltaTime
+    );
 
     void destroySwapchainDependentResources();
     void recreateSwapChain();

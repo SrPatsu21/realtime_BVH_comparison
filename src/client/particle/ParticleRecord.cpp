@@ -33,12 +33,6 @@ void ParticleRecord::record(
     //     scissorProviders
     // );
 
-    particleInstanceDescriptorManager->update(
-        currentFrame,
-        currentOffset,
-        particles
-    );
-
     // set 0 = global UBO
     vkCmdBindDescriptorSets(
         cmd,

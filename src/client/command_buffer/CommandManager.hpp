@@ -239,7 +239,7 @@ public:
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
         RenderInstanceManager* renderInstanceManager,
         GBufferDescriptorManager* gBufferDescriptorManager,
-        const std::vector<ParticleData>& particles,
+        const std::vector<ParticleData>& particlesData,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders,

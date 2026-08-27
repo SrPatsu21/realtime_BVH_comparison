@@ -69,12 +69,9 @@ public:
     void rebuildSortedBatches();
     void rebuildTLAS();
 
-    std::vector<RenderInstance>& getRenderInstances(){
-        return instances;
-    };
-    RenderInstance* const getRenderInstance(size_t index){
-        return &instances[index];
-    };
+    std::vector<RenderInstance>& getRenderInstances(){ return instances; };
+    RenderInstance* const getRenderInstance(size_t index){ return &instances[index]; };
+    const RenderBatch& getBatch(size_t index) const{ return *batches_sorted[index]; };
 
     RenderInstanceManager(ResourceManager* resourceManager);
     ~RenderInstanceManager();

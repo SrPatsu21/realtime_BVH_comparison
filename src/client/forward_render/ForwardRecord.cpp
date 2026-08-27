@@ -85,13 +85,6 @@ void ForwardRecord::record(
                 );
             }
 
-            // Update storage buffer of the current frame.
-            instanceDescriptorManager->update(
-                currentFrame,
-                currentOffset,
-                instancesData
-            );
-
             // Bind descriptor set 2 (instances)
             vkCmdBindDescriptorSets(
                 cmd,

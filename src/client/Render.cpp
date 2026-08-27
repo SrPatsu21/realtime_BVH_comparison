@@ -51,6 +51,11 @@ int Render::run(){
 
         lastFrameTime = glfwGetTime();
 
+        updateInstances(
+            currentTime,
+            elapsed
+        );
+
         drawFrame();
     }
 
@@ -482,12 +487,101 @@ void Render::initInstances(){
     });
 }
 
+void Render::updateInstances(
+    double time,
+    double deltaTime
+){
+    // Update UBOs for this frame
+    {
+        UniformBufferGlobal ubg{};
+        iCameraProvider->fill(
+            ubg,
+            time,
+            swapchainManager->getExtent()
+        );
+        this->cameraBufferManager->update(currentFrame, ubg);
+    }
+
+    // update render instances
+    {
+        std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
+        std::size_t renderInstancesSize = renderInstances.size();
+        for (size_t i = 0; i < renderInstancesSize; i++)
+        {
+            renderInstances[i].rotation = glm::vec3(
+                0.5* time,
+                0.3,
+                0.6
+            );
+            renderInstances[i].updateModelMatrix();
+        }
+
+        uint32_t currentOffset = 0;
+        renderInstanceManager->forEachBatch(
+            [&](RenderBatch& batch)
+            {
+                instanceDescriptorManager->update(
+                    currentFrame,
+                    currentOffset,
+                    batch.getinstancesData()
+                );
+                currentOffset += static_cast<uint32_t>(batch.getinstancesData().size());
+            }
+        );
+    }
+
+    // particlesData
+    {
+        float timeTester = (time * 5);
+        float phaseA = sin(timeTester);
+        float phaseB = sin(timeTester + 2.094395f);  // 120°
+        float phaseC = sin(timeTester + 4.18879f);   // 240°
+
+        ParticleData particle{};
+        ParticleData particle1{};
+
+        particle.positionSize = glm::vec4(
+            0.6f * phaseA,
+            0.6f  * phaseB,
+            0.6f  * phaseC,
+            60 // (timeTester*60) + 10.0f
+        );
+        particle1.positionSize = glm::vec4(
+            -0.6f * phaseA,
+            -0.6f  * phaseB,
+            -0.6f  * phaseC,
+            60 // (timeTester*60) + 10.0f
+        );
+
+        particle.color = glm::vec4(
+            (phaseA + 1.0f) * 0.5f,
+            (phaseB + 1.0f) * 0.5f,
+            (phaseC + 1.0f) * 0.5f,
+            1.0f
+        );
+        particle1.color = glm::vec4(
+            (phaseA + 1.0f) * 0.5f,
+            (phaseB + 1.0f) * 0.5f,
+            (phaseC + 1.0f) * 0.5f,
+            1.0f
+        );
+
+        particlesData.resize(2);
+        particlesData[0] = particle;
+        particlesData[1] = particle1;
+        uint32_t currentOffset = 0;
+
+        particleInstanceDescriptorManager->update(
+            currentFrame,
+            currentOffset,
+            particlesData
+        );
+    }
+    // light
+    this->lightInstanceManager->update(currentFrame);
+}
+
 void Render::drawFrame(){
-
-    double time = glfwGetTime();
-    // double deltaTime = time - lastTime;
-    // double lastTime = currentTime;
-
     // Wait for this frame to be free
     vkWaitForFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -518,62 +612,6 @@ void Render::drawFrame(){
     // Reset the fence for the current frame
     vkResetFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame]);
 
-    // Update UBOs for this frame
-    UniformBufferGlobal ubg{};
-    iCameraProvider->fill(
-        ubg,
-        time,
-        swapchainManager->getExtent()
-    );
-    this->cameraBufferManager->update(currentFrame, ubg);
-    this->lightInstanceManager->update(currentFrame);
-
-    std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
-    std::size_t renderInstancesSize = renderInstances.size();
-    for (size_t i = 0; i < renderInstancesSize; i++)
-    {
-        renderInstances[i].rotation = glm::vec3(
-            0.5* time,
-            0.3,
-            0.6
-        );
-        renderInstances[i].updateModelMatrix();
-    }
-
-    // particles
-    float timeTester = (time * 5);
-    float phaseA = sin(timeTester);
-    float phaseB = sin(timeTester + 2.094395f);  // 120°
-    float phaseC = sin(timeTester + 4.18879f);   // 240°
-
-    ParticleData particle{};
-    ParticleData particle1{};
-
-    particle.positionSize = glm::vec4(
-        0.6f * phaseA,
-        0.6f  * phaseB,
-        0.6f  * phaseC,
-        60 // (timeTester*60) + 10.0f
-    );
-    particle1.positionSize = glm::vec4(
-        -0.6f * phaseA,
-        -0.6f  * phaseB,
-        -0.6f  * phaseC,
-        60 // (timeTester*60) + 10.0f
-    );
-
-    particle.color = glm::vec4(
-        (phaseA + 1.0f) * 0.5f,
-        (phaseB + 1.0f) * 0.5f,
-        (phaseC + 1.0f) * 0.5f,
-        1.0f
-    );
-    particle1.color = glm::vec4(
-        (phaseA + 1.0f) * 0.5f,
-        (phaseB + 1.0f) * 0.5f,
-        (phaseC + 1.0f) * 0.5f,
-        1.0f
-    );
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
 
@@ -594,8 +632,7 @@ void Render::drawFrame(){
             particleInstanceDescriptorManager,
             renderInstanceManager,
             gBufferDescriptorManager,
-            {particle, particle1},
-            // {},
+            particlesData,
             {},
             {},
             {},
@@ -618,8 +655,7 @@ void Render::drawFrame(){
             particleInstanceDescriptorManager,
             renderInstanceManager,
             gBufferDescriptorManager,
-            {particle, particle1},
-            // {},
+            particlesData,
             {},
             {},
             {},
