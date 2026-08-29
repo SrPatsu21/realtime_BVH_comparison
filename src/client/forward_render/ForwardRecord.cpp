@@ -24,7 +24,7 @@ void ForwardRecord::record(
             const Mesh::SubMesh* submesh = key.subMesh;
             const std::shared_ptr<Material> material = key.material;
             const GraphicsPipelineManager::PipelineFlags pipelineFlags = key.pipelineFlags;
-            const std::vector<InstanceData>& instancesData = batch.getinstancesData();
+            const std::vector<InstanceData>& instancesData = batch.getInstancesData();
 
             uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
 

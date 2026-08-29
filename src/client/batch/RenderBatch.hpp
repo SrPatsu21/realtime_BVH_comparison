@@ -37,5 +37,6 @@ public:
 
     const BatchKey& getKey() const { return batchKey; }
     std::vector<BatchRegistration*> getRenderInstance() const{ return batchRegistrations; }
-    std::vector<InstanceData>& getinstancesData() { return instancesData; }
+    const std::vector<InstanceData>& getInstancesData() const { return instancesData; }
+    InstanceData& getInstanceData(size_t index) { return instancesData[index]; }
 };

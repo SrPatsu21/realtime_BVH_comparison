@@ -11,15 +11,55 @@
 CommandManager::CommandManager(
     VkDevice device,
     uint32_t graphicsQueueFamily,
-    const std::vector<VkFramebuffer>& framebuffers
-):
-    device(device)
+    const std::vector<VkFramebuffer>& framebuffers,
+    uint32_t swapchainImageViewsSize,
+    uint32_t workerThreadCount
+)
+    :
+    device(device),
+    workerThreadCount(workerThreadCount)
 {
-    // Create command pool
-    createCommandPool(graphicsQueueFamily);
+    if (this->workerThreadCount == 0)
+        throw std::runtime_error("CommandManager requires at least one worker thread");
 
-    // Allocate command buffers
+    // Primary command pool
+    createCommandPool(graphicsQueueFamily);
+    // Primary command buffers
     allocateCommandBuffers(framebuffers);
+
+    // Secondary command pools
+    createSecondaryCommandPools(graphicsQueueFamily);
+    // Secondary command buffers
+    createSecondaryCommandBuffers(swapchainImageViewsSize);
+}
+
+CommandManager::~CommandManager()
+{
+    for (VkCommandPool pool : secondaryCommandPools)
+    {
+        if (pool != VK_NULL_HANDLE)
+        {
+            vkDestroyCommandPool(
+                device,
+                pool,
+                nullptr
+            );
+        }
+    }
+
+    secondaryCommandPools.clear();
+    secondaryCommandBuffers.clear();
+
+    if (commandPool != VK_NULL_HANDLE)
+    {
+        vkDestroyCommandPool(
+            device,
+            commandPool,
+            nullptr
+        );
+
+        commandPool = VK_NULL_HANDLE;
+    }
 }
 
 void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {
@@ -50,6 +90,55 @@ void CommandManager::allocateCommandBuffers(
     }
 }
 
+void CommandManager::createSecondaryCommandPools(
+    uint32_t graphicsQueueFamily
+)
+{
+    secondaryCommandPools.resize(workerThreadCount);
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = graphicsQueueFamily;
+
+    for (uint32_t i = 0; i < workerThreadCount; ++i)
+    {
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, &secondaryCommandPools[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create secondary command pool!");
+        }
+    }
+}
+
+void CommandManager::createSecondaryCommandBuffers(
+    uint32_t imageCount
+)
+{
+    if (imageCount == 0)
+        return;
+
+    secondaryCommandBuffers.resize(workerThreadCount);
+
+    for (uint32_t worker = 0; worker < workerThreadCount; ++worker)
+    {
+        auto& buffers = secondaryCommandBuffers[worker];
+        buffers.resize(imageCount);
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = secondaryCommandPools[worker];
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        allocInfo.commandBufferCount = imageCount;
+
+        if (vkAllocateCommandBuffers(device, &allocInfo, buffers.data()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate secondary command buffers!");
+        }
+    }
+}
+
+//* Render
+
 void CommandManager::beginCommandBuffer(
     VkCommandBuffer cmd
 ) {
@@ -60,6 +149,34 @@ void CommandManager::beginCommandBuffer(
 
     if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
+    }
+}
+
+void CommandManager::beginSecondaryCommandBuffer(
+    VkCommandBuffer cmd,
+    VkRenderPass renderPass,
+    VkFramebuffer framebuffer,
+    uint32_t subpass
+)
+{
+    VkCommandBufferInheritanceInfo inheritance{};
+
+    inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    inheritance.renderPass = renderPass;
+    inheritance.subpass = subpass;
+    inheritance.framebuffer = framebuffer;
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags =
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+        VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+    beginInfo.pInheritanceInfo = &inheritance;
+
+    if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to begin secondary command buffer!");
     }
 }
 
@@ -118,8 +235,10 @@ void CommandManager::beginRenderPass(
     VkRenderPass renderPass,
     VkFramebuffer framebuffer,
     VkExtent2D extent,
-    const std::vector<VkClearValue>& clearValues
-) {
+    const std::vector<VkClearValue>& clearValues,
+    VkSubpassContents contents
+)
+{
     VkRenderPassBeginInfo info{};
     info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     info.renderPass = renderPass;
@@ -129,7 +248,7 @@ void CommandManager::beginRenderPass(
     info.clearValueCount = static_cast<uint32_t>(clearValues.size());
     info.pClearValues = clearValues.data();
 
-    vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd, &info, contents);
 }
 
 void CommandManager::setViewportAndScissor(
@@ -157,7 +276,6 @@ void CommandManager::setViewportAndScissor(
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
-// TODO change to multi RenderPass
 void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
@@ -202,7 +320,8 @@ void CommandManager::recordCommandBuffer(
             renderPass,
             framebuffers[imageIndex],
             extent,
-            clearValues
+            clearValues,
+            VK_SUBPASS_CONTENTS_INLINE
         );
         setViewportAndScissor(
             cmd,
@@ -221,53 +340,139 @@ void CommandManager::recordCommandBuffer(
         );
     }else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
     {
-
         // ----------------------------------
         // GBuffer
         // ----------------------------------
-        buildGBufferClearValues(
-            clearValues
-        );
-        beginRenderPass(
-            cmd,
-            renderPass,
-            framebuffers[imageIndex],
-            extent,
-            clearValues
-        );
-        setViewportAndScissor(
-            cmd,
-            graphicsPipeline,
-            viewportProviders,
-            scissorProviders
-        );
+        {
+            buildGBufferClearValues(
+                clearValues
+            );
 
-        GeometryRecord::record(
-            cmd,
-            currentFrame,
-            graphicsPipeline,
-            globalSet,
-            instanceDescriptorManager,
-            renderInstanceManager
-        );
-        vkCmdEndRenderPass(cmd);
+            beginRenderPass(
+                cmd,
+                renderPass,
+                framebuffers[imageIndex],
+                extent,
+                clearValues,
+                VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+            );
 
+            VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
+
+            const uint32_t batchCount = static_cast<uint32_t>(renderInstanceManager->getBatches().size());
+            const uint32_t batchesPerWorker = (batchCount + workerThreadCount - 1) / workerThreadCount;
+            std::vector<std::thread> workers;
+
+            workers.reserve(workerThreadCount);
+
+            for (uint32_t worker = 0; worker < workerThreadCount; ++worker)
+            {
+                const uint32_t firstBatch = std::min(worker * batchesPerWorker, batchCount);
+                const uint32_t lastBatch = std::min(firstBatch + batchesPerWorker, batchCount);
+                if (firstBatch >= lastBatch)
+                    continue;
+
+                uint32_t firstInstanceOffset = 0;
+
+                for (uint32_t i = 0; i < firstBatch; ++i)
+                {
+                    firstInstanceOffset += static_cast<uint32_t>(renderInstanceManager->getBatch(i).getInstancesData().size());
+                }
+
+                workers.emplace_back(
+                    [&, worker, firstBatch, lastBatch, firstInstanceOffset]()
+                    {
+                        VkCommandBuffer secondaryCommandBuffer = secondaryCommandBuffers[worker][imageIndex];
+                        beginSecondaryCommandBuffer(
+                            secondaryCommandBuffer,
+                            renderPass,
+                            VK_NULL_HANDLE,
+                            0
+                        );
+
+                        setViewportAndScissor(
+                            secondaryCommandBuffer,
+                            graphicsPipeline,
+                            viewportProviders,
+                            scissorProviders
+                        );
+
+                        GeometryRecord::record(
+                            secondaryCommandBuffer,
+                            graphicsPipeline,
+                            globalSet,
+                            instanceSet,
+                            renderInstanceManager,
+                            firstBatch,
+                            lastBatch,
+                            firstInstanceOffset
+                        );
+
+                        if (vkEndCommandBuffer(secondaryCommandBuffer) != VK_SUCCESS)
+                        {
+                            throw std::runtime_error(
+                                "failed to record geometry secondary command buffer!"
+                            );
+                        }
+                    }
+                );
+            }
+
+            for (auto& worker : workers)
+                worker.join();
+
+            std::vector<VkCommandBuffer> secondaryCommands;
+
+            secondaryCommands.reserve(workerThreadCount);
+
+            for (uint32_t worker = 0; worker < workerThreadCount; ++worker)
+            {
+                const uint32_t firstBatch =
+                    std::min(
+                        worker * batchesPerWorker,
+                        batchCount
+                    );
+
+                const uint32_t lastBatch =
+                    std::min(
+                        firstBatch + batchesPerWorker,
+                        batchCount
+                    );
+
+                if (firstBatch >= lastBatch)
+                    continue;
+
+                secondaryCommands.push_back(
+                    secondaryCommandBuffers[worker][imageIndex]
+                );
+            }
+
+            vkCmdExecuteCommands(
+                cmd,
+                static_cast<uint32_t>(secondaryCommands.size()),
+                secondaryCommands.data()
+            );
+
+            vkCmdEndRenderPass(cmd);
+        }
+
+        clearValues.clear();
 
         // ----------------------------------
         // Lighting
         // ----------------------------------
 
-        clearValues.clear();
-        buildLightingClearValues(
-            clearValues
-        );
+        buildLightingClearValues(clearValues);
+
         beginRenderPass(
             cmd,
             lightRenderPass,
             lightingFramebuffers[imageIndex],
             extent,
-            clearValues
+            clearValues,
+            VK_SUBPASS_CONTENTS_INLINE
         );
+
         setViewportAndScissor(
             cmd,
             graphicsPipeline,
@@ -276,6 +481,7 @@ void CommandManager::recordCommandBuffer(
         );
 
         VkDescriptorSet gBufferSet = gBufferDescriptorManager->getDescriptorSet();
+
         LightingRecord::record(
             cmd,
             graphicsPipeline,
@@ -308,7 +514,57 @@ void CommandManager::recordCommandBuffer(
     }
 }
 
-CommandManager::~CommandManager() {
-    vkDestroyCommandPool(device, this->commandPool, nullptr);
-    commandPool = VK_NULL_HANDLE;
+void CommandManager::recordGeometrySecondaryCommandBuffer(
+    VkCommandBuffer secondaryCommandBuffer,
+
+    VkRenderPass renderPass,
+
+    uint32_t currentFrame,
+
+    GraphicsPipelineManager* graphicsPipeline,
+
+    VkDescriptorSet globalSet,
+    VkDescriptorSet instanceSet,
+
+    RenderInstanceManager* renderInstanceManager,
+
+    uint32_t firstBatch,
+    uint32_t lastBatch,
+    uint32_t firstInstanceOffset,
+
+    const std::vector<IViewportProvider*>& viewportProviders,
+    const std::vector<IScissorProvider*>& scissorProviders
+)
+{
+    beginSecondaryCommandBuffer(
+        secondaryCommandBuffer,
+        renderPass,
+        VK_NULL_HANDLE,
+        0
+    );
+
+    setViewportAndScissor(
+        secondaryCommandBuffer,
+        graphicsPipeline,
+        viewportProviders,
+        scissorProviders
+    );
+
+    GeometryRecord::record(
+        secondaryCommandBuffer,
+        graphicsPipeline,
+        globalSet,
+        instanceSet,
+        renderInstanceManager,
+        firstBatch,
+        lastBatch,
+        firstInstanceOffset
+    );
+
+    if (vkEndCommandBuffer(secondaryCommandBuffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error(
+            "failed to record geometry secondary command buffer!"
+        );
+    }
 }

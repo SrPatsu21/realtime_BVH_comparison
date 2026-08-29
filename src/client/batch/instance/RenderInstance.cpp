@@ -91,7 +91,7 @@ void RenderInstance::updateModelMatrix()
 
     for (auto& reg : registrations)
     {
-        reg.renderBatch->getinstancesData()[reg.indexInBatch] = model;
+        reg.renderBatch->getInstanceData(reg.indexInBatch) = model;
     }
 }
 

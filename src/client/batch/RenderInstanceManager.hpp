@@ -72,6 +72,7 @@ public:
     std::vector<RenderInstance>& getRenderInstances(){ return instances; };
     RenderInstance* const getRenderInstance(size_t index){ return &instances[index]; };
     const RenderBatch& getBatch(size_t index) const{ return *batches_sorted[index]; };
+    const std::vector<RenderBatch*> getBatches() const { return batches_sorted; };
 
     RenderInstanceManager(ResourceManager* resourceManager);
     ~RenderInstanceManager();

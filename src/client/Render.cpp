@@ -227,7 +227,9 @@ void Render::createCommandAndSyncObjects(){
     commandManager = new CommandManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value(),
-        this->framebufferManager->getFramebuffers()
+        this->framebufferManager->getFramebuffers(),
+        this->swapchainManager->getImages().size(),
+        4
     );
 }
 
@@ -523,9 +525,9 @@ void Render::updateInstances(
                 instanceDescriptorManager->update(
                     currentFrame,
                     currentOffset,
-                    batch.getinstancesData()
+                    batch.getInstancesData()
                 );
-                currentOffset += static_cast<uint32_t>(batch.getinstancesData().size());
+                currentOffset += static_cast<uint32_t>(batch.getInstancesData().size());
             }
         );
     }
