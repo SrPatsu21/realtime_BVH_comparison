@@ -166,6 +166,8 @@ set(SHADERS
     deferred_lighting.vert.glsl
     geometry_mesh.frag.glsl
     geometry_mesh.vert.glsl
+    lighting.frag.glsl
+    lighting.vert.glsl
 )
 
 set(SHADER_OUTPUTS "")

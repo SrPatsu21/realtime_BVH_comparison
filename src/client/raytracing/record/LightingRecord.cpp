@@ -5,6 +5,7 @@ void LightingRecord::record(
     GraphicsPipelineManager* graphicsPipeline,
     VkDescriptorSet globalSet,
     VkDescriptorSet gBufferSet,
+    VkDescriptorSet lightSet,
     const Config::ConfigTable& config
 )
 {
@@ -37,7 +38,8 @@ void LightingRecord::record(
 
     VkDescriptorSet descriptorSets[] = {
         globalSet,
-        gBufferSet
+        gBufferSet,
+        lightSet
     };
 
     vkCmdBindDescriptorSets(
@@ -45,7 +47,7 @@ void LightingRecord::record(
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         layout,
         0,
-        2,
+        3,
         descriptorSets,
         0,
         nullptr

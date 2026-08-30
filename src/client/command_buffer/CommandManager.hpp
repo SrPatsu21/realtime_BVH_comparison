@@ -9,6 +9,7 @@
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
 #include "../raytracing/buffers/GBufferDescriptorManager.hpp"
+#include "../light/LightInstanceManager.hpp"
 #include <thread>
 
 class CommandManager {
@@ -152,6 +153,7 @@ public:
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
         RenderInstanceManager* renderInstanceManager,
         GBufferDescriptorManager* gBufferDescriptorManager,
+        LightInstanceManager* lightInstanceManager,
         const std::vector<ParticleData>& particlesData,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

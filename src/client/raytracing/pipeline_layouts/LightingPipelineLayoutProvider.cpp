@@ -16,7 +16,8 @@ LightingPipelineLayoutProvider::createPipelineLayouts(
 
     std::vector<VkDescriptorSetLayout> descriptorLayouts = {
         ctx.globalLayout,
-        ctx.gBufferLayout
+        ctx.gBufferLayout,
+        ctx.lightingLayout
     };
 
     GraphicsPipelineHelper::createPipelineLayout(

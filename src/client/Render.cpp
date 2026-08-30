@@ -32,16 +32,20 @@ int Render::run(){
     // The 3D objects
     initInstances();
 
-    const double targetFPS = 60.0;
+    const double targetFPS = 120.0;
     const double targetFrameTime = 1.0 / targetFPS;
 
     double lastFrameTime = glfwGetTime();
+    double fpsTimer = lastFrameTime;
+
+    int frameCount = 0;
+    double fps = 0.0;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        double currentTime = glfwGetTime();
-        double elapsed = currentTime - lastFrameTime;
+        double frameStart = glfwGetTime();
+        double elapsed = frameStart - lastFrameTime;
 
         if (elapsed < targetFrameTime) {
             std::this_thread::sleep_for(
@@ -49,7 +53,9 @@ int Render::run(){
             );
         }
 
-        lastFrameTime = glfwGetTime();
+        double currentTime = glfwGetTime();
+        elapsed = currentTime - lastFrameTime;
+        lastFrameTime = currentTime;
 
         updateInstances(
             currentTime,
@@ -57,12 +63,27 @@ int Render::run(){
         );
 
         drawFrame();
+
+        frameCount++;
+
+        if (currentTime - fpsTimer >= 1.0) {
+            fps = frameCount / (currentTime - fpsTimer);
+
+            std::cout
+                << "time: " << currentTime
+                << " | Delta: " << elapsed << " s"
+                << " | FPS: " << fps
+                << std::endl;
+
+            frameCount = 0;
+            fpsTimer = currentTime;
+        }
     }
 
-    //free memory (secure)
     cleanup();
     return 0;
-};
+}
+
 
 void Render::initWindow(){
     if (!glfwInit()) {
@@ -213,6 +234,13 @@ void Render::createDescriptorManagers(){
         coreVulkan->getAtomSize(),
         Render::MAX_FRAMES_IN_FLIGHT,
         maxInstances
+    );
+    lightInstanceManager = new LightInstanceManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        coreVulkan->getAtomSize(),
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxLightInstances
     );
 }
 
@@ -399,19 +427,22 @@ void Render::createGraphicsPipelineObjects(){
     switch (config.render.mode)
     {
         case Config::RenderMode::Forward:
+        {
             pipelineContext.lightRenderPass = VK_NULL_HANDLE;
 
             pipelineContext.gBufferLayout = VK_NULL_HANDLE;
             pipelineContext.lightingLayout = VK_NULL_HANDLE;
             break;
-
+        }
         case Config::RenderMode::GeometryGBuffer:
+        {
             pipelineContext.lightRenderPass = lightRenderPassManager->get();
 
             pipelineContext.gBufferLayout = gBufferDescriptorManager->getLayout();
-            pipelineContext.lightingLayout = VK_NULL_HANDLE;
-            break;
+            pipelineContext.lightingLayout = lightInstanceManager->getLightDescriptorManager()->getDescriptorSetLayout();
 
+            break;
+        }
         default:
             throw std::runtime_error(
                 "Unknown render mode"
@@ -469,13 +500,6 @@ void Render::initInstances(){
     renderInstance->position += glm::vec3(1.5f, 0, 0);
 
     //* light
-    lightInstanceManager = new LightInstanceManager(
-        coreVulkan->getDevice(),
-        bufferManager,
-        coreVulkan->getAtomSize(),
-        Render::MAX_FRAMES_IN_FLIGHT,
-        maxInstances
-    );
     lightInstanceManager->createLight({
         .position = glm::vec3(0.0f),
         .intensity = 0.5f,
@@ -634,6 +658,7 @@ void Render::drawFrame(){
             particleInstanceDescriptorManager,
             renderInstanceManager,
             gBufferDescriptorManager,
+            lightInstanceManager,
             particlesData,
             {},
             {},
@@ -657,6 +682,7 @@ void Render::drawFrame(){
             particleInstanceDescriptorManager,
             renderInstanceManager,
             gBufferDescriptorManager,
+            lightInstanceManager,
             particlesData,
             {},
             {},

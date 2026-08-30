@@ -47,6 +47,8 @@ public:
     const LightData* getLightData( LightInstanceRegistration* registration ) const { return &lightsData[registration->indexInVector]; };
     std::vector<LightData>& getLightData() { return lightsData; }
     const std::vector<LightData>& getLightData() const { return lightsData; }
+    const LightDescriptorManager* getLightDescriptorManager() const { return descriptorManager; };
+    VkDescriptorSet getDescriptorSet(uint32_t frameIndex) const { return descriptorManager->getDescriptorSets()[frameIndex]; }
 
     ~LightInstanceManager();
 };

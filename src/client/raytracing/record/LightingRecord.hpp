@@ -11,7 +11,8 @@ public:
         VkCommandBuffer cmd,
         GraphicsPipelineManager* graphicsPipeline,
         VkDescriptorSet globalSet,
-        VkDescriptorSet gbufferSet,
+        VkDescriptorSet gBufferSet,
+        VkDescriptorSet lightSet,
         const Config::ConfigTable& config
     );
 };

@@ -290,6 +290,7 @@ void CommandManager::recordCommandBuffer(
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager,
     GBufferDescriptorManager* gBufferDescriptorManager,
+    LightInstanceManager* lightInstanceManager,
     const std::vector<ParticleData>& particlesData,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -481,12 +482,14 @@ void CommandManager::recordCommandBuffer(
         );
 
         VkDescriptorSet gBufferSet = gBufferDescriptorManager->getDescriptorSet();
+        VkDescriptorSet lightSet = lightInstanceManager->getDescriptorSet(currentFrame);
 
         LightingRecord::record(
             cmd,
             graphicsPipeline,
             globalSet,
             gBufferSet,
+            lightSet,
             config
         );
     }
