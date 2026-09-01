@@ -1,11 +1,11 @@
 #pragma once
 
-#include "AABB.hpp"
+#include "../../AABB.hpp"
 #include <cstdint>
 
 struct BVHNode
 {
-    AABB bounds;
+    AABB bounds; //32
 
     union
     {
@@ -20,12 +20,11 @@ struct BVHNode
             uint32_t firstPrimitive;
             uint32_t primitiveCount;
         };
-    };
+    }; //8
 
-    bool leaf;
+    uint32_t leaf; //4
+    uint32_t pad0;//4
 
-    inline AABB& getBounds()
-    {
-        return bounds;
-    }
-};
+    AABB& getBounds() { return bounds; }
+    const AABB& getBounds() const { return bounds; }
+}; //48

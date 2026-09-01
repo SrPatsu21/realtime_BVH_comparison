@@ -7,7 +7,7 @@
 #include "TLAS.hpp"
 #include "BLAS.hpp"
 #include "BVHNode.hpp"
-#include "primitives/BLASInstance.hpp"
+#include "primitives/TLASBuildInstance.hpp"
 
 #include "../../batch/mesh/Mesh.hpp"
 
@@ -34,9 +34,17 @@ public:
     );
 
     void createTLAS(
-        std::vector<BLASInstance>& instances,
+        std::vector<TLASBuildInstance>& instances,
         BufferManager* bufferManager,
         TLAS<TLNodeType>& tlas
+    );
+
+private:
+
+    void buildVulkanAccelerationStructureGPU(
+        const std::vector<TLASBuildInstance>& instances,
+        BufferManager* bufferManager,
+        AccelerationStructureGPU& gpu
     );
 };
 
@@ -63,6 +71,7 @@ AccelerationStructureManager<
     blas.mesh = mesh;
 
     blas.accelerationStructure.nodes.clear();
+
     BLBuilderType::build(
         blas.accelerationStructure.nodes,
         primitives
@@ -77,7 +86,6 @@ AccelerationStructureManager<
 //*======================
 //* buildTLAS
 //*======================
-
 template<
     typename TLBuilderType,
     typename BLBuilderType
@@ -87,26 +95,48 @@ AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
 >::createTLAS(
-    std::vector<BLASInstance>& instances,
+    std::vector<TLASBuildInstance>& instances,
     BufferManager* bufferManager,
     TLAS<TLNodeType>& tlas
 )
 {
     tlas.accelerationStructure.nodes.clear();
-    if(!instances.size()){
-        // TODO change to throw
-        std::cout << "No instances to build TLAS" << std::endl;
+
+    if (!instances.size())
+    {
+        std::cout
+            << "No instances to build TLAS"
+            << std::endl;
+
         return;
     }
+
+    // =========================================================
+    // Build CPU TLAS
+    // =========================================================
 
     TLBuilderType::build(
         tlas.accelerationStructure.nodes,
         instances
     );
 
+    // =========================================================
+    // Upload TLAS nodes
+    // =========================================================
+
     buildVulkanTLAS(
         bufferManager,
         tlas
+    );
+
+    // =========================================================
+    // Build GPU acceleration data
+    // =========================================================
+
+    buildVulkanAccelerationStructureGPU(
+        instances,
+        bufferManager,
+        tlas.gpuData
     );
 }
 

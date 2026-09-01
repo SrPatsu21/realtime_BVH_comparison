@@ -173,28 +173,29 @@ inline AABB transformAABB(
     AABB result;
     result.reset();
 
-    const glm::vec3 min = localBounds.min;
-    const glm::vec3 max = localBounds.max;
+    const glm::vec4& min = localBounds.min;
+    const glm::vec4& max = localBounds.max;
 
-    const glm::vec3 corners[8] =
+    const glm::vec4 corners[8] =
     {
-        { min.x, min.y, min.z },
-        { max.x, min.y, min.z },
-        { min.x, max.y, min.z },
-        { max.x, max.y, min.z },
+        { min.x, min.y, min.z, 1.0f },
+        { max.x, min.y, min.z, 1.0f },
+        { min.x, max.y, min.z, 1.0f },
+        { max.x, max.y, min.z, 1.0f },
 
-        { min.x, min.y, max.z },
-        { max.x, min.y, max.z },
-        { min.x, max.y, max.z },
-        { max.x, max.y, max.z }
+        { min.x, min.y, max.z, 1.0f },
+        { max.x, min.y, max.z, 1.0f },
+        { min.x, max.y, max.z, 1.0f },
+        { max.x, max.y, max.z, 1.0f }
     };
 
-    for (const glm::vec3& corner : corners)
+    for (const glm::vec4& corner : corners)
     {
-        glm::vec3 world =
-            glm::vec3(transform * glm::vec4(corner, 1.0f));
+        const glm::vec4 world = transform * corner;
 
-        result.expand(world);
+        result.expand(
+            glm::vec3(world)
+        );
     }
 
     return result;
@@ -202,54 +203,71 @@ inline AABB transformAABB(
 
 void RenderInstanceManager::rebuildTLAS()
 {
-    auto accelerationStructureManager = resourceManager->getAccelerationStructureManager();
+    auto accelerationStructureManager =
+        resourceManager->getAccelerationStructureManager();
 
-    std::vector<BLASInstance> tlasInstances;
+    std::vector<TLASBuildInstance> tlasInstances;
     tlasInstances.reserve(instances.size());
 
     for (const auto& instance : instances)
     {
-        BLASInstance blasInstance{};
+        TLASBuildInstance tlasInstance{};
 
-        blasInstance.blas = instance.getBLAS();
-        blasInstance.transform = instance.getModelMatrix();
+        tlasInstance.blas =
+            instance.getBLAS();
 
-        const auto& localBounds = instance.getBLAS()->accelerationStructure.nodes[0].bounds;
+        tlasInstance.transform =
+            instance.getModelMatrix();
 
-        blasInstance.bounds =
+        const auto& localBounds =
+            instance.getBLAS()->getBounds();
+
+        tlasInstance.bounds =
             transformAABB(
                 localBounds,
-                blasInstance.transform
+                tlasInstance.transform
             );
 
-        tlasInstances.emplace_back(std::move(blasInstance));
+        tlasInstances.emplace_back(
+            std::move(tlasInstance)
+        );
     }
 
-    #ifndef NDEBUG
-        std::cout << "tlas instances size " << tlasInstances.size() << '\n';
+    accelerationStructureManager->createTLAS(
+        tlasInstances,
+        resourceManager->getBufferManager(),
+        tlas
+    );
 
-        for (const auto& i : tlasInstances)
+    #ifndef NDEBUG
+
+        std::cout
+            << "tlas instances size "
+            << tlasInstances.size()
+            << '\n';
+
+        for (const auto& instance : tlasInstances)
         {
             std::cout
-                << "[" << i.blas << "] "
+                << "[" << instance.blas << "] "
                 << "min=("
-                << i.bounds.min.x << ", "
-                << i.bounds.min.y << ", "
-                << i.bounds.min.z << ") "
+                << instance.bounds.min.x << ", "
+                << instance.bounds.min.y << ", "
+                << instance.bounds.min.z << ") "
                 << "max=("
-                << i.bounds.max.x << ", "
-                << i.bounds.max.y << ", "
-                << i.bounds.max.z << ") "
+                << instance.bounds.max.x << ", "
+                << instance.bounds.max.y << ", "
+                << instance.bounds.max.z << ") "
                 << '\n';
         }
 
         std::cout << "end tlas\n";
-    #endif
 
-    accelerationStructureManager->createTLAS(tlasInstances, resourceManager->getBufferManager(), tlas);
+        printBVH(
+            tlas.accelerationStructure.nodes,
+            0
+        );
 
-    #ifndef NDEBUG
-        printBVH(tlas.accelerationStructure.nodes, 0);
     #endif
 }
 

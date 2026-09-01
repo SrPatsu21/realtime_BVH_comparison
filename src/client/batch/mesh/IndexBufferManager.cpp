@@ -21,7 +21,7 @@ IndexBufferManager::IndexBufferManager(
     memcpy(data, indices.data(), (size_t) bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
-    bufferManager->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, this->indexBuffer);
+    bufferManager->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, this->indexBuffer);
     bufferManager->allocateBufferMemory(this->indexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, this->indexBufferMemory);
     vkBindBufferMemory(device, this->indexBuffer, this->indexBufferMemory, 0);
 

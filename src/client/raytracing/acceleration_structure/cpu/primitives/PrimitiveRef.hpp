@@ -1,11 +1,15 @@
-#include "../AABB.hpp"
+#pragma once
+
+#include "../../AABB.hpp"
+#include <cstdint>
 
 struct PrimitiveRef
 {
     uint32_t triangleIndex;
 
     AABB bounds;
-    inline const AABB& getBounds() const
+
+    const AABB& getBounds() const
     {
         return bounds;
     }

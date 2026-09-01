@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstdint>
-#include "../utils/BVHUtils.hpp"
+#include "../../utils/BVHUtils.hpp"
 #include <algorithm>
 
 template<typename TNodeType>
@@ -75,7 +75,7 @@ uint32_t BVHBuilder<NodeType>::buildRecursive(
 
     if (count <= LEAF_SIZE)
     {
-        nodes[nodeIndex].leaf = true;
+        nodes[nodeIndex].leaf = 1;
         nodes[nodeIndex].firstPrimitive = begin;
         nodes[nodeIndex].primitiveCount = count;
 
@@ -104,7 +104,7 @@ uint32_t BVHBuilder<NodeType>::buildRecursive(
         }
     );
 
-    nodes[nodeIndex].leaf = false;
+    nodes[nodeIndex].leaf = 0;
 
     uint32_t left = buildRecursive(
         nodes,
