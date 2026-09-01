@@ -1,18 +1,16 @@
 #pragma once
 
-#include <deque>
-#include <vector>
 #include <cstdint>
+#include <iostream>
+#include <vector>
 
-#include "TLAS.hpp"
-#include "BLAS.hpp"
 #include "BVHNode.hpp"
-#include "primitives/TLASBuildInstance.hpp"
+
+#include "builder/BLASInstanceBuilder.hpp"
+#include "builder/TLASInstanceBuilder.hpp"
+#include "builder/TLASBuildInput.hpp"
 
 #include "../../batch/mesh/Mesh.hpp"
-
-#include "vulkan/BuildVulkanBLAS.hpp"
-#include "vulkan/BuildVulkanTLAS.hpp"
 
 template<
     typename TLBuilderType,
@@ -22,70 +20,58 @@ class AccelerationStructureManager
 {
 public:
 
-    using TLNodeType = typename TLBuilderType::NodeType;
-    using BLNodeType = typename BLBuilderType::NodeType;
+    using TLNodeType =
+        typename TLBuilderType::NodeType;
 
-    template<typename Primitive>
+    using BLNodeType =
+        typename BLBuilderType::NodeType;
+
     void createBLAS(
         const Mesh* mesh,
-        std::vector<Primitive>& primitives,
+        std::vector<PrimitiveRef>& primitives,
         BufferManager* bufferManager,
         BLAS<BLNodeType>& blas
     );
 
     void createTLAS(
-        std::vector<TLASBuildInstance>& instances,
+        const std::vector<TLASBuildInput>& inputs,
+        std::vector<PrimitiveRef>& primitives,
         BufferManager* bufferManager,
         TLAS<TLNodeType>& tlas
     );
-
-private:
-
-    void buildVulkanAccelerationStructureGPU(
-        const std::vector<TLASBuildInstance>& instances,
-        BufferManager* bufferManager,
-        AccelerationStructureGPU& gpu
-    );
 };
-
-//*======================
-//* buildBLAS
-//*======================
 
 template<
     typename TLBuilderType,
     typename BLBuilderType
 >
-template<typename Primitive>
 void
 AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
 >::createBLAS(
     const Mesh* mesh,
-    std::vector<Primitive>& primitives,
+    std::vector<PrimitiveRef>& primitives,
     BufferManager* bufferManager,
     BLAS<BLNodeType>& blas
 )
 {
     blas.mesh = mesh;
 
-    blas.accelerationStructure.nodes.clear();
+    blas.accelerationStructure
+        .accelerationStructure.clear();
 
-    BLBuilderType::build(
-        blas.accelerationStructure.nodes,
-        primitives
-    );
+    blas.accelerationStructure
+        .instances.clear();
 
-    buildVulkanBLAS(
-        bufferManager,
-        blas
+    BLASInstanceBuilder::build(
+        *mesh,
+        primitives,
+        blas.accelerationStructure.accelerationStructure,
+        blas.accelerationStructure.instances
     );
 }
 
-//*======================
-//* buildTLAS
-//*======================
 template<
     typename TLBuilderType,
     typename BLBuilderType
@@ -95,14 +81,19 @@ AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
 >::createTLAS(
-    std::vector<TLASBuildInstance>& instances,
+    const std::vector<TLASBuildInput>& inputs,
+    std::vector<PrimitiveRef>& primitives,
     BufferManager* bufferManager,
     TLAS<TLNodeType>& tlas
 )
 {
-    tlas.accelerationStructure.nodes.clear();
+    tlas.accelerationStructure
+        .accelerationStructure.clear();
 
-    if (!instances.size())
+    tlas.accelerationStructure
+        .instances.clear();
+
+    if (inputs.empty())
     {
         std::cout
             << "No instances to build TLAS"
@@ -111,38 +102,13 @@ AccelerationStructureManager<
         return;
     }
 
-    // =========================================================
-    // Build CPU TLAS
-    // =========================================================
-
-    TLBuilderType::build(
-        tlas.accelerationStructure.nodes,
-        instances
-    );
-
-    // =========================================================
-    // Upload TLAS nodes
-    // =========================================================
-
-    buildVulkanTLAS(
-        bufferManager,
-        tlas
-    );
-
-    // =========================================================
-    // Build GPU acceleration data
-    // =========================================================
-
-    buildVulkanAccelerationStructureGPU(
-        instances,
-        bufferManager,
-        tlas.gpuData
+    TLASInstanceBuilder::build(
+        inputs,
+        primitives,
+        tlas.accelerationStructure.accelerationStructure,
+        tlas.accelerationStructure.instances
     );
 }
-
-//*======================
-//* Helpers
-//*======================
 
 template<typename NodeType>
 void printBVH(
@@ -153,18 +119,27 @@ void printBVH(
     if (index >= nodes.size())
         return;
 
-    const NodeType& node = nodes[index];
+    const NodeType& node =
+        nodes[index];
 
     std::cout
-        << "[" << index << "] "
+        << "["
+        << index
+        << "] "
         << "min=("
-        << node.bounds.min.x << ", "
-        << node.bounds.min.y << ", "
-        << node.bounds.min.z << ") "
+        << node.bounds.min.x
+        << ", "
+        << node.bounds.min.y
+        << ", "
+        << node.bounds.min.z
+        << ") "
         << "max=("
-        << node.bounds.max.x << ", "
-        << node.bounds.max.y << ", "
-        << node.bounds.max.z << ") ";
+        << node.bounds.max.x
+        << ", "
+        << node.bounds.max.y
+        << ", "
+        << node.bounds.max.z
+        << ") ";
 
     if (node.leaf)
     {
@@ -187,7 +162,14 @@ void printBVH(
 
     if (!node.leaf)
     {
-        printBVH(nodes, node.left);
-        printBVH(nodes, node.right);
+        printBVH(
+            nodes,
+            node.left
+        );
+
+        printBVH(
+            nodes,
+            node.right
+        );
     }
 }

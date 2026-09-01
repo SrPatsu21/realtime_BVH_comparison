@@ -2,14 +2,15 @@
 
 #include <vector>
 #include <cstdint>
-#include <cstdint>
 #include "../../utils/BVHUtils.hpp"
 #include <algorithm>
+
 
 template<typename TNodeType>
 class BVHBuilder
 {
 public:
+
     using NodeType = TNodeType;
 
     static constexpr uint32_t LEAF_SIZE = 4;
@@ -44,6 +45,10 @@ void BVHBuilder<NodeType>::build(
     if (primitives.empty())
         return;
 
+    nodes.reserve(
+        primitives.size() * 2
+    );
+
     buildRecursive(
         nodes,
         primitives,
@@ -51,6 +56,7 @@ void BVHBuilder<NodeType>::build(
         static_cast<uint32_t>(primitives.size())
     );
 }
+
 
 template<typename NodeType>
 template<typename PrimitiveType>
@@ -61,37 +67,39 @@ uint32_t BVHBuilder<NodeType>::buildRecursive(
     uint32_t end
 )
 {
-    uint32_t nodeIndex = static_cast<uint32_t>(nodes.size());
+    const uint32_t nodeIndex = static_cast<uint32_t>(nodes.size());
 
     nodes.emplace_back();
 
-    nodes[nodeIndex].bounds = BVHUtils::computeBounds(
-        primitives,
-        begin,
-        end
-    );
+    NodeType& node = nodes[nodeIndex];
+
+    node.bounds = BVHUtils::computeBounds(
+            primitives,
+            begin,
+            end
+        );
 
     const uint32_t count = end - begin;
 
     if (count <= LEAF_SIZE)
     {
-        nodes[nodeIndex].leaf = 1;
-        nodes[nodeIndex].firstPrimitive = begin;
-        nodes[nodeIndex].primitiveCount = count;
+        node.leaf = 1;
+        node.firstPrimitive = begin;
+        node.primitiveCount = count;
 
         return nodeIndex;
     }
 
-    AABB centroidBounds =
+    const AABB centroidBounds =
         BVHUtils::computeCentroidBounds(
             primitives,
             begin,
             end
         );
 
-    int axis = BVHUtils::selectSplitAxis(centroidBounds);
+    const int axis = BVHUtils::selectSplitAxis(centroidBounds);
 
-    uint32_t mid = begin + count / 2;
+    const uint32_t mid = begin + count / 2;
 
     std::nth_element(
         primitives.begin() + begin,
@@ -100,28 +108,28 @@ uint32_t BVHBuilder<NodeType>::buildRecursive(
         [axis](const PrimitiveType& a, const PrimitiveType& b)
         {
             return a.getBounds().getCenterAxis(axis)
-                < b.getBounds().getCenterAxis(axis);
+            < b.getBounds().getCenterAxis(axis);
         }
     );
 
-    nodes[nodeIndex].leaf = 0;
+    node.leaf = 0;
 
-    uint32_t left = buildRecursive(
-        nodes,
-        primitives,
-        begin,
-        mid
-    );
+    const uint32_t left = buildRecursive(
+            nodes,
+            primitives,
+            begin,
+            mid
+        );
 
-    uint32_t right = buildRecursive(
-        nodes,
-        primitives,
-        mid,
-        end
-    );
+    const uint32_t right = buildRecursive(
+            nodes,
+            primitives,
+            mid,
+            end
+        );
 
-    nodes[nodeIndex].left = left;
-    nodes[nodeIndex].right = right;
+    node.left = left;
+    node.right = right;
 
     return nodeIndex;
-    }
+}

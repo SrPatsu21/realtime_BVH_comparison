@@ -5,9 +5,9 @@
 
 struct PrimitiveRef
 {
-    uint32_t triangleIndex;
-
     AABB bounds;
+
+    uint32_t index;
 
     const AABB& getBounds() const
     {

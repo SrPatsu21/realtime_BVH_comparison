@@ -4,12 +4,12 @@
 
 struct BLASInstance
 {
-    uint64_t vertexAddress; //8
-    uint64_t indexAddress; //8
+    uint64_t vertexAddress;
+    uint64_t indexAddress;
 
-    uint32_t nodeOffset; //4
-    uint32_t nodeCount; //4
+    uint32_t firstTriangle;
+    uint32_t triangleCount;
 
-    uint32_t triangleCount; //4
-    uint32_t pad0; //4
-};
+    uint32_t materialOffset;
+    uint32_t pad0;
+}; //32
