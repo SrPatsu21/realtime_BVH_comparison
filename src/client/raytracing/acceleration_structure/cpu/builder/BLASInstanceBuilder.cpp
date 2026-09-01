@@ -1,5 +1,42 @@
 #include "BLASInstanceBuilder.hpp"
 
+#include "../builder/BVHBuilder.hpp"
+
+void BLASInstanceBuilder::build(
+    const Mesh& mesh,
+    std::vector<BVHNode>& nodes,
+    std::vector<BLASInstance>& instances
+)
+{
+    nodes.clear();
+    instances.clear();
+    std::vector<PrimitiveRef> primitives;
+
+    buildPrimitives(
+        mesh,
+        primitives
+    );
+
+    if (primitives.empty())
+    {
+        primitives.clear();
+        return;
+    }
+
+    BVHBuilder<BVHNode>::build(
+        nodes,
+        primitives
+    );
+
+    buildInstances(
+        nodes,
+        primitives,
+        instances
+    );
+
+    primitives.clear();
+}
+
 void BLASInstanceBuilder::buildPrimitives(
     const Mesh& mesh,
     std::vector<PrimitiveRef>& primitives
@@ -15,13 +52,23 @@ void BLASInstanceBuilder::buildPrimitives(
 
     for (uint32_t triangle = 0; triangle < triangleCount; ++triangle)
     {
-        const uint32_t i0 = indices[triangle * 3 + 0];
-        const uint32_t i1 = indices[triangle * 3 + 1];
-        const uint32_t i2 = indices[triangle * 3 + 2];
+        const uint32_t i0 =
+            indices[triangle * 3 + 0];
 
-        const glm::vec3& v0 = vertices[i0].pos;
-        const glm::vec3& v1 = vertices[i1].pos;
-        const glm::vec3& v2 = vertices[i2].pos;
+        const uint32_t i1 =
+            indices[triangle * 3 + 1];
+
+        const uint32_t i2 =
+            indices[triangle * 3 + 2];
+
+        const glm::vec3& v0 =
+            vertices[i0].pos;
+
+        const glm::vec3& v1 =
+            vertices[i1].pos;
+
+        const glm::vec3& v2 =
+            vertices[i2].pos;
 
         AABB bounds;
         bounds.reset();
@@ -35,7 +82,9 @@ void BLASInstanceBuilder::buildPrimitives(
         primitive.bounds = bounds;
         primitive.index = triangle;
 
-        primitives.emplace_back(primitive);
+        primitives.emplace_back(
+            primitive
+        );
     }
 }
 
@@ -66,15 +115,14 @@ void BLASInstanceBuilder::buildInstances(
 
         instance.vertexAddress = 0;
         instance.indexAddress = 0;
-
         instance.firstTriangle = firstPrimitive.index;
-
         instance.triangleCount = node.primitiveCount;
-
         instance.materialOffset = 0;
 
         instance.pad0 = 0;
 
-        instances.emplace_back(instance);
+        instances.emplace_back(
+            instance
+        );
     }
 }

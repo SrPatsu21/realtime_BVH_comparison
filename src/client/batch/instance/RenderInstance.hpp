@@ -4,6 +4,7 @@
 #include "BatchRegistration.hpp"
 #include "../../raytracing/acceleration_structure/utils/accelerationStructureConfig.hpp"
 #include "../../raytracing/acceleration_structure/cpu/AS.hpp"
+#include "../../raytracing/acceleration_structure/cpu/node/BLASInstance.hpp"
 #include "RenderInstanceRegistration.hpp"
 
 #include <vector>

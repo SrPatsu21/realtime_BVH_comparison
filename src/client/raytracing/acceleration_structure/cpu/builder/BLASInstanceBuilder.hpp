@@ -15,6 +15,12 @@ class BLASInstanceBuilder
 {
 public:
 
+    static void build(
+        const Mesh& mesh,
+        std::vector<BVHNode>& nodes,
+        std::vector<BLASInstance>& instances
+    );
+
     static void buildPrimitives(
         const Mesh& mesh,
         std::vector<PrimitiveRef>& primitives

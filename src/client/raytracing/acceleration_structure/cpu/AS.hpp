@@ -12,6 +12,7 @@ struct AS
 {
     std::vector<NodeType> nodes;
     std::vector<InstanceType> instances;
+    uint32_t index;
 
     const AABB& getBounds() const { return nodes[0].bounds; }
     bool empty() const { return nodes.empty(); }

@@ -32,7 +32,7 @@ RenderInstanceRegistration* RenderInstanceManager::createRenderInstance(
 
     instance.renderInstanceRegistration = registration;
 
-    instance.blas = resourceManager->getAccelerationStructureManager()->createBLAS(mesh.get());
+    instance.blas = resourceManager->getAccelerationStructureManager()->getBLAS(mesh.get());
 
     addInstance(
         mesh,
@@ -234,7 +234,7 @@ void RenderInstanceManager::rebuildTLAS()
         );
     }
 
-    accelerationStructureManager->createTLAS(
+    accelerationStructureManager->recreateTLAS(
         inputs
     );
 
@@ -273,7 +273,7 @@ void RenderInstanceManager::rebuildTLAS()
         std::cout
             << "end tlas\n";
 
-        printBVH(
+        accelerationStructureManager->printBVH(
             tlas.nodes,
             0
         );

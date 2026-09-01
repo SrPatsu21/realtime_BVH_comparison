@@ -3,21 +3,19 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
 #include "cpu/AS.hpp"
-
 #include "cpu/node/BVHNode.hpp"
 #include "cpu/node/BLASInstance.hpp"
 #include "cpu/node/TLASInstance.hpp"
-
 #include "cpu/primitives/PrimitiveRef.hpp"
 #include "cpu/primitives/TLASBuildInput.hpp"
 
 #include "cpu/builder/BLASInstanceBuilder.hpp"
 #include "cpu/builder/TLASInstanceBuilder.hpp"
-#include "cpu/builder/BVHBuilder.hpp"
 
 #include "../../batch/mesh/Mesh.hpp"
 
@@ -32,10 +30,14 @@ public:
     using TLNodeType = typename TLBuilderType::NodeType;
     using BLNodeType = typename BLBuilderType::NodeType;
 
+    using BLAS = AS<BLNodeType, BLASInstance>;
     using TLAS = AS<TLNodeType, TLASInstance>;
-    using BLAS = AS< BLNodeType, BLASInstance>;
 
 private:
+
+    std::vector<
+        std::shared_ptr<BLAS>
+    > blasVector;
 
     std::unordered_map<
         const Mesh*,
@@ -46,100 +48,35 @@ private:
 
 public:
 
-    AccelerationStructureManager() = default;
-
-    ~AccelerationStructureManager() = default;
-
-    std::shared_ptr<BLAS> createBLAS(
-        const Mesh* mesh
-    );
     std::shared_ptr<BLAS> getBLAS(
         const Mesh* mesh
-    ) const;
+    );
 
-    void createTLAS(
+    void recreateTLAS(
         const std::vector<TLASBuildInput>& inputs
     );
+
     TLAS& getTLAS()
     {
         return tlas;
     }
+
     const TLAS& getTLAS() const
     {
         return tlas;
     }
 
-    void clear();
-
-private:
-
-    void destroyBLAS(
-        const Mesh* mesh
+    template<typename NodeType>
+    static void printBVH(
+        const std::vector<NodeType>& nodes,
+        uint32_t index = 0
     );
 };
 
 
-/*
- * =============================================================
- * createBLAS
- * =============================================================
- */
-
-template<
-    typename TLBuilderType,
-    typename BLBuilderType
->
-std::shared_ptr<
-    typename AccelerationStructureManager<
-        TLBuilderType,
-        BLBuilderType
-    >::BLAS
->
-AccelerationStructureManager<
-    TLBuilderType,
-    BLBuilderType
->::createBLAS(
-    const Mesh* mesh
-)
-{
-    if (!mesh)
-        return nullptr;
-
-    auto it = blasMap.find(mesh);
-
-    if (it != blasMap.end())
-        return it->second;
-
-    auto blas = std::make_shared<BLAS>();
-
-    std::vector<PrimitiveRef> primitives;
-
-    BLASInstanceBuilder::buildPrimitives(
-        *mesh,
-        primitives
-    );
-
-    BLBuilderType::build(
-        blas->accelerationStructure,
-        primitives
-    );
-
-    BLASInstanceBuilder::buildInstances(
-        blas->accelerationStructure,
-        primitives,
-        blas->instances
-    );
-
-    primitives.clear();
-
-    blasMap.emplace(
-        mesh,
-        blas
-    );
-
-    return blas;
-}
-
+// =========================================================
+// getBLAS
+// =========================================================
 
 template<
     typename TLBuilderType,
@@ -156,21 +93,38 @@ AccelerationStructureManager<
     BLBuilderType
 >::getBLAS(
     const Mesh* mesh
-) const
+)
 {
     auto it = blasMap.find(mesh);
 
-    if (it == blasMap.end())
-        return nullptr;
+    if (it != blasMap.end())
+        return it->second;
 
-    return it->second;
+    std::shared_ptr<BLAS> blas = std::make_shared<BLAS>();
+    BLAS* as = blas.get();
+
+    BLASInstanceBuilder::build(
+        *mesh,
+        as->nodes,
+        as->instances
+    );
+
+    as->index = blasVector.size();
+
+    blasVector.emplace_back(
+        blas
+    );
+
+    blasMap.emplace(
+        mesh,
+        blas
+    );
+    return blas;
 }
 
-/*
- * =============================================================
- * createTLAS
- * =============================================================
- */
+// =========================================================
+// recreateTLAS
+// =========================================================
 
 template<
     typename TLBuilderType,
@@ -180,11 +134,11 @@ void
 AccelerationStructureManager<
     TLBuilderType,
     BLBuilderType
->::createTLAS(
+>::recreateTLAS(
     const std::vector<TLASBuildInput>& inputs
 )
 {
-    tlas.accelerationStructure.clear();
+    tlas.nodes.clear();
     tlas.instances.clear();
 
     if (inputs.empty())
@@ -197,17 +151,22 @@ AccelerationStructureManager<
     }
 
     std::vector<uint32_t> blasIndices;
-    blasIndices.reserve(inputs.size());
+
+    blasIndices.reserve(
+        inputs.size()
+    );
 
     for (const TLASBuildInput& input : inputs)
     {
         if (!input.blas)
+        {
             throw std::runtime_error(
                 "TLAS input contains null BLAS"
             );
+        }
 
         blasIndices.emplace_back(
-            getBLASIndex(input.blas)
+            input.blas->index
         );
     }
 
@@ -217,78 +176,33 @@ AccelerationStructureManager<
         inputs,
         blasIndices,
         primitives,
-        tlas.accelerationStructure,
+        tlas.nodes,
         tlas.instances
     );
 }
 
-/*
- * =============================================================
- * destroyBLAS
- * =============================================================
- */
+// =========================================================
+// debug
+// =========================================================
 
 template<
     typename TLBuilderType,
     typename BLBuilderType
 >
-void
-AccelerationStructureManager<
-    TLBuilderType,
-    BLBuilderType
->::destroyBLAS(
-    const Mesh* mesh
-)
-{
-    auto it = blasMap.find(mesh);
-
-    if (it == blasMap.end())
-        return;
-
-    blasMap.erase(it);
-}
-
-
-/*
- * =============================================================
- * clear
- * =============================================================
- */
-
-template<
-    typename TLBuilderType,
-    typename BLBuilderType
->
-void
-AccelerationStructureManager<
-    TLBuilderType,
-    BLBuilderType
->::clear()
-{
-    tlas.accelerationStructure.clear();
-    tlas.instances.clear();
-
-    blasMap.clear();
-}
-
-
-/*
- * =============================================================
- * Debug
- * =============================================================
- */
-
 template<typename NodeType>
-void printBVH(
+void
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::printBVH(
     const std::vector<NodeType>& nodes,
-    uint32_t index = 0
+    uint32_t index
 )
 {
     if (index >= nodes.size())
         return;
 
-    const NodeType& node =
-        nodes[index];
+    const NodeType& node = nodes[index];
 
     std::cout
         << "["
