@@ -248,6 +248,10 @@ public:    /**
         uint32_t layerCount
     );
 
+    VkDeviceAddress getBufferDeviceAddress(
+        VkBuffer buffer
+    ) const;
+
     template<typename T>
     VkBuffer
     createDeviceBuffer(
@@ -374,8 +378,7 @@ VkBuffer BufferManager::createDeviceBuffer(
     if (address)
     {
         VkBufferDeviceAddressInfo info{};
-        info.sType =
-            VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
         info.buffer = buffer;
 
         *address =

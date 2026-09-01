@@ -8,8 +8,8 @@ AABB::AABB()
 
 void AABB::reset()
 {
-    min = glm::vec3( 1e30f);
-    max = glm::vec3(-1e30f);
+    min = glm::vec4( 1e30f, 1e30f, 1e30f, 0.0f);
+    max = glm::vec4(-1e30f,-1e30f,-1e30f, 0.0f);
 }
 
 void AABB::expand(const AABB& other)
@@ -20,13 +20,22 @@ void AABB::expand(const AABB& other)
 
 void AABB::expand(const glm::vec3& point)
 {
-    min = glm::min(min, point);
-    max = glm::max(max, point);
+    min = glm::min(
+        min,
+        glm::vec4(point, 0.0f)
+    );
+
+    max = glm::max(
+        max,
+        glm::vec4(point, 0.0f)
+    );
 }
 
 glm::vec3 AABB::getCenter() const
 {
-    return (min + max) * 0.5f;
+    return glm::vec3(
+        (min + max) * 0.5f
+    );
 }
 
 float AABB::getCenterAxis(int axis) const
@@ -36,8 +45,12 @@ float AABB::getCenterAxis(int axis) const
 
 float AABB::surfaceArea() const
 {
-    glm::vec3 size = max - min;
-    return 2.0f * (size.x * size.y +
-                   size.y * size.z +
-                   size.z * size.x);
+    glm::vec3 size =
+        glm::vec3(max - min);
+
+    return 2.0f * (
+        size.x * size.y +
+        size.y * size.z +
+        size.z * size.x
+    );
 }

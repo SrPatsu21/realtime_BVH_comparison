@@ -3,7 +3,7 @@
 int BVHUtils::selectSplitAxis(
     const AABB& centroidBounds
 ) {
-    glm::vec3 extent = centroidBounds.max - centroidBounds.min;
+    const glm::vec4 extent = centroidBounds.max - centroidBounds.min;
 
     if (extent.x >= extent.y && extent.x >= extent.z)
         return 0;

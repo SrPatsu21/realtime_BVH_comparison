@@ -13,6 +13,8 @@ struct BLAS
 
     VulkanBLAS gpu;
 
+    const AABB& getBounds() const { return accelerationStructure.nodes[0].bounds; }
+
     void destroy(VkDevice device)
     {
         gpu.destroy(device);
