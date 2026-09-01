@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../../AABB.hpp"
-#include <glm/glm.hpp>
-#include <cstdint>
+#include "../AS.hpp"
+#include "../node/BLASInstance.hpp"
+#include "../../utils/accelerationStructureConfig.hpp"
 
 struct TLASBuildInput
 {
@@ -10,5 +11,5 @@ struct TLASBuildInput
 
     glm::mat4 inverseTransform;
 
-    uint32_t blasIndex;
+    AS<DefaultBLASNode, BLASInstance>* blas;
 };

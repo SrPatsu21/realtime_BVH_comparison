@@ -8,11 +8,8 @@
 #include "material/Material.hpp"
 #include "texture/SamplerManager.hpp"
 #include "texture/TextureImage.hpp"
-#include "../raytracing/acceleration_structure/AccelerationStructure.hpp"
-#include "../raytracing/acceleration_structure/BVHNode.hpp"
 #include "../raytracing/acceleration_structure/AccelerationStructureManager.hpp"
-#include "../raytracing/acceleration_structure/accelerationStructureConfig.hpp"
-#include "../raytracing/acceleration_structure/primitives/PrimitiveRef.hpp"
+#include "../raytracing/acceleration_structure/utils/accelerationStructureConfig.hpp"
 
 class ResourceManager
 {
@@ -27,7 +24,6 @@ private:
     std::unordered_map<std::string, std::weak_ptr<Mesh>> meshes;
     std::unordered_map<std::string, std::weak_ptr<TextureImage>> textures;
     std::unordered_map<std::string, std::weak_ptr<Material>> materials;
-    std::unordered_map<const Mesh*, std::weak_ptr<BLAS<DefaultBLASNode>>> accelerationStructures;
 
     static void buildPrimitiveRefs(
         const Mesh& mesh,
@@ -66,10 +62,6 @@ public:
     AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>* getAccelerationStructureManager(){
         return accelerationStructureManager;
     }
-
-    std::shared_ptr<BLAS<DefaultBLASNode>> getAccelerationStructure(
-        const Mesh* mash
-    );
 
     template<typename Map>
     void CleanupMap(Map& map)

@@ -2,8 +2,8 @@
 
 #include "../material/Material.hpp"
 #include "BatchRegistration.hpp"
-#include "../../raytracing/acceleration_structure/accelerationStructureConfig.hpp"
-#include "../../raytracing/acceleration_structure/BLAS.hpp"
+#include "../../raytracing/acceleration_structure/utils/accelerationStructureConfig.hpp"
+#include "../../raytracing/acceleration_structure/cpu/AS.hpp"
 #include "RenderInstanceRegistration.hpp"
 
 #include <vector>
@@ -29,7 +29,7 @@ private:
 public:
     RenderInstanceRegistration* renderInstanceRegistration; //8
 private:
-    std::shared_ptr<BLAS<DefaultBLASNode>> blas; //8
+    std::shared_ptr<AS<DefaultBLASNode, BLASInstance>> blas; //8
 
 public:
     // bool dirtyTransform = true; // 1
@@ -63,7 +63,7 @@ private:
     void clearRegistrations();
 
 public:
-    BLAS<DefaultBLASNode>* getBLAS() const
+    AS<DefaultBLASNode, BLASInstance>* getBLAS() const
     {
         return blas.get();
     }

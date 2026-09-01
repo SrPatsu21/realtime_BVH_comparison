@@ -5,9 +5,8 @@
 #include "instance/RenderInstance.hpp"
 #include "RenderBatch.hpp"
 #include "../graphics_pipeline/GraphicsPipelineManager.hpp"
-#include "../raytracing/acceleration_structure/AccelerationStructure.hpp"
-#include "../raytracing/acceleration_structure/accelerationStructureConfig.hpp"
-#include "../raytracing/acceleration_structure/BVHNode.hpp"
+#include "../raytracing/acceleration_structure/AccelerationStructureManager.hpp"
+#include "../raytracing/acceleration_structure/utils/accelerationStructureConfig.hpp"
 #include "BatchKey.hpp"
 #include "instance/RenderInstanceRegistration.hpp"
 
@@ -22,7 +21,7 @@ private:
     std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches_map;
     std::vector<RenderBatch*> batches_sorted;
     std::vector<RenderInstance> instances;
-    TLAS<DefaultTLASNode> tlas;
+    AS<DefaultTLASNode, TLASInstance> tlas;
     bool batches_dirty = true;
 
     ResourceManager* resourceManager;

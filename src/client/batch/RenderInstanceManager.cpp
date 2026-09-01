@@ -32,7 +32,7 @@ RenderInstanceRegistration* RenderInstanceManager::createRenderInstance(
 
     instance.renderInstanceRegistration = registration;
 
-    instance.blas = resourceManager->getAccelerationStructure(mesh.get());
+    instance.blas = resourceManager->getAccelerationStructureManager()->createBLAS(mesh.get());
 
     addInstance(
         mesh,
@@ -200,77 +200,86 @@ inline AABB transformAABB(
 
     return result;
 }
-
 void RenderInstanceManager::rebuildTLAS()
 {
-    auto accelerationStructureManager =
-        resourceManager->getAccelerationStructureManager();
+    auto* accelerationStructureManager = resourceManager->getAccelerationStructureManager();
 
-    std::vector<TLASBuildInstance> tlasInstances;
-    tlasInstances.reserve(instances.size());
+    std::vector<TLASBuildInput> inputs;
+    inputs.reserve(instances.size());
 
     for (const auto& instance : instances)
     {
-        TLASBuildInstance tlasInstance{};
+        AS<DefaultBLASNode, BLASInstance>* blas = instance.getBLAS();
 
-        tlasInstance.blas =
-            instance.getBLAS();
+        if (!blas)
+            continue;
 
-        tlasInstance.transform =
-            instance.getModelMatrix();
+        TLASBuildInput input{};
 
-        const auto& localBounds =
-            instance.getBLAS()->getBounds();
+        input.blas = blas;
 
-        tlasInstance.bounds =
+        input.bounds =
             transformAABB(
-                localBounds,
-                tlasInstance.transform
+                blas->getBounds(),
+                instance.getModelMatrix()
             );
 
-        tlasInstances.emplace_back(
-            std::move(tlasInstance)
+        input.inverseTransform =
+            glm::inverse(
+                instance.getModelMatrix()
+            );
+
+        inputs.emplace_back(
+            input
         );
     }
 
     accelerationStructureManager->createTLAS(
-        tlasInstances,
-        resourceManager->getBufferManager(),
-        tlas
+        inputs
     );
+
+    tlas = accelerationStructureManager->getTLAS();
 
     #ifndef NDEBUG
 
         std::cout
             << "tlas instances size "
-            << tlasInstances.size()
+            << tlas.instances.size()
             << '\n';
 
-        for (const auto& instance : tlasInstances)
+        for (const auto& instance : tlas.instances)
         {
             std::cout
-                << "[" << instance.blas << "] "
+                << "[blasIndex="
+                << instance.blasIndex
+                << "] "
                 << "min=("
-                << instance.bounds.min.x << ", "
-                << instance.bounds.min.y << ", "
-                << instance.bounds.min.z << ") "
+                << instance.bounds.min.x
+                << ", "
+                << instance.bounds.min.y
+                << ", "
+                << instance.bounds.min.z
+                << ") "
                 << "max=("
-                << instance.bounds.max.x << ", "
-                << instance.bounds.max.y << ", "
-                << instance.bounds.max.z << ") "
+                << instance.bounds.max.x
+                << ", "
+                << instance.bounds.max.y
+                << ", "
+                << instance.bounds.max.z
+                << ") "
                 << '\n';
         }
 
-        std::cout << "end tlas\n";
+        std::cout
+            << "end tlas\n";
 
         printBVH(
-            tlas.accelerationStructure.nodes,
+            tlas.nodes,
             0
         );
 
     #endif
 }
-
 // ========================
 // BatchKey helpers
 // ========================
@@ -313,11 +322,6 @@ BatchKey RenderInstanceManager::findBatchKey(
 RenderInstanceManager::~RenderInstanceManager()
 {
     VkDevice device = resourceManager->getBufferManager()->getDevice();
-    for (RenderInstance& i : instances)
-    {
-        i.getBLAS()->destroy(device);
-    }
-    tlas.destroy(device);
 
     batches_map.clear();
     batches_sorted.clear();

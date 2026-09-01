@@ -168,69 +168,6 @@ ResourceManager::getTexture(const std::string& path)
     return textureImage;
 }
 
-std::shared_ptr<BLAS<DefaultBLASNode>> ResourceManager::getAccelerationStructure(
-    const Mesh* mesh
-)
-{
-    auto it = accelerationStructures.find(mesh);
-
-    if (it != accelerationStructures.end())
-    {
-        if (auto ac = it->second.lock())
-            return ac;
-    }
-
-    std::vector<PrimitiveRef> primitives;
-
-    buildPrimitiveRefs(
-        *mesh,
-        primitives
-    );
-
-    std::shared_ptr<BLAS<DefaultBLASNode>> accelerationStructure = std::make_shared<BLAS<DefaultBLASNode>>();
-
-    accelerationStructureManager->createBLAS<PrimitiveRef>(
-        mesh,
-        primitives,
-        bufferManager,
-        *accelerationStructure.get()
-    );
-
-    accelerationStructures[mesh] = accelerationStructure;
-
-    return accelerationStructure;
-}
-
-void ResourceManager::buildPrimitiveRefs(
-    const Mesh& mesh,
-    std::vector<PrimitiveRef>& primitives
-)
-{
-    primitives.clear();
-
-    const auto& vertices = mesh.getVertices();
-    const auto& indices = mesh.getIndices();
-
-    primitives.reserve(indices.size() / 3);
-
-    for (uint32_t i = 0; i < indices.size(); i += 3)
-    {
-        const glm::vec3& v0 = vertices[indices[i + 0]].pos;
-        const glm::vec3& v1 = vertices[indices[i + 1]].pos;
-        const glm::vec3& v2 = vertices[indices[i + 2]].pos;
-
-        PrimitiveRef primitive{};
-
-        primitive.triangleIndex = i / 3;
-
-        primitive.bounds.reset();
-        primitive.bounds.expand(v0);
-        primitive.bounds.expand(v1);
-        primitive.bounds.expand(v2);
-
-        primitives.emplace_back(std::move(primitive));
-    }
-}
 
 ResourceManager::~ResourceManager(){
     delete accelerationStructureManager;
@@ -241,5 +178,4 @@ void ResourceManager::CleanupMaps()
     CleanupMap(meshes);
     CleanupMap(textures);
     CleanupMap(materials);
-    CleanupMap(accelerationStructures);
 }

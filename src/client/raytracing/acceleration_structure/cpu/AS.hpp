@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "AABB.hpp"
+#include "../AABB.hpp"
 
 template<
     typename NodeType,

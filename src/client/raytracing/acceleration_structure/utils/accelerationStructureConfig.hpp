@@ -1,5 +1,7 @@
-#include "cpu/builder/BVHBuilder.hpp"
-#include "cpu/node/BVHNode.hpp"
+#pragma once
+
+#include "../cpu/builder/BVHBuilder.hpp"
+#include "../cpu/node/BVHNode.hpp"
 
 //*======================
 //* BLAS

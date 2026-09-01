@@ -4,21 +4,26 @@
 
 void TLASInstanceBuilder::build(
     const std::vector<TLASBuildInput>& inputs,
+    const std::vector<uint32_t>& blasIndices,
     std::vector<PrimitiveRef>& primitives,
     std::vector<BVHNode>& nodes,
     std::vector<TLASInstance>& instances
 )
 {
+    primitives.clear();
+    nodes.clear();
+    instances.clear();
+
+    if (inputs.empty())
+        return;
+
+    if (blasIndices.size() != inputs.size())
+        throw std::runtime_error("TLASInstanceBuilder: blasIndices size mismatch");
+
     createPrimitives(
         inputs,
         primitives
     );
-
-    nodes.clear();
-    instances.clear();
-
-    if (primitives.empty())
-        return;
 
     BVHBuilder<BVHNode>::build(
         nodes,
@@ -27,10 +32,13 @@ void TLASInstanceBuilder::build(
 
     createInstances(
         inputs,
+        blasIndices,
         primitives,
         nodes,
         instances
     );
+
+    primitives.clear();
 }
 
 void TLASInstanceBuilder::createPrimitives(
@@ -38,18 +46,25 @@ void TLASInstanceBuilder::createPrimitives(
     std::vector<PrimitiveRef>& primitives
 )
 {
-    primitives.clear();
     primitives.reserve(inputs.size());
 
-    for (uint32_t i = 0; i < inputs.size(); ++i)
+    for (uint32_t i = 0;
+         i < static_cast<uint32_t>(inputs.size());
+         ++i)
     {
         PrimitiveRef primitive{};
 
         primitive.bounds =
             inputs[i].bounds;
 
-        primitive.index =
-            i;
+        /*
+         * Identidade da entrada original.
+         *
+         * O BVHBuilder pode reordenar os PrimitiveRef,
+         * então este índice não pode ser substituído pela
+         * posição atual dentro do vetor.
+         */
+        primitive.index = i;
 
         primitives.emplace_back(
             primitive
@@ -59,12 +74,13 @@ void TLASInstanceBuilder::createPrimitives(
 
 void TLASInstanceBuilder::createInstances(
     const std::vector<TLASBuildInput>& inputs,
+    const std::vector<uint32_t>& blasIndices,
     const std::vector<PrimitiveRef>& primitives,
     const std::vector<BVHNode>& nodes,
     std::vector<TLASInstance>& instances
 )
 {
-    instances.clear();
+    instances.reserve(inputs.size());
 
     for (const BVHNode& node : nodes)
     {
@@ -74,26 +90,33 @@ void TLASInstanceBuilder::createInstances(
         if (node.primitiveCount == 0)
             continue;
 
-        for (
-            uint32_t i = 0;
-            i < node.primitiveCount;
-            ++i
-        )
+        for (uint32_t i = 0;
+             i < node.primitiveCount;
+             ++i)
         {
             const uint32_t primitiveIndex =
                 node.firstPrimitive + i;
 
+            const PrimitiveRef& primitive =
+                primitives[primitiveIndex];
+
             const uint32_t inputIndex =
-                primitives[primitiveIndex].index;
+                primitive.index;
 
             const TLASBuildInput& input =
                 inputs[inputIndex];
 
             TLASInstance instance{};
 
-            instance.bounds = input.bounds;
-            instance.inverseTransform = input.inverseTransform;
-            instance.blasIndex = input.blasIndex;
+            instance.bounds =
+                input.bounds;
+
+            instance.inverseTransform =
+                input.inverseTransform;
+
+            instance.blasIndex =
+                blasIndices[inputIndex];
+
             instance.pad0 = 0;
             instance.pad1 = 0;
             instance.pad2 = 0;
