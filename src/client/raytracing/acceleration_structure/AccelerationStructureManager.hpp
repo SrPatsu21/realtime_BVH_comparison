@@ -92,15 +92,14 @@ public:
         const std::vector<TLASBuildInput>& inputs
     );
 
-    TLAS& getTLAS()
-    {
-        return tlas;
-    }
+    TLAS& getTLAS() { return tlas; }
 
-    const TLAS& getTLAS() const
-    {
-        return tlas;
-    }
+    const TLAS& getTLAS() const { return tlas; }
+
+    AccelerationStructureGPU* getBLASBuffer() { return blasBuffer; }
+    AccelerationStructureGPU* getBLASInstanceBuffer() { return blasInstanceBuffer; }
+    AccelerationStructureGPU* getTLASGPU() { return tlasGPU; }
+    AccelerationStructureGPU* getTLASInstanceGPU() { return tlasInstanceGPU; }
 
     template<typename NodeType>
     static void printBVH(
@@ -360,6 +359,17 @@ AccelerationStructureManager<
         tlas.nodes,
         tlas.instances
     );
+
+    for (TLASInstance& instance : tlas.instances)
+    {
+        if (instance.blasIndex >= blasVector.size())
+            throw std::runtime_error("TLAS instance contains invalid BLAS index");
+
+        const BLAS& blas = *blasVector[instance.blasIndex];
+        instance.nodeOffset = blas.nodeOffset;
+        instance.nodeCount = blas.nodeCount;
+        instance.instanceOffset = blas.instanceOffset;
+    }
 
     uploadTLAS();
 }

@@ -211,16 +211,31 @@ void Render::createCameraAndSamplers(){
 }
 
 void Render::createDescriptorManagers(){
-    globalDescriptorManager = new GlobalDescriptorManager(
-        coreVulkan->getDevice(),
-        this->cameraBufferManager,
-        Render::MAX_FRAMES_IN_FLIGHT
-    );
+
     materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
         maxMaterials,
         {}
     );
+
+    resourceManager = new ResourceManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        materialDescriptorManager
+    );
+
+    auto accelerationStructureManager = resourceManager->getAccelerationStructureManager();
+    globalDescriptorManager = new GlobalDescriptorManager(
+        coreVulkan->getDevice(),
+        this->cameraBufferManager,
+        accelerationStructureManager->getBLASBuffer(),
+        accelerationStructureManager->getBLASInstanceBuffer(),
+        accelerationStructureManager->getTLASGPU(),
+        accelerationStructureManager->getTLASInstanceGPU(),
+        Render::MAX_FRAMES_IN_FLIGHT
+    );
+
     instanceDescriptorManager = new InstanceDescriptorManager(
         coreVulkan->getDevice(),
         bufferManager,
@@ -460,13 +475,6 @@ void Render::createGraphicsPipelineObjects(){
 
 void Render::initInstances(){
 
-    resourceManager = new ResourceManager(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        bufferManager,
-        materialDescriptorManager
-    );
-
     renderInstanceManager = new RenderInstanceManager(
         resourceManager
     );
@@ -501,13 +509,12 @@ void Render::initInstances(){
 
     //* light
     lightInstanceManager->createLight({
-        .position = glm::vec3(0.0f),
-        .intensity = 0.5f,
-        .color = glm::vec3(1.0f),
-        .radius = 0.5f,
-        .type = (Config::LightType::Point),
-        .range = 5.0f,
-
+        .position = glm::vec3(-100.0f, 150.0f, -100.0f),
+        .intensity = 500000.0f,
+        .color = glm::vec3(1.0f, 0.95f, 0.85f),
+        .radius = 10.0f,
+        .type = Config::LightType::Point,
+        .range = 500.0f,
         ._pad0 = 0.0f,
         ._pad1 = 0.0f
     });

@@ -48,22 +48,10 @@ void TLASInstanceBuilder::createPrimitives(
 {
     primitives.reserve(inputs.size());
 
-    for (uint32_t i = 0;
-         i < static_cast<uint32_t>(inputs.size());
-         ++i)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(inputs.size()); ++i)
     {
         PrimitiveRef primitive{};
-
-        primitive.bounds =
-            inputs[i].bounds;
-
-        /*
-         * Identidade da entrada original.
-         *
-         * O BVHBuilder pode reordenar os PrimitiveRef,
-         * então este índice não pode ser substituído pela
-         * posição atual dentro do vetor.
-         */
+        primitive.bounds = inputs[i].bounds;
         primitive.index = i;
 
         primitives.emplace_back(
@@ -90,36 +78,20 @@ void TLASInstanceBuilder::createInstances(
         if (node.primitiveCount == 0)
             continue;
 
-        for (uint32_t i = 0;
-             i < node.primitiveCount;
-             ++i)
+        for (uint32_t i = 0; i < node.primitiveCount; ++i)
         {
-            const uint32_t primitiveIndex =
-                node.firstPrimitive + i;
-
-            const PrimitiveRef& primitive =
-                primitives[primitiveIndex];
-
-            const uint32_t inputIndex =
-                primitive.index;
-
-            const TLASBuildInput& input =
-                inputs[inputIndex];
+            const uint32_t primitiveIndex = node.firstPrimitive + i;
+            const PrimitiveRef& primitive = primitives[primitiveIndex];
+            const uint32_t inputIndex = primitive.index;
+            const TLASBuildInput& input = inputs[inputIndex];
 
             TLASInstance instance{};
-
-            instance.bounds =
-                input.bounds;
-
-            instance.inverseTransform =
-                input.inverseTransform;
-
-            instance.blasIndex =
-                blasIndices[inputIndex];
-
-            instance.pad0 = 0;
-            instance.pad1 = 0;
-            instance.pad2 = 0;
+            instance.bounds = input.bounds;
+            instance.inverseTransform = input.inverseTransform;
+            instance.blasIndex = blasIndices[inputIndex];
+            instance.nodeOffset = 0;
+            instance.nodeCount = 0;
+            instance.instanceOffset = 0;
 
             instances.emplace_back(
                 instance

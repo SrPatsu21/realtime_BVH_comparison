@@ -26,8 +26,8 @@ void LightingPipelineProvider::createPipelines(
 
     ShaderLoader shader(
         ctx.device,
-        "shaders/lighting.vert.glsl.spv",
-        "shaders/lighting.frag.glsl.spv"
+        "shaders/deferred_lighting.vert.glsl.spv",
+        "shaders/deferred_lighting.frag.glsl.spv"
     );
     VkPipelineShaderStageCreateInfo shaderStages[2];
     GraphicsPipelineHelper::createVertexStage(

@@ -10,7 +10,7 @@ struct TLASInstance
     glm::mat4 inverseTransform;
 
     uint32_t blasIndex;
-    uint32_t pad0;
-    uint32_t pad1;
-    uint32_t pad2;
+    uint32_t nodeOffset;
+    uint32_t nodeCount;
+    uint32_t instanceOffset;
 };
