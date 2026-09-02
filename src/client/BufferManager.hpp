@@ -192,7 +192,9 @@ public:    /**
     void copyBuffer(
         VkBuffer srcBuffer,
         VkBuffer dstBuffer,
-        VkDeviceSize size
+        VkDeviceSize size,
+        VkDeviceSize srcOffset = 0,
+        VkDeviceSize dstOffset = 0
     );
 
     /**
@@ -246,6 +248,13 @@ public:    /**
         uint32_t mipLevel,
         uint32_t baseArrayLayer,
         uint32_t layerCount
+    );
+
+    void uploadBuffer(
+        VkBuffer dstBuffer,
+        const void* data,
+        VkDeviceSize size,
+        VkDeviceSize dstOffset = 0
     );
 
     VkDeviceAddress getBufferDeviceAddress(

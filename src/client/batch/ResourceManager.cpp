@@ -12,7 +12,7 @@ ResourceManager::ResourceManager(
     descriptorManager(descriptorManager),
     samplerManager(physicalDevice, device)
 {
-    accelerationStructureManager = new AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>();
+    accelerationStructureManager = new AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>(bufferManager);
 }
 
 std::shared_ptr<Mesh> ResourceManager::getMesh(

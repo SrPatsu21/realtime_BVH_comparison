@@ -136,15 +136,25 @@ void BufferManager::allocateBufferMemory(
 void BufferManager::copyBuffer(
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,
-    VkDeviceSize size
-) {
+    VkDeviceSize size,
+    VkDeviceSize srcOffset,
+    VkDeviceSize dstOffset
+)
+{
     VkCommandBuffer commandBuffer = beginImmediate();
 
     VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0; // Optional
-    copyRegion.dstOffset = 0; // Optional
+    copyRegion.srcOffset = srcOffset;
+    copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    vkCmdCopyBuffer(
+        commandBuffer,
+        srcBuffer,
+        dstBuffer,
+        1,
+        &copyRegion
+    );
 
     endImmediate();
 }
@@ -319,6 +329,103 @@ void BufferManager::uploadToImageMipLevel(
     // Cleanup
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingMemory, nullptr);
+}
+
+void BufferManager::uploadBuffer(
+    VkBuffer dstBuffer,
+    const void* data,
+    VkDeviceSize size,
+    VkDeviceSize dstOffset
+)
+{
+    if (!data || size == 0)
+        return;
+
+    VkBuffer stagingBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+
+    // Staging buffer
+    createBuffer(
+        size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        stagingBuffer
+    );
+
+    allocateBufferMemory(
+        stagingBuffer,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingMemory
+    );
+
+    vkBindBufferMemory(
+        device,
+        stagingBuffer,
+        stagingMemory,
+        0
+    );
+
+    // CPU -> staging
+    void* mapped = nullptr;
+
+    if (vkMapMemory(
+        device,
+        stagingMemory,
+        0,
+        size,
+        0,
+        &mapped
+    ) != VK_SUCCESS)
+    {
+        vkDestroyBuffer(
+            device,
+            stagingBuffer,
+            nullptr
+        );
+
+        vkFreeMemory(
+            device,
+            stagingMemory,
+            nullptr
+        );
+
+        throw std::runtime_error(
+            "failed to map staging buffer memory!"
+        );
+    }
+
+    memcpy(
+        mapped,
+        data,
+        static_cast<size_t>(size)
+    );
+
+    vkUnmapMemory(
+        device,
+        stagingMemory
+    );
+
+    // staging -> GPU
+    copyBuffer(
+        stagingBuffer,
+        dstBuffer,
+        size,
+        0,
+        dstOffset
+    );
+
+    // Cleanup
+    vkDestroyBuffer(
+        device,
+        stagingBuffer,
+        nullptr
+    );
+
+    vkFreeMemory(
+        device,
+        stagingMemory,
+        nullptr
+    );
 }
 
 BufferManager::~BufferManager() {

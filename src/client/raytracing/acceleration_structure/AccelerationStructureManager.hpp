@@ -17,7 +17,10 @@
 #include "cpu/builder/BLASInstanceBuilder.hpp"
 #include "cpu/builder/TLASInstanceBuilder.hpp"
 
+#include "gpu/AccelerationStructureGPU.hpp"
+
 #include "../../batch/mesh/Mesh.hpp"
+#include "../../BufferManager.hpp"
 
 template<
     typename TLBuilderType,
@@ -27,6 +30,13 @@ class AccelerationStructureManager
 {
 public:
 
+    BufferManager* bufferManager;
+
+    static constexpr uint32_t BLAS_NODE_CAPACITY = 1000000;
+    static constexpr uint32_t BLAS_INSTANCE_CAPACITY = 500000;
+    static constexpr uint32_t TLAS_NODE_CAPACITY = 100000;
+    static constexpr uint32_t TLAS_INSTANCE_CAPACITY = 50000;
+
     using TLNodeType = typename TLBuilderType::NodeType;
     using BLNodeType = typename BLBuilderType::NodeType;
 
@@ -35,9 +45,7 @@ public:
 
 private:
 
-    std::vector<
-        std::shared_ptr<BLAS>
-    > blasVector;
+    std::vector<std::shared_ptr<BLAS>> blasVector;
 
     std::unordered_map<
         const Mesh*,
@@ -46,7 +54,35 @@ private:
 
     TLAS tlas;
 
+    // GPU
+    AccelerationStructureGPU* blasBuffer;
+    AccelerationStructureGPU* blasInstanceBuffer;
+    AccelerationStructureGPU* tlasGPU;
+    AccelerationStructureGPU* tlasInstanceGPU;
+
+    uint32_t uploadedBLASCount = 0;
+
+    uint32_t blasNodeCount = 0;
+    uint32_t blasInstanceCount = 0;
+
+    void uploadBLAS();
+    void uploadTLAS();
+
 public:
+
+    explicit AccelerationStructureManager(
+        BufferManager* bufferManager
+    );
+
+    ~AccelerationStructureManager();
+
+    AccelerationStructureManager(
+        const AccelerationStructureManager&
+    ) = delete;
+
+    AccelerationStructureManager& operator=(
+        const AccelerationStructureManager&
+    ) = delete;
 
     std::shared_ptr<BLAS> getBLAS(
         const Mesh* mesh
@@ -72,6 +108,148 @@ public:
         uint32_t index = 0
     );
 };
+
+// =========================================================
+// constructor and destructor
+// =========================================================
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::AccelerationStructureManager(
+    BufferManager* bufferManager
+)
+    : bufferManager(bufferManager)
+{
+    if (!bufferManager)
+    {
+        throw std::invalid_argument(
+            "AccelerationStructureManager: "
+            "bufferManager is null"
+        );
+    }
+
+    blasBuffer = new AccelerationStructureGPU();
+    blasInstanceBuffer = new AccelerationStructureGPU();
+
+    tlasGPU = new AccelerationStructureGPU();
+    tlasInstanceGPU = new AccelerationStructureGPU();
+
+    VkDevice device = bufferManager->getDevice();
+
+    // =====================================================
+    // BLAS NODE BUFFER
+    // =====================================================
+
+    bufferManager->createBuffer(
+        static_cast<VkDeviceSize>(BLAS_NODE_CAPACITY) * sizeof(BLNodeType),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        blasBuffer->buffer
+    );
+
+    bufferManager->allocateBufferMemory(blasBuffer->buffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, blasBuffer->memory, true);
+
+    if (vkBindBufferMemory(device, blasBuffer->buffer, blasBuffer->memory, 0) != VK_SUCCESS)
+        throw std::runtime_error("failed to bind BLAS node buffer memory!");
+
+    blasBuffer->address = bufferManager->getBufferDeviceAddress(blasBuffer->buffer);
+
+    // =====================================================
+    // BLAS INSTANCE BUFFER
+    // =====================================================
+
+    bufferManager->createBuffer(
+        static_cast<VkDeviceSize>(BLAS_INSTANCE_CAPACITY) * sizeof(BLASInstance),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        blasInstanceBuffer->buffer
+    );
+
+    bufferManager->allocateBufferMemory(blasInstanceBuffer->buffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, blasInstanceBuffer->memory, true);
+
+    if (vkBindBufferMemory( device, blasInstanceBuffer->buffer, blasInstanceBuffer->memory, 0) != VK_SUCCESS)
+        throw std::runtime_error("failed to bind BLAS instance buffer memory!");
+
+    blasInstanceBuffer->address = bufferManager->getBufferDeviceAddress(blasInstanceBuffer->buffer);
+
+    // =====================================================
+    // TLAS NODE BUFFER
+    // =====================================================
+
+    bufferManager->createBuffer(
+        static_cast<VkDeviceSize>(TLAS_NODE_CAPACITY) * sizeof(TLNodeType),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        tlasGPU->buffer
+    );
+
+    bufferManager->allocateBufferMemory(tlasGPU->buffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tlasGPU->memory, true);
+
+    if (vkBindBufferMemory(device, tlasGPU->buffer, tlasGPU->memory, 0) != VK_SUCCESS)
+        throw std::runtime_error("failed to bind TLAS node buffer memory!");
+
+    tlasGPU->address = bufferManager->getBufferDeviceAddress(tlasGPU->buffer);
+
+    // =====================================================
+    // TLAS INSTANCE BUFFER
+    // =====================================================
+
+    bufferManager->createBuffer(
+        static_cast<VkDeviceSize>(TLAS_INSTANCE_CAPACITY) * sizeof(TLASInstance),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        tlasInstanceGPU->buffer
+    );
+
+    bufferManager->allocateBufferMemory(tlasInstanceGPU->buffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tlasInstanceGPU->memory, true);
+
+    if (vkBindBufferMemory(device, tlasInstanceGPU->buffer, tlasInstanceGPU->memory, 0) != VK_SUCCESS)
+        throw std::runtime_error("failed to bind TLAS instance buffer memory!");
+
+    tlasInstanceGPU->address = bufferManager->getBufferDeviceAddress(tlasInstanceGPU->buffer);
+}
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::~AccelerationStructureManager()
+{
+    VkDevice device =
+        bufferManager->getDevice();
+
+    if (blasBuffer)
+    {
+        blasBuffer->destroy(device);
+        delete blasBuffer;
+        blasBuffer = nullptr;
+    }
+
+    if (blasInstanceBuffer)
+    {
+        blasInstanceBuffer->destroy(device);
+        delete blasInstanceBuffer;
+        blasInstanceBuffer = nullptr;
+    }
+
+    if (tlasGPU)
+    {
+        tlasGPU->destroy(device);
+        delete tlasGPU;
+        tlasGPU = nullptr;
+    }
+
+    if (tlasInstanceGPU)
+    {
+        tlasInstanceGPU->destroy(device);
+        delete tlasInstanceGPU;
+        tlasInstanceGPU = nullptr;
+    }
+}
 
 
 // =========================================================
@@ -119,6 +297,9 @@ AccelerationStructureManager<
         mesh,
         blas
     );
+
+    uploadBLAS();
+
     return blas;
 }
 
@@ -179,6 +360,148 @@ AccelerationStructureManager<
         tlas.nodes,
         tlas.instances
     );
+
+    uploadTLAS();
+}
+
+// =========================================================
+// upload
+// =========================================================
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+void
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::uploadBLAS()
+{
+    if (uploadedBLASCount >= blasVector.size())
+        return;
+
+    uint32_t nodeOffset = blasNodeCount;
+
+    uint32_t instanceOffset = blasInstanceCount;
+
+    for (
+        uint32_t i = uploadedBLASCount;
+        i < blasVector.size();
+        ++i
+    )
+    {
+        BLAS& blas = *blasVector[i];
+
+        blas.nodeOffset = nodeOffset;
+        blas.nodeCount = static_cast<uint32_t>(blas.nodes.size());
+
+        blas.instanceOffset = instanceOffset;
+        blas.instanceCount = static_cast<uint32_t>(blas.instances.size());
+
+        nodeOffset += blas.nodeCount;
+        instanceOffset += blas.instanceCount;
+
+        if (!blas.nodes.empty())
+        {
+            VkDeviceSize offset =
+                static_cast<VkDeviceSize>(
+                    blas.nodeOffset
+                ) * sizeof(BLNodeType);
+
+            VkDeviceSize size =
+                static_cast<VkDeviceSize>(
+                    blas.nodes.size()
+                ) * sizeof(BLNodeType);
+
+            bufferManager->uploadBuffer(
+                blasBuffer->buffer,
+                blas.nodes.data(),
+                size,
+                offset
+            );
+        }
+
+        if (!blas.instances.empty())
+        {
+            VkDeviceSize offset =
+                static_cast<VkDeviceSize>(
+                    blas.instanceOffset
+                ) * sizeof(BLASInstance);
+
+            VkDeviceSize size =
+                static_cast<VkDeviceSize>(
+                    blas.instances.size()
+                ) * sizeof(BLASInstance);
+
+            bufferManager->uploadBuffer(
+                blasInstanceBuffer->buffer,
+                blas.instances.data(),
+                size,
+                offset
+            );
+        }
+    }
+
+    blasNodeCount = nodeOffset;
+
+    blasInstanceCount = instanceOffset;
+
+    uploadedBLASCount = static_cast<uint32_t>(blasVector.size());
+}
+
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+void
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::uploadTLAS()
+{
+    tlas.nodeOffset = 0;
+
+    tlas.nodeCount = static_cast<uint32_t>(
+            tlas.nodes.size()
+        );
+
+    tlas.instanceOffset = 0;
+
+    tlas.instanceCount = static_cast<uint32_t>(
+            tlas.instances.size()
+        );
+
+    if (!tlas.nodes.empty())
+    {
+        VkDeviceSize size =
+            static_cast<VkDeviceSize>(
+                tlas.nodes.size()
+            ) * sizeof(TLNodeType);
+
+        bufferManager->uploadBuffer(
+            tlasGPU->buffer,
+            tlas.nodes.data(),
+            size,
+            0
+        );
+    }
+
+    if (!tlas.instances.empty())
+    {
+        VkDeviceSize size =
+            static_cast<VkDeviceSize>(
+                tlas.instances.size()
+            ) * sizeof(TLASInstance);
+
+        bufferManager->uploadBuffer(
+            tlasInstanceGPU->buffer,
+            tlas.instances.data(),
+            size,
+            0
+        );
+    }
 }
 
 // =========================================================
