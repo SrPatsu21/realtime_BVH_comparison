@@ -46,7 +46,9 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
         std::string key =
             matData.baseColorPath + "|" +
             matData.normalPath + "|" +
-            matData.metallicRoughnessPath;
+            matData.metallicRoughnessPath + "|" +
+            std::to_string(static_cast<uint32_t>(matData.alphaMode)) + "|" +
+            std::to_string(matData.alphaCutoff);
 
         std::shared_ptr<Material> material = nullptr;
 
@@ -73,10 +75,13 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
 
             material = std::make_shared<Material>(
                 device,
+                bufferManager,
                 descriptorManager,
                 baseColorHandle,
                 normalHandle,
-                mrHandle
+                mrHandle,
+                matData.alphaMode,
+                matData.alphaCutoff
             );
 
             materials[key] = material;
@@ -104,7 +109,9 @@ ResourceManager::getMaterialForSubMesh(
     std::string key =
         matData.baseColorPath + "|" +
         matData.normalPath + "|" +
-        matData.metallicRoughnessPath;
+        matData.metallicRoughnessPath + "|" +
+        std::to_string(static_cast<uint32_t>(matData.alphaMode)) + "|" +
+        std::to_string(matData.alphaCutoff);
 
     std::shared_ptr<Material> material = nullptr;
 
@@ -129,10 +136,13 @@ ResourceManager::getMaterialForSubMesh(
 
         material = std::make_shared<Material>(
             device,
+            bufferManager,
             descriptorManager,
             baseColorHandle,
             normalHandle,
-            mrHandle
+            mrHandle,
+            matData.alphaMode,
+            matData.alphaCutoff
         );
 
         materials[key] = material;

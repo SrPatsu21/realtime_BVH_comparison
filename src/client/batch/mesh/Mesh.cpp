@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <assimp/GltfMaterial.h>
 
 void Mesh::load(
     const std::string& path,
@@ -58,6 +59,22 @@ void Mesh::load(
             material.metallicRoughnessPath =
                 (directory / pathStr.C_Str()).string();
         }
+
+        aiString alphaMode;
+
+        if (mat->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
+            std::string mode = alphaMode.C_Str();
+
+            if (mode == "MASK")
+                material.alphaMode = Material::AlphaMode::MASK;
+            else if (mode == "BLEND")
+                material.alphaMode = Material::AlphaMode::BLEND;
+        }
+
+        float alphaCutoff = 0.5f;
+
+        if (mat->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCutoff) == AI_SUCCESS)
+            material.alphaCutoff = alphaCutoff;
 
         materials[i] = material;
     }

@@ -11,6 +11,7 @@
 
 #include "VertexBufferManager.hpp"
 #include "IndexBufferManager.hpp"
+#include "../material/Material.hpp"
 
 /**
  * @class Mesh
@@ -39,6 +40,9 @@ public:
         std::string baseColorPath;
         std::string normalPath;
         std::string metallicRoughnessPath;
+
+        Material::AlphaMode alphaMode = Material::AlphaMode::OPAQUE;
+        float alphaCutoff = 0.5f;
     };
 
         /**

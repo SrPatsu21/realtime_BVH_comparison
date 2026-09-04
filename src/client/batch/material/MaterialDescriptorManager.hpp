@@ -93,6 +93,13 @@ public:
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT
             );
+
+            builder.addEngineBinding(
+                3,
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                1,
+                VK_SHADER_STAGE_FRAGMENT_BIT
+            );
         }
     };
 

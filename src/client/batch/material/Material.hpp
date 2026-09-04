@@ -1,76 +1,58 @@
 #pragma once
 
-#include "../texture/TextureImage.hpp"
-#include "MaterialDescriptorManager.hpp"
 #include <memory>
+#include <vulkan/vulkan.h>
 
-/**
- * @brief CPU-side representation of a material for bindless rendering.
- *
- * A Material stores indices into global bindless descriptor arrays.
- *
- * These indices are used in the shader to fetch textures.
- */
+class TextureImage;
+class MaterialDescriptorManager;
+class BufferManager;
+
 class Material
 {
-private:
-    std::shared_ptr<TextureImage> baseColorHandle;
-    std::shared_ptr<TextureImage> normalHandle;
-    std::shared_ptr<TextureImage> metallicRoughnessHandle;
-    VkDescriptorSet descriptorSet;
-
 public:
+
+    enum class AlphaMode : uint32_t
+    {
+        OPAQUE = 1,
+        MASK   = 2,
+        BLEND  = 4
+    };
+
+    struct MaterialAlphaData
+    {
+        AlphaMode alphaMode;
+        float alphaCutoff;
+    };
+
     Material(
         VkDevice device,
+        BufferManager* bufferManager,
         MaterialDescriptorManager* descriptorManager,
         std::shared_ptr<TextureImage> baseColorHandle,
         std::shared_ptr<TextureImage> normalHandle,
-        std::shared_ptr<TextureImage> metallicRoughnessHandle
+        std::shared_ptr<TextureImage> metallicRoughnessHandle,
+        AlphaMode alphaMode = AlphaMode::OPAQUE,
+        float alphaCutoff = 0.5f
     );
 
-    Material(const Material& other) :
-        baseColorHandle(other.baseColorHandle),
-        normalHandle(other.normalHandle),
-        metallicRoughnessHandle(other.metallicRoughnessHandle),
-        descriptorSet(other.descriptorSet)
-    {}
-    Material& operator=(const Material& other)
-    {
-        if (this != &other)
-        {
-            baseColorHandle = other.baseColorHandle;
-            normalHandle = other.normalHandle;
-            metallicRoughnessHandle = other.metallicRoughnessHandle;
-            descriptorSet = other.descriptorSet;
-        }
-        return *this;
-    }
+    ~Material();
 
-    Material(Material&& other) noexcept :
-        baseColorHandle(std::move(other.baseColorHandle)),
-        normalHandle(std::move(other.normalHandle)),
-        metallicRoughnessHandle(std::move(other.metallicRoughnessHandle)),
-        descriptorSet(other.descriptorSet)
-    {
-        other.descriptorSet = VK_NULL_HANDLE;
-    }
-    Material& operator=(Material&& other) noexcept
-    {
-        if (this != &other)
-        {
-            baseColorHandle = std::move(other.baseColorHandle);
-            normalHandle = std::move(other.normalHandle);
-            metallicRoughnessHandle = std::move(other.metallicRoughnessHandle);
-            descriptorSet = other.descriptorSet;
+    VkDescriptorSet getDescriptorSet() const { return descriptorSet; }
+    AlphaMode getAlphaMode() const { return materialAlphaData.alphaMode; }
+    float getAlphaCutoff() const { return materialAlphaData.alphaCutoff; }
 
-            other.descriptorSet = VK_NULL_HANDLE;
-        }
-        return *this;
-    }
+private:
 
+    VkDevice device{};
 
-    std::shared_ptr<TextureImage> getBaseColorHandle() const { return baseColorHandle; }
-    std::shared_ptr<TextureImage> getNnormalHandle() const { return normalHandle; }
-    std::shared_ptr<TextureImage> getMetallicRoughnessHandle() const { return metallicRoughnessHandle; }
-    const VkDescriptorSet getDescriptorSet() const { return descriptorSet; }
+    VkDescriptorSet descriptorSet{};
+
+    std::shared_ptr<TextureImage> baseColorHandle;
+    std::shared_ptr<TextureImage> normalHandle;
+    std::shared_ptr<TextureImage> metallicRoughnessHandle;
+
+    MaterialAlphaData materialAlphaData;
+
+    VkBuffer materialAlphaBuffer{};
+    VkDeviceMemory materialAlphaMemory{};
 };
