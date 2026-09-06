@@ -13,6 +13,7 @@ public:
         VkDescriptorSet globalSet,
         VkDescriptorSet gBufferSet,
         VkDescriptorSet lightSet,
+        VkDescriptorSet transparentGBufferSet,
         const Config::ConfigTable& config
     );
 };

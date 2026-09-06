@@ -14,6 +14,7 @@ struct PipelineCreationContext
     VkDescriptorSetLayout instanceLayout;
 
     VkDescriptorSetLayout gBufferLayout;
+    VkDescriptorSetLayout transparentGBufferLayout;
     VkDescriptorSetLayout lightingLayout;
 
     VkSampleCountFlagBits msaa;

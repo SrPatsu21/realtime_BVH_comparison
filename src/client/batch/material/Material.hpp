@@ -18,11 +18,6 @@ public:
         BLEND  = 4
     };
 
-    struct MaterialAlphaData
-    {
-        AlphaMode alphaMode;
-        float alphaCutoff;
-    };
 
     Material(
         VkDevice device,
@@ -38,8 +33,8 @@ public:
     ~Material();
 
     VkDescriptorSet getDescriptorSet() const { return descriptorSet; }
-    AlphaMode getAlphaMode() const { return materialAlphaData.alphaMode; }
-    float getAlphaCutoff() const { return materialAlphaData.alphaCutoff; }
+    AlphaMode getAlphaMode() const { return alphaMode; }
+    float getAlphaCutoff() const { return alphaCutoff; }
 
 private:
 
@@ -51,7 +46,8 @@ private:
     std::shared_ptr<TextureImage> normalHandle;
     std::shared_ptr<TextureImage> metallicRoughnessHandle;
 
-    MaterialAlphaData materialAlphaData;
+    AlphaMode alphaMode;
+    float alphaCutoff;
 
     VkBuffer materialAlphaBuffer{};
     VkDeviceMemory materialAlphaMemory{};

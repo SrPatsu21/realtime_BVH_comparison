@@ -1,17 +1,12 @@
-#include "GeometryGBufferRenderPassProvider.hpp"
+#include "TransparentGBufferRenderPassProvider.hpp"
 #include "../../render_pass/RenderPassHelper.hpp"
 
-void
-GeometryGBufferRenderPassProvider::build(
+void TransparentGBufferRenderPassProvider::build(
     RenderPassManager::Description& description,
     VkSampleCountFlagBits msaaSamples,
     VkFormat depthFormat
 )
 {
-    // ============================================================
-    // GBuffer
-    // ============================================================
-
     const uint32_t position =
         RenderPassHelper::addColorAttachment(
             description,
@@ -48,24 +43,16 @@ GeometryGBufferRenderPassProvider::build(
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
-    // ============================================================
-    // Depth
-    // ============================================================
-
     const uint32_t depth =
         RenderPassHelper::addDepthAttachment(
             description,
             depthFormat,
             msaaSamples,
-            VK_ATTACHMENT_LOAD_OP_CLEAR,
+            VK_ATTACHMENT_LOAD_OP_LOAD,
             VK_ATTACHMENT_STORE_OP_STORE,
-            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
         );
-
-    // ============================================================
-    // Subpass
-    // ============================================================
 
     const uint32_t subpass =
         RenderPassHelper::addSubpass(
@@ -101,10 +88,6 @@ GeometryGBufferRenderPassProvider::build(
         subpass,
         depth
     );
-
-    // ============================================================
-    // Dependency
-    // ============================================================
 
     RenderPassHelper::addExternalDependency(
         description,

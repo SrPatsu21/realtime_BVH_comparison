@@ -23,8 +23,10 @@ public:
         RenderPassManager::Description& description,
         VkFormat format,
         VkSampleCountFlagBits samples,
+        VkAttachmentLoadOp loadOp,
         VkAttachmentStoreOp storeOp,
-    VkImageLayout finalLayout
+        VkImageLayout initialLayout,
+        VkImageLayout finalLayout
     );
 
 

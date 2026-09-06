@@ -158,14 +158,16 @@ set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
 
 set(SHADERS
-    triangle.frag.glsl
-    triangle.vert.glsl
-    particle.frag.glsl
-    particle.vert.glsl
     deferred_lighting.frag.glsl
     deferred_lighting.vert.glsl
-    geometry_mesh.frag.glsl
     geometry_mesh.vert.glsl
+    geometry_mesh_blend.frag.glsl
+    geometry_mesh_mask.frag.glsl
+    geometry_mesh_opaque.frag.glsl
+    particle.frag.glsl
+    particle.vert.glsl
+    triangle.frag.glsl
+    triangle.vert.glsl
 )
 
 set(SHADER_OUTPUTS "")

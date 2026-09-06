@@ -219,6 +219,21 @@ void CommandManager::buildGBufferClearValues(
     clearValues[4] = depth;
 }
 
+void CommandManager::buildTransparentGBufferClearValues(
+    std::vector<VkClearValue>& clearValues
+) {
+    clearValues.resize(4);
+
+    VkClearValue color{};
+    color.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+
+    clearValues[0] = color; // position
+    clearValues[1] = color; // normal
+    clearValues[2] = color; // albedo
+    clearValues[3] = color; // material
+}
+
+
 void CommandManager::buildLightingClearValues(
     std::vector<VkClearValue>& clearValues
 ) {
@@ -280,9 +295,11 @@ void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
     VkRenderPass renderPass,
+    VkRenderPass transparentRenderPass,
     VkRenderPass lightRenderPass,
     GraphicsPipelineManager* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
+    const std::vector<VkFramebuffer>& transparentFramebuffers,
     const std::vector<VkFramebuffer>&  lightingFramebuffers,
     VkExtent2D extent,
     GlobalDescriptorManager* globalDescriptorManager,
@@ -290,6 +307,7 @@ void CommandManager::recordCommandBuffer(
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderInstanceManager* renderInstanceManager,
     GBufferDescriptorManager* gBufferDescriptorManager,
+    TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager,
     LightInstanceManager* lightInstanceManager,
     const std::vector<ParticleData>& particlesData,
     const std::vector<IClearValueProvider*>& clearProviders,
@@ -348,6 +366,7 @@ void CommandManager::recordCommandBuffer(
             buildGBufferClearValues(
                 clearValues
             );
+            uint32_t currentOffset;
 
             beginRenderPass(
                 cmd,
@@ -355,103 +374,62 @@ void CommandManager::recordCommandBuffer(
                 framebuffers[imageIndex],
                 extent,
                 clearValues,
-                VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+                VK_SUBPASS_CONTENTS_INLINE
             );
 
             VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
 
-            const uint32_t batchCount = static_cast<uint32_t>(renderInstanceManager->getBatches().size());
-            const uint32_t batchesPerWorker = (batchCount + workerThreadCount - 1) / workerThreadCount;
-            std::vector<std::thread> workers;
-
-            workers.reserve(workerThreadCount);
-
-            for (uint32_t worker = 0; worker < workerThreadCount; ++worker)
-            {
-                const uint32_t firstBatch = std::min(worker * batchesPerWorker, batchCount);
-                const uint32_t lastBatch = std::min(firstBatch + batchesPerWorker, batchCount);
-                if (firstBatch >= lastBatch)
-                    continue;
-
-                uint32_t firstInstanceOffset = 0;
-
-                for (uint32_t i = 0; i < firstBatch; ++i)
-                {
-                    firstInstanceOffset += static_cast<uint32_t>(renderInstanceManager->getBatch(i).getInstancesData().size());
-                }
-
-                workers.emplace_back(
-                    [&, worker, firstBatch, lastBatch, firstInstanceOffset]()
-                    {
-                        VkCommandBuffer secondaryCommandBuffer = secondaryCommandBuffers[worker][imageIndex];
-                        beginSecondaryCommandBuffer(
-                            secondaryCommandBuffer,
-                            renderPass,
-                            VK_NULL_HANDLE,
-                            0
-                        );
-
-                        setViewportAndScissor(
-                            secondaryCommandBuffer,
-                            graphicsPipeline,
-                            viewportProviders,
-                            scissorProviders
-                        );
-
-                        GeometryRecord::record(
-                            secondaryCommandBuffer,
-                            graphicsPipeline,
-                            globalSet,
-                            instanceSet,
-                            renderInstanceManager,
-                            firstBatch,
-                            lastBatch,
-                            firstInstanceOffset
-                        );
-
-                        if (vkEndCommandBuffer(secondaryCommandBuffer) != VK_SUCCESS)
-                        {
-                            throw std::runtime_error(
-                                "failed to record geometry secondary command buffer!"
-                            );
-                        }
-                    }
-                );
-            }
-
-            for (auto& worker : workers)
-                worker.join();
-
-            std::vector<VkCommandBuffer> secondaryCommands;
-
-            secondaryCommands.reserve(workerThreadCount);
-
-            for (uint32_t worker = 0; worker < workerThreadCount; ++worker)
-            {
-                const uint32_t firstBatch =
-                    std::min(
-                        worker * batchesPerWorker,
-                        batchCount
-                    );
-
-                const uint32_t lastBatch =
-                    std::min(
-                        firstBatch + batchesPerWorker,
-                        batchCount
-                    );
-
-                if (firstBatch >= lastBatch)
-                    continue;
-
-                secondaryCommands.push_back(
-                    secondaryCommandBuffers[worker][imageIndex]
-                );
-            }
-
-            vkCmdExecuteCommands(
+            setViewportAndScissor(
                 cmd,
-                static_cast<uint32_t>(secondaryCommands.size()),
-                secondaryCommands.data()
+                graphicsPipeline,
+                viewportProviders,
+                scissorProviders
+            );
+
+            GeometryRecord::record(
+                cmd,
+                graphicsPipeline,
+                globalSet,
+                instanceSet,
+                renderInstanceManager,
+                0,
+                renderInstanceManager->getBatchRanges().blendStart,
+                currentOffset
+            );
+            vkCmdEndRenderPass(cmd);
+
+            clearValues.clear();
+
+            // ----------------------------------
+            // Transparent GBuffer
+            // ----------------------------------
+            buildTransparentGBufferClearValues(clearValues);
+
+            beginRenderPass(
+                cmd,
+                transparentRenderPass,
+                transparentFramebuffers[imageIndex],
+                extent,
+                clearValues,
+                VK_SUBPASS_CONTENTS_INLINE
+            );
+
+            setViewportAndScissor(
+                cmd,
+                graphicsPipeline,
+                viewportProviders,
+                scissorProviders
+            );
+
+            GeometryRecord::record(
+                cmd,
+                graphicsPipeline,
+                globalSet,
+                instanceSet,
+                renderInstanceManager,
+                renderInstanceManager->getBatchRanges().blendStart,
+                renderInstanceManager->getBatchRanges().end,
+                currentOffset
             );
 
             vkCmdEndRenderPass(cmd);
@@ -482,6 +460,7 @@ void CommandManager::recordCommandBuffer(
         );
 
         VkDescriptorSet gBufferSet = gBufferDescriptorManager->getDescriptorSet();
+        VkDescriptorSet transparentGBufferSet = transparentGBufferDescriptorManager->getDescriptorSet();
         VkDescriptorSet lightSet = lightInstanceManager->getDescriptorSet(currentFrame);
 
         LightingRecord::record(
@@ -490,6 +469,7 @@ void CommandManager::recordCommandBuffer(
             globalSet,
             gBufferSet,
             lightSet,
+            transparentGBufferSet,
             config
         );
     }

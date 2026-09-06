@@ -9,8 +9,7 @@ layout(location = 1) in vec3 fragNormal;
 layout(location = 2) in vec3 fragWorldPos;
 layout(location = 3) in vec4 fragTangent;
 
-
-// GBuffer attachments
+// Transparent GBuffer attachments
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -23,7 +22,8 @@ void main()
     // Albedo
     // --------------------------------------------------
 
-    vec4 albedo = texture(albedoTex, fragTexCoord);
+    vec4 albedo =
+        texture(albedoTex, fragTexCoord);
 
     // --------------------------------------------------
     // Normal map
@@ -35,7 +35,6 @@ void main()
 
     vec3 T = normalize(fragTangent.xyz);
 
-    // Re-orthogonalize T against N.
     T = normalize(T - N * dot(N, T));
 
     vec3 B = normalize(cross(N, T) * fragTangent.w);
@@ -51,10 +50,11 @@ void main()
     vec4 mr = texture(metallicRoughnessTex, fragTexCoord);
 
     float metallic = mr.b;
+
     float roughness = mr.g;
 
     // --------------------------------------------------
-    // GBuffer
+    // Transparent GBuffer
     // --------------------------------------------------
 
     outPosition = vec4(fragWorldPos, 1.0);
@@ -63,10 +63,11 @@ void main()
 
     outAlbedo = albedo;
 
-    outMaterial = vec4(
-        metallic,
-        roughness,
-        0.0,
-        1.0
-    );
+    outMaterial =
+        vec4(
+            metallic,
+            roughness,
+            0.0,
+            1.0
+        );
 }

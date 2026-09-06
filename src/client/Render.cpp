@@ -1,6 +1,7 @@
 #include "Render.hpp"
 #include "graphics_pipeline/pipelines/IPipelineProvider.hpp"
 #include "raytracing/render_pass/GeometryGBufferRenderPassProvider.hpp"
+#include "raytracing/render_pass/TransparentGBufferRenderPassProvider.hpp"
 #include "raytracing/render_pass/LightingRenderPassProvider.hpp"
 #include "raytracing/frame_buffer/GBufferFramebufferProvider.hpp"
 #include "raytracing/frame_buffer/LightingFramebufferProvider.hpp"
@@ -277,7 +278,7 @@ void Render::createCommandAndSyncObjects(){
 }
 
 void Render::createRenderPasses(){
-    RenderPassManager::Description description1, description2;
+    RenderPassManager::Description description1, description2, description3;
     switch (config.render.mode)
     {
         case Config::RenderMode::Forward:
@@ -307,13 +308,23 @@ void Render::createRenderPasses(){
                 std::move(description1)
             );
 
-            LightingRenderPassProvider::build(
+            TransparentGBufferRenderPassProvider::build(
                 description2,
+                coreVulkan->getMsaaSamples(),
+                coreVulkan->getDepthFormat()
+            );
+            transparentRenderPassManager = new RenderPassManager(
+                coreVulkan->getDevice(),
+                std::move(description2)
+            );
+
+            LightingRenderPassProvider::build(
+                description3,
                 swapchainManager->getImageFormat()
             );
             lightRenderPassManager = new RenderPassManager(
                 coreVulkan->getDevice(),
-                std::move(description2)
+                std::move(description3)
             );
 
             break;
@@ -373,6 +384,9 @@ void Render::createSwapchainDependentResources(){
 
         depthBufferManager = nullptr;
 
+        // ==========================
+        // GBuffer
+        // ==========================
         gBuffer = new GBuffer;
         gBuffer->create(
             coreVulkan->getDevice(),
@@ -380,6 +394,11 @@ void Render::createSwapchainDependentResources(){
             swapchainManager->getExtent(),
             coreVulkan->getDepthFormat(),
             coreVulkan->getMsaaSamples()
+        );
+
+        gBufferDescriptorManager = new GBufferDescriptorManager(
+            coreVulkan->getDevice(),
+            gBuffer
         );
 
         GBufferFramebufferProvider::GBufferAttachments gBufferAttachments{
@@ -404,6 +423,48 @@ void Render::createSwapchainDependentResources(){
             attachmentsVector
         );
 
+        // ==========================
+        // Transparent GBuffer
+        // ==========================
+        attachmentsVector.clear();
+        transparentGBuffer = new TransparentGBuffer;
+        transparentGBuffer->create(
+            coreVulkan->getDevice(),
+            coreVulkan->getPhysicalDevice(),
+            swapchainManager->getExtent(),
+            coreVulkan->getMsaaSamples()
+        );
+
+        transparentGBufferDescriptorManager = new TransparentGBufferDescriptorManager(
+            coreVulkan->getDevice(),
+            transparentGBuffer
+        );
+
+        GBufferFramebufferProvider::GBufferAttachments transparentGBufferAttachments{
+            .position = transparentGBuffer->getView(TransparentGBuffer::Attachment::Position),
+            .albedo = transparentGBuffer->getView(TransparentGBuffer::Attachment::Albedo),
+            .normal = transparentGBuffer->getView(TransparentGBuffer::Attachment::Normal),
+            .material = transparentGBuffer->getView(TransparentGBuffer::Attachment::Material),
+
+            .depth = gBuffer->getView(GBuffer::Attachment::Depth)
+        };
+        GBufferFramebufferProvider::build(
+            transparentGBufferAttachments,
+            swapchainManager->getImageViews().size(),
+            attachmentsVector
+        );
+
+        transparentFramebufferManager = new FramebufferManager(
+            coreVulkan->getDevice(),
+            transparentRenderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
+        );
+
+        // ==========================
+        // Lighting
+        // ==========================
         attachmentsVector.clear();
         LightingFramebufferProvider::build(
             swapchainManager->getImageViews(),
@@ -417,11 +478,6 @@ void Render::createSwapchainDependentResources(){
             swapchainManager->getImageViews().size(),
             swapchainManager->getExtent(),
             attachmentsVector
-        );
-
-        gBufferDescriptorManager = new GBufferDescriptorManager(
-            coreVulkan->getDevice(),
-            gBuffer
         );
     }
 }
@@ -454,6 +510,7 @@ void Render::createGraphicsPipelineObjects(){
             pipelineContext.lightRenderPass = lightRenderPassManager->get();
 
             pipelineContext.gBufferLayout = gBufferDescriptorManager->getLayout();
+            pipelineContext.transparentGBufferLayout = transparentGBufferDescriptorManager->getLayout();
             pipelineContext.lightingLayout = lightInstanceManager->getLightDescriptorManager()->getDescriptorSetLayout();
 
             break;
@@ -656,8 +713,10 @@ void Render::drawFrame(){
             currentFrame,
             this->renderPassManager->get(),
             VK_NULL_HANDLE,
+            VK_NULL_HANDLE,
             this->graphicsPipeline,
             this->framebufferManager->getFramebuffers(),
+            {},
             {},
             swapchainManager->getExtent(),
             globalDescriptorManager,
@@ -665,6 +724,7 @@ void Render::drawFrame(){
             particleInstanceDescriptorManager,
             renderInstanceManager,
             gBufferDescriptorManager,
+            transparentGBufferDescriptorManager,
             lightInstanceManager,
             particlesData,
             {},
@@ -679,9 +739,11 @@ void Render::drawFrame(){
             imageIndex,
             currentFrame,
             renderPassManager->get(),
+            transparentRenderPassManager->get(),
             lightRenderPassManager->get(),
             graphicsPipeline,
             framebufferManager->getFramebuffers(),
+            transparentFramebufferManager->getFramebuffers(),
             lightingFramebufferManager->getFramebuffers(),
             swapchainManager->getExtent(),
             globalDescriptorManager,
@@ -689,6 +751,7 @@ void Render::drawFrame(){
             particleInstanceDescriptorManager,
             renderInstanceManager,
             gBufferDescriptorManager,
+            transparentGBufferDescriptorManager,
             lightInstanceManager,
             particlesData,
             {},
@@ -874,16 +937,18 @@ void Render::destroySwapchainDependentResources() {
 
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
     if (this->lightingFramebufferManager){ delete this->lightingFramebufferManager; this->lightingFramebufferManager = nullptr; }
+    if (this->transparentFramebufferManager) { delete this->transparentFramebufferManager; this->transparentFramebufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
+
     if (this->gBufferDescriptorManager) { delete this->gBufferDescriptorManager; this->gBufferDescriptorManager = nullptr; }
-    if (this->gBuffer) {
-        gBuffer->destroy(coreVulkan->getDevice());
-        delete this->gBuffer;
-        this->gBuffer = nullptr;
-    }
+    if (this->gBuffer) { gBuffer->destroy(coreVulkan->getDevice()); delete this->gBuffer; this->gBuffer = nullptr;}
+    if (this->transparentGBufferDescriptorManager) { delete this->transparentGBufferDescriptorManager; this->transparentGBufferDescriptorManager = nullptr; }
+    if (this->transparentGBuffer) { this->transparentGBuffer->destroy(coreVulkan->getDevice()); delete this->transparentGBuffer; this->transparentGBuffer = nullptr; }
+
     if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
+    if (this->transparentRenderPassManager){ delete this->transparentRenderPassManager; this->transparentRenderPassManager = nullptr; }
     if (this->lightRenderPassManager){ delete this->lightRenderPassManager; this->lightRenderPassManager = nullptr; }
 
 }

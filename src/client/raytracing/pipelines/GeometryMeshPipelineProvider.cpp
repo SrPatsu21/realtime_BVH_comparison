@@ -4,32 +4,62 @@
 #include "../../graphics_pipeline/GraphicsPipelineHelper.hpp"
 #include "../../graphics_pipeline/layouts/MeshPipelineLayoutProvider.hpp"
 
-
 void GeometryMeshPipelineProvider::createPipelines(
     GraphicsPipelineManager& manager,
     const PipelineCreationContext& ctx
 )
 {
-    ShaderLoader shader(
+    ShaderLoader opaqueShader(
         ctx.device,
         "shaders/geometry_mesh.vert.glsl.spv",
-        "shaders/geometry_mesh.frag.glsl.spv"
+        "shaders/geometry_mesh_opaque.frag.glsl.spv"
     );
 
-    VkPipelineShaderStageCreateInfo shaderStages[2];
+    ShaderLoader maskShader(
+        ctx.device,
+        "shaders/geometry_mesh.vert.glsl.spv",
+        "shaders/geometry_mesh_mask.frag.glsl.spv"
+    );
 
+    ShaderLoader blendShader(
+        ctx.device,
+        "shaders/geometry_mesh.vert.glsl.spv",
+        "shaders/geometry_mesh_blend.frag.glsl.spv"
+    );
+
+    VkPipelineShaderStageCreateInfo opaqueStages[2];
     GraphicsPipelineHelper::createVertexStage(
-        shader.getVertModule(),
-        shaderStages[0]
+        opaqueShader.getVertModule(),
+        opaqueStages[0]
     );
-
     GraphicsPipelineHelper::createFragmentStage(
-        shader.getFragModule(),
-        shaderStages[1]
+        opaqueShader.getFragModule(),
+        opaqueStages[1]
     );
 
+    VkPipelineShaderStageCreateInfo maskStages[2];
+    GraphicsPipelineHelper::createVertexStage(
+        maskShader.getVertModule(),
+        maskStages[0]
+    );
+    GraphicsPipelineHelper::createFragmentStage(
+        maskShader.getFragModule(),
+        maskStages[1]
+    );
 
-    //* layout
+    VkPipelineShaderStageCreateInfo blendStages[2];
+    GraphicsPipelineHelper::createVertexStage(
+        blendShader.getVertModule(),
+        blendStages[0]
+    );
+    GraphicsPipelineHelper::createFragmentStage(
+        blendShader.getFragModule(),
+        blendStages[1]
+    );
+
+    // --------------------------------------------------
+    // Layout
+    // --------------------------------------------------
 
     MeshPipelineLayoutProvider meshPipelineLayoutProvider;
 
@@ -41,7 +71,10 @@ void GeometryMeshPipelineProvider::createPipelines(
             )
         );
 
-    //* create info
+    // --------------------------------------------------
+    // Vertex input
+    // --------------------------------------------------
+
     VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
     std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions =
         Vertex::getAttributeDescriptions();
@@ -53,6 +86,10 @@ void GeometryMeshPipelineProvider::createPipelines(
         vertexInputInfo
     );
 
+    // --------------------------------------------------
+    // Viewport
+    // --------------------------------------------------
+
     VkPipelineViewportStateCreateInfo viewportState;
     GraphicsPipelineHelper::createViewportState(
         manager.getViewport(),
@@ -60,39 +97,48 @@ void GeometryMeshPipelineProvider::createPipelines(
         viewportState
     );
 
+    // --------------------------------------------------
+    // Multisampling
+    // --------------------------------------------------
+
     VkPipelineMultisampleStateCreateInfo multiSampling;
+
     GraphicsPipelineHelper::createMultisampleState(
         ctx.msaa,
         multiSampling
     );
+
+    // --------------------------------------------------
+    // Dynamic state
+    // --------------------------------------------------
 
     std::vector<VkDynamicState> dynamicStates =
     {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR
     };
+
     VkPipelineDynamicStateCreateInfo dynamicState;
     GraphicsPipelineHelper::createDynamicState(
         dynamicStates,
         dynamicState
     );
 
+    // --------------------------------------------------
+    // Depth / stencil
+    // --------------------------------------------------
+
     VkPipelineDepthStencilStateCreateInfo depthStencil;
     GraphicsPipelineHelper::createDepthStencilState(
         depthStencil
     );
 
-
     // --------------------------------------------------
     // GBuffer color attachments
-    //
-    // Position
-    // Normal
-    // Albedo
-    // Material
     // --------------------------------------------------
 
     std::array<VkPipelineColorBlendAttachmentState, 4> colorBlendAttachments;
+
     for (size_t i = 0; i < 4; i++)
     {
         colorBlendAttachments[i] = {};
@@ -103,11 +149,17 @@ void GeometryMeshPipelineProvider::createPipelines(
             VK_COLOR_COMPONENT_B_BIT |
             VK_COLOR_COMPONENT_A_BIT;
     }
+
     VkPipelineColorBlendStateCreateInfo colorBlending;
+
     GraphicsPipelineHelper::createColorBlendState(
         colorBlendAttachments,
         colorBlending
     );
+
+    // --------------------------------------------------
+    // Input assembly
+    // --------------------------------------------------
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
     GraphicsPipelineHelper::createInputAssemblyState(
@@ -116,47 +168,9 @@ void GeometryMeshPipelineProvider::createPipelines(
     );
 
     VkPipelineRasterizationStateCreateInfo rasterizationState;
-    GraphicsPipelineHelper::createRasterizerState(
-        VK_CULL_MODE_NONE,
-        VK_POLYGON_MODE_FILL,
-        rasterizationState
-    );
-
 
     // ==================================================
-    // TRIANGLES / CULL NONE
-    // ==================================================
-
-    VkPipeline pipelineTriangleCullNone;
-
-    GraphicsPipelineHelper::createPipeline(
-        ctx.device,
-        ctx.renderPass,
-        pipelineLayout,
-        shaderStages,
-        vertexInputInfo,
-        inputAssemblyState,
-        viewportState,
-        rasterizationState,
-        multiSampling,
-        depthStencil,
-        colorBlending,
-        dynamicState,
-        pipelineTriangleCullNone
-    );
-
-    manager.createPipeline(
-        GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
-        GraphicsPipelineManager::PIPE_CULL_NONE |
-        GraphicsPipelineManager::PIPE_DEPTH_TEST |
-        GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-        GraphicsPipelineManager::PIPE_GEOMETRY,
-        pipelineTriangleCullNone
-    );
-
-
-    // ==================================================
-    // TRIANGLES / CULL BACK
+    // OPAQUE MATERIAL / TRIANGLES / CULL BACK
     // ==================================================
 
     GraphicsPipelineHelper::createRasterizerState(
@@ -165,13 +179,13 @@ void GeometryMeshPipelineProvider::createPipelines(
         rasterizationState
     );
 
-    VkPipeline pipelineTriangleCullBack;
+    VkPipeline pipelineOpaque;
 
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
         ctx.renderPass,
         pipelineLayout,
-        shaderStages,
+        opaqueStages,
         vertexInputInfo,
         inputAssemblyState,
         viewportState,
@@ -180,7 +194,7 @@ void GeometryMeshPipelineProvider::createPipelines(
         depthStencil,
         colorBlending,
         dynamicState,
-        pipelineTriangleCullBack
+        pipelineOpaque
     );
 
     manager.createPipeline(
@@ -189,27 +203,20 @@ void GeometryMeshPipelineProvider::createPipelines(
         GraphicsPipelineManager::PIPE_DEPTH_TEST |
         GraphicsPipelineManager::PIPE_DEPTH_WRITE |
         GraphicsPipelineManager::PIPE_GEOMETRY,
-        pipelineTriangleCullBack
+        pipelineOpaque
     );
 
-
     // ==================================================
-    // TRIANGLES / CULL FRONT
+    // MASK MATERIAL / TRIANGLES / CULL BACK
     // ==================================================
 
-    GraphicsPipelineHelper::createRasterizerState(
-        VK_CULL_MODE_FRONT_BIT,
-        VK_POLYGON_MODE_FILL,
-        rasterizationState
-    );
-
-    VkPipeline pipelineTriangleCullFront;
+    VkPipeline pipelineMask;
 
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
         ctx.renderPass,
         pipelineLayout,
-        shaderStages,
+        maskStages,
         vertexInputInfo,
         inputAssemblyState,
         viewportState,
@@ -218,15 +225,80 @@ void GeometryMeshPipelineProvider::createPipelines(
         depthStencil,
         colorBlending,
         dynamicState,
-        pipelineTriangleCullFront
+        pipelineMask
     );
 
     manager.createPipeline(
         GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
-        GraphicsPipelineManager::PIPE_CULL_FRONT |
+        GraphicsPipelineManager::PIPE_CULL_BACK |
         GraphicsPipelineManager::PIPE_DEPTH_TEST |
         GraphicsPipelineManager::PIPE_DEPTH_WRITE |
+        GraphicsPipelineManager::PIPE_ALPHA_TEST |
         GraphicsPipelineManager::PIPE_GEOMETRY,
-        pipelineTriangleCullFront
+        pipelineMask
+    );
+
+    // ==================================================
+    // BLEND TRIANGLES / CULL NONE
+    // ==================================================
+
+    GraphicsPipelineHelper::createRasterizerState(
+        VK_CULL_MODE_NONE,
+        VK_POLYGON_MODE_FILL,
+        rasterizationState
+    );
+
+    std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachments;
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        blendAttachments[i] = {};
+        blendAttachments[i].blendEnable = VK_TRUE;
+        blendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        blendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
+        blendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
+        blendAttachments[i].colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT |
+            VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT |
+            VK_COLOR_COMPONENT_A_BIT;
+    }
+
+    GraphicsPipelineHelper::createColorBlendState(
+        blendAttachments,
+        colorBlending
+    );
+
+    VkPipeline pipelineBlend;
+
+    // fix depth write off for this pipeline
+    depthStencil.depthWriteEnable = VK_FALSE;
+
+    GraphicsPipelineHelper::createPipeline(
+        ctx.device,
+        ctx.renderPass,
+        pipelineLayout,
+        blendStages,
+        vertexInputInfo,
+        inputAssemblyState,
+        viewportState,
+        rasterizationState,
+        multiSampling,
+        depthStencil,
+        colorBlending,
+        dynamicState,
+        pipelineBlend
+    );
+
+    manager.createPipeline(
+        GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
+        GraphicsPipelineManager::PIPE_CULL_NONE |
+        GraphicsPipelineManager::PIPE_DEPTH_TEST |
+        GraphicsPipelineManager::PIPE_BLEND |
+        GraphicsPipelineManager::PIPE_GEOMETRY,
+        pipelineBlend
     );
 }

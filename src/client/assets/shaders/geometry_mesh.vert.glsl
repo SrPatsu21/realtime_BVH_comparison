@@ -28,11 +28,9 @@ layout(std430, set = 2, binding = 0) readonly buffer InstanceBuffer
 
 void main()
 {
-    mat4 model =
-        instanceBuffer.instances[gl_InstanceIndex].model;
+    mat4 model = instanceBuffer.instances[gl_InstanceIndex].model;
 
-    vec4 worldPos =
-        model * vec4(inPosition, 1.0);
+    vec4 worldPos = model * vec4(inPosition, 1.0);
 
     gl_Position =
         ubo.proj *
@@ -41,11 +39,9 @@ void main()
 
     fragTexCoord = inTexCoord;
 
-    mat3 normalMatrix =
-        mat3(transpose(inverse(model)));
+    mat3 normalMatrix = mat3(transpose(inverse(model)));
 
-    fragNormal =
-        normalize(normalMatrix * inNormal);
+    fragNormal = normalize(normalMatrix * inNormal);
 
     fragTangent = inTangent;
 

@@ -21,6 +21,7 @@
 #include "particle/ParticleInstanceDescriptorManager.hpp"
 #include "ConfigTable.hpp"
 #include "raytracing/buffers/GBufferDescriptorManager.hpp"
+#include "raytracing/buffers/TransparentGBufferDescriptorManager.hpp"
 #include "raytracing/buffers/LightingDescriptorManager.hpp"
 #include "light/LightInstanceManager.hpp"
 
@@ -49,17 +50,19 @@ private:
     CoreVulkan* coreVulkan;
     SwapchainManager* swapchainManager;
 
-    RenderPassManager* renderPassManager, *lightRenderPassManager;
+    RenderPassManager* renderPassManager, *lightRenderPassManager, *transparentRenderPassManager;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
     GBuffer* gBuffer;
+    TransparentGBuffer* transparentGBuffer;
     GBufferDescriptorManager* gBufferDescriptorManager;
+    TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager;
     // LightingDescriptorManager* lightingDescriptorManager;
     MaterialDescriptorManager* materialDescriptorManager;
     GraphicsPipelineManager* graphicsPipeline;
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
-    FramebufferManager* framebufferManager, *lightingFramebufferManager;
+    FramebufferManager* framebufferManager, *lightingFramebufferManager, *transparentFramebufferManager;
     CommandManager* commandManager;
     CameraBufferManager::ICameraProvider* iCameraProvider;
     std::vector<VkSemaphore> imageAvailableSemaphores;

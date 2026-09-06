@@ -9,6 +9,7 @@
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
 #include "../raytracing/buffers/GBufferDescriptorManager.hpp"
+#include "../raytracing/buffers/TransparentGBufferDescriptorManager.hpp"
 #include "../light/LightInstanceManager.hpp"
 #include <thread>
 
@@ -58,6 +59,10 @@ private:
     );
 
     void buildGBufferClearValues(
+        std::vector<VkClearValue>& clearValues
+    );
+
+    void buildTransparentGBufferClearValues(
         std::vector<VkClearValue>& clearValues
     );
 
@@ -143,9 +148,11 @@ public:
         uint32_t imageIndex,
         uint32_t currentFrame,
         VkRenderPass renderPass,
+        VkRenderPass transparentRenderPass,
         VkRenderPass lightRenderPass,
         GraphicsPipelineManager* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
+        const std::vector<VkFramebuffer>& transparentFramebuffers,
         const std::vector<VkFramebuffer>&  lightingFramebuffers,
         VkExtent2D extent,
         GlobalDescriptorManager* globalDescriptorManager,
@@ -153,6 +160,7 @@ public:
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
         RenderInstanceManager* renderInstanceManager,
         GBufferDescriptorManager* gBufferDescriptorManager,
+        TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager,
         LightInstanceManager* lightInstanceManager,
         const std::vector<ParticleData>& particlesData,
         const std::vector<IClearValueProvider*>& clearProviders,

@@ -68,39 +68,65 @@ void RenderInstanceManager::addInstance(
     RenderInstance* instance
 ) {
     instance->getRegistrations().reserve(mesh->getSubMeshes().size());
+
     const std::vector<Mesh::SubMesh>& meshes = mesh->getSubMeshes();
 
     for (size_t i = 0; i < meshes.size(); i++)
     {
+        auto material = resourceManager->getMaterialForSubMesh(*mesh, meshes[i]);
+
+        GraphicsPipelineManager::PipelineFlags pipelineFlags =
+            GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
+            GraphicsPipelineManager::PIPE_DEPTH_TEST;
+
+        switch (material->getAlphaMode())
+        {
+            case Material::AlphaMode::OPAQUE:
+                pipelineFlags |=
+                    GraphicsPipelineManager::PIPE_CULL_BACK |
+                    GraphicsPipelineManager::PIPE_DEPTH_WRITE;
+                break;
+
+            case Material::AlphaMode::MASK:
+                pipelineFlags |=
+                    GraphicsPipelineManager::PIPE_CULL_BACK |
+                    GraphicsPipelineManager::PIPE_DEPTH_WRITE |
+                    GraphicsPipelineManager::PIPE_ALPHA_TEST;
+                break;
+
+            case Material::AlphaMode::BLEND:
+                pipelineFlags |=
+                    GraphicsPipelineManager::PIPE_CULL_NONE |
+                    GraphicsPipelineManager::PIPE_BLEND;
+                break;
+        }
+
         BatchKey key = {
             mesh,
             &meshes[i],
-            resourceManager->getMaterialForSubMesh(*mesh.get(), meshes[i]),
-            GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
-            GraphicsPipelineManager::PIPE_CULL_NONE |
-            GraphicsPipelineManager::PIPE_DEPTH_TEST |
-            GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-            GraphicsPipelineManager::PIPE_BLEND |
-            GraphicsPipelineManager::PIPE_GEOMETRY |
-            GraphicsPipelineManager::PIPE_LIGHTING,
+            material,
+            pipelineFlags
         };
 
+        std::cout << "batch bleed:" << (pipelineFlags & GraphicsPipelineManager::PIPE_BLEND) 
+            << "ou mascara:" << (pipelineFlags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
+            << "ou opaco:" << (pipelineFlags & GraphicsPipelineManager::PIPE_DEPTH_WRITE)
+            << std::endl;
+        std::cout << "modo:" << static_cast<uint32_t>(material.get()->getAlphaMode()) << " cutoff" << material.get()->getAlphaCutoff() << std::endl;
+
         auto it = batches_map.find(key);
+
         if (it != batches_map.end())
         {
-            it->second->addInstance(
-                instance
-            );
+            it->second->addInstance(instance);
         }
-        else{
+        else {
             auto batch = std::make_unique<RenderBatch>(key);
             auto* batchPtr = batch.get();
 
             batches_map.emplace(key, std::move(batch));
 
-            batchPtr->addInstance(
-                instance
-            );
+            batchPtr->addInstance(instance);
 
             batches_dirty = true;
         }
@@ -152,9 +178,49 @@ void RenderInstanceManager::rebuildSortedBatches()
         batches_sorted.end(),
         [](RenderBatch* a, RenderBatch* b)
         {
-            return a->getKey() < b->getKey();
+            const auto& flagsA = a->getKey().pipelineFlags;
+            const auto& flagsB = b->getKey().pipelineFlags;
+
+            auto getType = [](auto flags)
+            {
+                if (flags & GraphicsPipelineManager::PIPE_BLEND)
+                    return 2;
+
+                if (flags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
+                    return 1;
+
+                return 0;
+            };
+
+            return getType(flagsA) < getType(flagsB);
         }
     );
+
+    batchRanges.opaqueStart = 0;
+
+    for (uint32_t i = 0; i < batches_sorted.size(); i++)
+    {
+        auto flags = batches_sorted[i]->getKey().pipelineFlags;
+
+        if (flags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
+        {
+            batchRanges.maskStart = i;
+            break;
+        }
+    }
+
+    for (uint32_t i = batchRanges.maskStart; i < batches_sorted.size(); i++)
+    {
+        auto flags = batches_sorted[i]->getKey().pipelineFlags;
+
+        if (flags & GraphicsPipelineManager::PIPE_BLEND)
+        {
+            batchRanges.blendStart = i;
+            break;
+        }
+    }
+
+    batchRanges.end = static_cast<uint32_t>(batches_sorted.size());
 
     #ifndef NDEBUG
         std::cout << "batches map: " << batches_map.size() << " batch sorted:" << batches_sorted.size() << std::endl;

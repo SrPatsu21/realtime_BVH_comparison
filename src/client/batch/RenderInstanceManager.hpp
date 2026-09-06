@@ -16,12 +16,22 @@ class RenderBatch;
 
 class RenderInstanceManager
 {
+public:
+    struct BatchRanges
+    {
+        uint32_t opaqueStart = 0;
+        uint32_t maskStart = 0;
+        uint32_t blendStart = 0;
+        uint32_t end = 0;
+    };
+
 private:
 
     std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches_map;
     std::vector<RenderBatch*> batches_sorted;
     std::vector<RenderInstance> instances;
     AS<DefaultTLASNode, TLASInstance> tlas;
+    BatchRanges batchRanges;
     bool batches_dirty = true;
 
     ResourceManager* resourceManager;
@@ -72,6 +82,7 @@ public:
     RenderInstance* const getRenderInstance(size_t index){ return &instances[index]; };
     const RenderBatch& getBatch(size_t index) const{ return *batches_sorted[index]; };
     const std::vector<RenderBatch*> getBatches() const { return batches_sorted; };
+    const BatchRanges& getBatchRanges()const { return batchRanges; };
 
     RenderInstanceManager(ResourceManager* resourceManager);
     ~RenderInstanceManager();

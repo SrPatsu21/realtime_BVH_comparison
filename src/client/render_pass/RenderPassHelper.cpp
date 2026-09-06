@@ -36,7 +36,9 @@ uint32_t RenderPassHelper::addDepthAttachment(
     RenderPassManager::Description& description,
     VkFormat format,
     VkSampleCountFlagBits samples,
+    VkAttachmentLoadOp loadOp,
     VkAttachmentStoreOp storeOp,
+    VkImageLayout initialLayout,
     VkImageLayout finalLayout
 )
 {
@@ -48,15 +50,14 @@ uint32_t RenderPassHelper::addDepthAttachment(
     description.attachments.emplace_back(
         format,
         samples,
-        VK_ATTACHMENT_LOAD_OP_CLEAR,
+        loadOp,
         storeOp,
-        VK_IMAGE_LAYOUT_UNDEFINED,
+        initialLayout,
         finalLayout
     );
 
     return index;
 }
-
 
 uint32_t RenderPassHelper::addResolveAttachment(
     RenderPassManager::Description& description,

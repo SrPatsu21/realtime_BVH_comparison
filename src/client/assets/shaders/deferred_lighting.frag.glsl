@@ -152,6 +152,21 @@ readonly buffer LightBuffer
     LightData lights[];
 };
 
+// =========================================================
+// Transparent GBuffer
+// =========================================================
+
+layout(set = 3, binding = 0)
+uniform sampler2DMS tgPosition;
+
+layout(set = 3, binding = 1)
+uniform sampler2DMS tgNormal;
+
+layout(set = 3, binding = 2)
+uniform sampler2DMS tgAlbedo;
+
+layout(set = 3, binding = 3)
+uniform sampler2DMS tgMaterial;
 
 // =========================================================
 // AABB
@@ -510,38 +525,12 @@ bool traceShadowRay(
     );
 }
 
-
-// =========================================================
-// Main
-// =========================================================
-
-void main()
+vec3 calculateLighting(
+    vec3 position,
+    vec3 normal,
+    vec3 albedo
+)
 {
-    ivec2 pixel = ivec2(gl_FragCoord.xy);
-
-    vec3 position =
-        texelFetch(
-            gPosition,
-            pixel,
-            0
-        ).xyz;
-
-    vec3 normal =
-        normalize(
-            texelFetch(
-                gNormal,
-                pixel,
-                0
-            ).xyz
-        );
-
-    vec3 albedo =
-        texelFetch(
-            gAlbedo,
-            pixel,
-            0
-        ).rgb;
-
     vec3 lighting = vec3(0.0);
 
     for (uint i = 0; i < lights.length(); ++i)
@@ -556,7 +545,9 @@ void main()
                 toLight
             );
 
-        float rangeSq = light.range * light.range;
+        float rangeSq =
+            light.range *
+            light.range;
 
         if (distanceSq > rangeSq)
             continue;
@@ -564,9 +555,12 @@ void main()
         if (distanceSq < 0.000001)
             continue;
 
-        float distanceToLight = sqrt(distanceSq);
+        float distanceToLight =
+            sqrt(distanceSq);
 
-        vec3 lightDirection = toLight / distanceToLight;
+        vec3 lightDirection =
+            toLight /
+            distanceToLight;
 
         float NdotL =
             dot(
@@ -579,9 +573,11 @@ void main()
 
         const float shadowBias = 0.001;
 
-        vec3 shadowOrigin = position + normal * shadowBias;
+        vec3 shadowOrigin =
+            position +
+            normal *
+            shadowBias;
 
-        // bool occluded = false;
         bool occluded =
             traceShadowRay(
                 shadowOrigin,
@@ -616,6 +612,97 @@ void main()
             attenuation *
             rangeFade;
     }
+
+    return lighting;
+}
+
+// =========================================================
+// Main
+// =========================================================
+
+void main()
+{
+    ivec2 pixel = ivec2(gl_FragCoord.xy);
+
+    // =========================================================
+    // GBuffer
+    // =========================================================
+
+    vec3 position =
+        texelFetch(
+            gPosition,
+            pixel,
+            0
+        ).xyz;
+
+    vec3 normal =
+        normalize(
+            texelFetch(
+                gNormal,
+                pixel,
+                0
+            ).xyz
+        );
+
+    vec3 albedo =
+        texelFetch(
+            gAlbedo,
+            pixel,
+            0
+        ).rgb;
+
+    vec3 lighting =
+        calculateLighting(
+            position,
+            normal,
+            albedo
+        );
+
+    // =========================================================
+    // Transparent GBuffer
+    // =========================================================
+
+
+    vec4 transparentAlbedo =
+        texelFetch(
+            tgAlbedo,
+            pixel,
+            0
+        );
+
+    bool hasTransparent = transparentAlbedo.a > 0.0;
+
+    if (hasTransparent)
+    {
+        vec3 transparentPosition =
+            texelFetch(
+                tgPosition,
+                pixel,
+                0
+            ).xyz;
+
+        vec3 transparentNormal =
+            normalize(
+                texelFetch(
+                    tgNormal,
+                    pixel,
+                    0
+                ).xyz
+            );
+
+        vec3 transparentLighting =
+            calculateLighting(
+                transparentPosition,
+                transparentNormal,
+                transparentAlbedo.rgb
+            );
+
+        lighting += transparentLighting;
+    }
+
+    // =========================================================
+    // OutPut
+    // =========================================================
 
     outColor =
         vec4(

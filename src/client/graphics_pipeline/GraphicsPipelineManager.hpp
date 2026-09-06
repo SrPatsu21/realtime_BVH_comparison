@@ -14,24 +14,26 @@ public:
     using PipelineFlags = uint16_t;
     enum : PipelineFlags
     {
-        // bits 0-1: topology (2 bits)
+        //* bits 0-1: topology
         PIPE_TOPO_TRIANGLES = 0 << 0,
-        PIPE_TOPO_LINES = 1 << 0,
-        PIPE_TOPO_POINTS = 2 << 0,
+        PIPE_TOPO_LINES     = 1 << 0,
+        PIPE_TOPO_POINTS    = 2 << 0,
 
-        // bits 2-3: cull mode (2 bits)
-        PIPE_CULL_NONE = 0 << 2,
-        PIPE_CULL_BACK = 1 << 2,
+        //* bits 2-3: cull mode
+        PIPE_CULL_NONE  = 0 << 2,
+        PIPE_CULL_BACK  = 1 << 2,
         PIPE_CULL_FRONT = 2 << 2,
 
-        // individual
-        PIPE_DEPTH_TEST = 1 << 4,
+        //* individual
+        // tests
+        PIPE_DEPTH_TEST  = 1 << 4,
         PIPE_DEPTH_WRITE = 1 << 5,
-        PIPE_BLEND = 1 << 6,
+        PIPE_BLEND       = 1 << 6,
+        PIPE_ALPHA_TEST  = 1 << 7,
 
         // type
-        PIPE_GEOMETRY = 1 << 7,
-        PIPE_LIGHTING = 1 << 8
+        PIPE_GEOMETRY = 1 << 8,
+        PIPE_LIGHTING = 1 << 9
         //next 9-15
     };
 

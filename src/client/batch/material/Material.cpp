@@ -19,15 +19,12 @@ Material::Material(
     device(device),
     baseColorHandle(baseColorHandle),
     normalHandle(normalHandle),
-    metallicRoughnessHandle(metallicRoughnessHandle)
+    metallicRoughnessHandle(metallicRoughnessHandle),
+    alphaMode(alphaMode),
+    alphaCutoff(alphaCutoff)
 {
-    materialAlphaData = {
-        .alphaMode = alphaMode,
-        .alphaCutoff = alphaCutoff
-    };
-
-    std::vector<MaterialAlphaData> materialData = {
-        materialAlphaData
+    std::vector<float> materialData = {
+        alphaCutoff
     };
 
     materialAlphaBuffer = bufferManager->createDeviceBuffer(
@@ -87,7 +84,7 @@ Material::Material(
     VkDescriptorBufferInfo materialInfo{};
     materialInfo.buffer = materialAlphaBuffer;
     materialInfo.offset = 0;
-    materialInfo.range = sizeof(MaterialAlphaData);
+    materialInfo.range = sizeof(float);
 
     std::array<VkWriteDescriptorSet, 4> writes{};
 

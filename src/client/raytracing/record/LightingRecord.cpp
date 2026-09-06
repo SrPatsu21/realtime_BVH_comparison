@@ -6,6 +6,7 @@ void LightingRecord::record(
     VkDescriptorSet globalSet,
     VkDescriptorSet gBufferSet,
     VkDescriptorSet lightSet,
+    VkDescriptorSet transparentGBufferSet,
     const Config::ConfigTable& config
 )
 {
@@ -22,24 +23,17 @@ void LightingRecord::record(
             GraphicsPipelineManager::PIPE_LIGHTING
         );
 
-    // ============================================================
-    // Pipeline
-    // ============================================================
-
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         graphicsPipeline->getPipeline(pipelineFlags)
     );
 
-    // ============================================================
-    // GBuffer + global descriptors
-    // ============================================================
-
     VkDescriptorSet descriptorSets[] = {
         globalSet,
         gBufferSet,
-        lightSet
+        lightSet,
+        transparentGBufferSet
     };
 
     vkCmdBindDescriptorSets(
@@ -47,7 +41,7 @@ void LightingRecord::record(
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         layout,
         0,
-        3,
+        4,
         descriptorSets,
         0,
         nullptr

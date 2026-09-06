@@ -24,6 +24,6 @@ public:
 
         uint32_t firstBatch,
         uint32_t lastBatch,
-        uint32_t firstInstanceOffset
+        uint32_t& currentOffset
     );
 };

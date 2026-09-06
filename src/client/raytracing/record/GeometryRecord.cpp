@@ -12,7 +12,7 @@ void GeometryRecord::record(
 
     uint32_t firstBatch,
     uint32_t lastBatch,
-    uint32_t firstInstanceOffset
+    uint32_t& currentOffset
 )
 {
     VkPipelineLayout layout = VK_NULL_HANDLE;
@@ -21,8 +21,6 @@ void GeometryRecord::record(
     Material* lastMaterial = nullptr;
 
     GraphicsPipelineManager::PipelineFlags lastPipeline = 0;
-
-    uint32_t currentOffset = firstInstanceOffset;
 
     for (uint32_t i = firstBatch; i < lastBatch; ++i)
     {
@@ -34,12 +32,7 @@ void GeometryRecord::record(
         const Mesh::SubMesh* subMesh = key.subMesh;
         const std::shared_ptr<Material>& material = key.material;
 
-        const auto pipelineFlags =
-            GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
-            GraphicsPipelineManager::PIPE_CULL_BACK |
-            GraphicsPipelineManager::PIPE_DEPTH_TEST |
-            GraphicsPipelineManager::PIPE_DEPTH_WRITE |
-            GraphicsPipelineManager::PIPE_GEOMETRY;
+        const auto pipelineFlags = key.pipelineFlags | GraphicsPipelineManager::PIPE_GEOMETRY;
 
         const uint32_t instanceCount = static_cast<uint32_t>(batch.getInstancesData().size());
 
