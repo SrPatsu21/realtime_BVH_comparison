@@ -3,7 +3,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "../batch/RenderBatch.hpp"
 #include "../batch/instance/RenderInstance.hpp"
-#include "../forward_render/ForwardRecord.hpp"
 #include "../particle/ParticleRecord.hpp"
 #include "../raytracing/record/GeometryRecord.hpp"
 #include "../raytracing/record/LightingRecord.hpp"
@@ -327,13 +326,15 @@ void CommandManager::recordCommandBuffer(
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
     std::vector<VkClearValue> clearValues;
 
-
-    if (config.render.mode == Config::RenderMode::Forward)
+    // ----------------------------------
+    // GBuffer
+    // ----------------------------------
     {
-        buildClearValues(
-            clearProviders,
+        buildGBufferClearValues(
             clearValues
         );
+        uint32_t currentOffset;
+
         beginRenderPass(
             cmd,
             renderPass,
@@ -342,6 +343,9 @@ void CommandManager::recordCommandBuffer(
             clearValues,
             VK_SUBPASS_CONTENTS_INLINE
         );
+
+        VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
+
         setViewportAndScissor(
             cmd,
             graphicsPipeline,
@@ -349,98 +353,61 @@ void CommandManager::recordCommandBuffer(
             scissorProviders
         );
 
-        ForwardRecord::record(
+        GeometryRecord::record(
             cmd,
-            currentFrame,
             graphicsPipeline,
             globalSet,
-            instanceDescriptorManager,
-            renderInstanceManager
+            instanceSet,
+            renderInstanceManager,
+            0,
+            renderInstanceManager->getBatchRanges().blendStart,
+            currentOffset
         );
-    }else if (config.render.mode == Config::RenderMode::GeometryGBuffer)
-    {
-        // ----------------------------------
-        // GBuffer
-        // ----------------------------------
-        {
-            buildGBufferClearValues(
-                clearValues
-            );
-            uint32_t currentOffset;
-
-            beginRenderPass(
-                cmd,
-                renderPass,
-                framebuffers[imageIndex],
-                extent,
-                clearValues,
-                VK_SUBPASS_CONTENTS_INLINE
-            );
-
-            VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
-
-            setViewportAndScissor(
-                cmd,
-                graphicsPipeline,
-                viewportProviders,
-                scissorProviders
-            );
-
-            GeometryRecord::record(
-                cmd,
-                graphicsPipeline,
-                globalSet,
-                instanceSet,
-                renderInstanceManager,
-                0,
-                renderInstanceManager->getBatchRanges().blendStart,
-                currentOffset
-            );
-            vkCmdEndRenderPass(cmd);
-
-            clearValues.clear();
-
-            // ----------------------------------
-            // Transparent GBuffer
-            // ----------------------------------
-            buildTransparentGBufferClearValues(clearValues);
-
-            beginRenderPass(
-                cmd,
-                transparentRenderPass,
-                transparentFramebuffers[imageIndex],
-                extent,
-                clearValues,
-                VK_SUBPASS_CONTENTS_INLINE
-            );
-
-            setViewportAndScissor(
-                cmd,
-                graphicsPipeline,
-                viewportProviders,
-                scissorProviders
-            );
-
-            GeometryRecord::record(
-                cmd,
-                graphicsPipeline,
-                globalSet,
-                instanceSet,
-                renderInstanceManager,
-                renderInstanceManager->getBatchRanges().blendStart,
-                renderInstanceManager->getBatchRanges().end,
-                currentOffset
-            );
-
-            vkCmdEndRenderPass(cmd);
-        }
+        vkCmdEndRenderPass(cmd);
 
         clearValues.clear();
 
         // ----------------------------------
-        // Lighting
+        // Transparent GBuffer
         // ----------------------------------
+        buildTransparentGBufferClearValues(clearValues);
 
+        beginRenderPass(
+            cmd,
+            transparentRenderPass,
+            transparentFramebuffers[imageIndex],
+            extent,
+            clearValues,
+            VK_SUBPASS_CONTENTS_INLINE
+        );
+
+        setViewportAndScissor(
+            cmd,
+            graphicsPipeline,
+            viewportProviders,
+            scissorProviders
+        );
+
+        GeometryRecord::record(
+            cmd,
+            graphicsPipeline,
+            globalSet,
+            instanceSet,
+            renderInstanceManager,
+            renderInstanceManager->getBatchRanges().blendStart,
+            renderInstanceManager->getBatchRanges().end,
+            currentOffset
+        );
+
+        vkCmdEndRenderPass(cmd);
+    }
+
+    clearValues.clear();
+
+    // ----------------------------------
+    // Lighting
+    // ----------------------------------
+    {
         buildLightingClearValues(clearValues);
 
         beginRenderPass(

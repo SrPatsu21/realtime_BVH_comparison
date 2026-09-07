@@ -1,5 +1,4 @@
 #include "GraphicsPipelineManager.hpp"
-#include "../forward_render/ForwardMeshPipelineProvider.hpp"
 #include "../particle/ParticlePipelineProvider.hpp"
 #include "../raytracing/pipelines/GeometryMeshPipelineProvider.hpp"
 #include "../raytracing/pipelines/LightingPipelineProvider.hpp"
@@ -18,23 +17,11 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     GeometryMeshPipelineProvider geometryMeshPipelineProvider;
     ParticlePipelineProvider particleProvider;
     LightingPipelineProvider lightingProvider;
-    ForwardMeshPipelineProvider forwardMeshPipelineProvider;
 
-    switch (config.render.mode)
-    {
-        case Config::RenderMode::Forward:
-            forwardMeshPipelineProvider.createPipelines(*this, ctx);
-            break;
-        case Config::RenderMode::GeometryGBuffer:
-            geometryMeshPipelineProvider.createPipelines(*this, ctx);
-            lightingProvider.createPipelines(*this, ctx);
-            break;
-        default:
-            throw std::runtime_error(
-                "Unknown render mode"
-            );
-    }
-    //! culpado
+    geometryMeshPipelineProvider.createPipelines(*this, ctx);
+    lightingProvider.createPipelines(*this, ctx);
+
+    //! danger
     // particleProvider.createPipelines(*this, ctx);
 }
 

@@ -7,11 +7,9 @@
 #include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
 #include "graphics_pipeline/GraphicsPipelineManager.hpp"
-#include "forward_render/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
 #include "command_buffer/CommandManager.hpp"
 #include "camera/UniformBufferGlobal.hpp"
-#include "forward_render/ImageColor.hpp"
 #include "batch/material/MaterialDescriptorManager.hpp"
 #include "batch/RenderInstanceManager.hpp"
 #include "batch/instance/RenderInstanceRegistration.hpp"
@@ -60,8 +58,6 @@ private:
     // LightingDescriptorManager* lightingDescriptorManager;
     MaterialDescriptorManager* materialDescriptorManager;
     GraphicsPipelineManager* graphicsPipeline;
-    ImageColor* imageColor;
-    DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager, *lightingFramebufferManager, *transparentFramebufferManager;
     CommandManager* commandManager;
     CameraBufferManager::ICameraProvider* iCameraProvider;

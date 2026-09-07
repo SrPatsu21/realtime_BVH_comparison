@@ -4,12 +4,6 @@
 
 namespace Config
 {
-    enum class RenderMode : uint32_t
-    {
-        Forward = 0,
-        GeometryGBuffer = 1
-    };
-
     enum class LightType : uint32_t
     {
         Point = 0U,
@@ -44,8 +38,6 @@ namespace Config
 
     struct RenderConfig
     {
-        RenderMode mode = RenderMode::Forward;
-
         uint64_t flags = 0;
 
         bool has(RenderBits bit) const
@@ -102,24 +94,6 @@ namespace Config
         static constexpr uint64_t Bit(PostBits bit)
         {
             return uint64_t(bit);
-        }
-
-        void normalize()
-        {
-            switch (render.mode)
-            {
-                case RenderMode::Forward:
-                {
-                    render.flags &= ~Bit(RenderBits::UseGbuffer);
-                    break;
-                }
-
-                case RenderMode::GeometryGBuffer:
-                {
-                    render.flags |= Bit(RenderBits::UseGbuffer);
-                    break;
-                }
-            }
         }
     };
 }
