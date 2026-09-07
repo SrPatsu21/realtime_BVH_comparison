@@ -267,7 +267,7 @@ void Render::createCommandAndSyncObjects(){
     commandManager = new CommandManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value(),
-        this->framebufferManager->getFramebuffers(),
+        this->gBufferFramebufferManager->getFramebuffers(),
         this->swapchainManager->getImages().size(),
         4
     );
@@ -281,7 +281,7 @@ void Render::createRenderPasses(){
         coreVulkan->getMsaaSamples(),
         coreVulkan->getDepthFormat()
     );
-    renderPassManager = new RenderPassManager(
+    gBufferRenderPassManager = new RenderPassManager(
         coreVulkan->getDevice(),
         std::move(description1)
     );
@@ -340,9 +340,9 @@ void Render::createSwapchainDependentResources(){
         attachmentsVector
     );
 
-    framebufferManager = new FramebufferManager(
+    gBufferFramebufferManager = new FramebufferManager(
         coreVulkan->getDevice(),
-        renderPassManager->get(),
+        gBufferRenderPassManager->get(),
         swapchainManager->getImageViews().size(),
         swapchainManager->getExtent(),
         attachmentsVector
@@ -409,7 +409,7 @@ void Render::createSwapchainDependentResources(){
 void Render::createGraphicsPipelineObjects(){
     PipelineCreationContext pipelineContext{
         .device = coreVulkan->getDevice(),
-        .renderPass = renderPassManager->get(),
+        .gBufferRenderPass = gBufferRenderPassManager->get(),
         .msaa = coreVulkan->getMsaaSamples(),
         .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
         .config = &config
@@ -615,11 +615,11 @@ void Render::drawFrame(){
     this->commandManager->recordCommandBuffer(
         imageIndex,
         currentFrame,
-        renderPassManager->get(),
+        gBufferRenderPassManager->get(),
         transparentRenderPassManager->get(),
         lightRenderPassManager->get(),
         graphicsPipeline,
-        framebufferManager->getFramebuffers(),
+        gBufferFramebufferManager->getFramebuffers(),
         transparentFramebufferManager->getFramebuffers(),
         lightingFramebufferManager->getFramebuffers(),
         swapchainManager->getExtent(),
@@ -811,7 +811,7 @@ void Render::initImagesInFlight(uint32_t swapchainImageCount) {
 
 void Render::destroySwapchainDependentResources() {
 
-    if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+    if (this->gBufferFramebufferManager){ delete this->gBufferFramebufferManager; this->gBufferFramebufferManager = nullptr; }
     if (this->lightingFramebufferManager){ delete this->lightingFramebufferManager; this->lightingFramebufferManager = nullptr; }
     if (this->transparentFramebufferManager) { delete this->transparentFramebufferManager; this->transparentFramebufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
@@ -821,7 +821,7 @@ void Render::destroySwapchainDependentResources() {
     if (this->transparentGBufferDescriptorManager) { delete this->transparentGBufferDescriptorManager; this->transparentGBufferDescriptorManager = nullptr; }
     if (this->transparentGBuffer) { this->transparentGBuffer->destroy(coreVulkan->getDevice()); delete this->transparentGBuffer; this->transparentGBuffer = nullptr; }
 
-    if (this->renderPassManager){ delete this->renderPassManager; this->renderPassManager = nullptr; }
+    if (this->gBufferRenderPassManager){ delete this->gBufferRenderPassManager; this->gBufferRenderPassManager = nullptr; }
     if (this->transparentRenderPassManager){ delete this->transparentRenderPassManager; this->transparentRenderPassManager = nullptr; }
     if (this->lightRenderPassManager){ delete this->lightRenderPassManager; this->lightRenderPassManager = nullptr; }
 
@@ -889,7 +889,7 @@ void Render::recreateSwapChain()
     // ------------------------------------------------------------
 
     commandManager->allocateCommandBuffers(
-        framebufferManager->getFramebuffers()
+        gBufferFramebufferManager->getFramebuffers()
     );
 
     // ------------------------------------------------------------

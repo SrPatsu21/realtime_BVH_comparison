@@ -5,7 +5,7 @@
 struct PipelineCreationContext
 {
     VkDevice device;
-    VkRenderPass renderPass;
+    VkRenderPass gBufferRenderPass;
     VkRenderPass lightRenderPass;
 
     VkDescriptorSetLayout globalLayout;

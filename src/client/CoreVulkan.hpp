@@ -151,14 +151,22 @@ public:
     };
 
     /**
-     * @brief Required capabilities for a physical device.
+     * @brief Configuration for Vulkan device selection and logical device creation.
      *
-     * Used during device selection to ensure mandatory extensions and features
-     * are supported before a device is considered usable.
+     * Required features must be supported by the physical device.
+     * Optional features are enabled only when supported.
+     *
+     * Vulkan 1.0 features are stored in VkPhysicalDeviceFeatures.
+     * Vulkan 1.2 features are stored in VkPhysicalDeviceVulkan12Features.
      */
-    struct PhysicalDeviceRequirements {
-        std::vector<const char*> requiredExtensions;
+    struct DeviceConfig {
+        std::vector<const char*> extensions;
+        // Vulkan 1.0 features
         VkPhysicalDeviceFeatures requiredFeatures{};
+        VkPhysicalDeviceFeatures optionalFeatures{};
+        // Vulkan 1.2 features
+        VkPhysicalDeviceVulkan12Features requiredFeatures12{};
+        VkPhysicalDeviceVulkan12Features optionalFeatures12{};
     };
 
     /**
@@ -174,7 +182,8 @@ public:
          */
         virtual bool isDeviceCompatible(
             VkPhysicalDevice device,
-            const PhysicalDeviceRequirements& requirements
+            const DeviceConfig& config
+
         ) = 0;
 
         /**
@@ -184,18 +193,6 @@ public:
             VkPhysicalDevice device,
             int& score
         ) = 0;
-    };
-
-    /**
-     * @brief Configuration for logical device creation.
-     *
-     * Required features must be supported by the device.
-     * Optional features are enabled when available.
-     */
-    struct DeviceConfig {
-        std::vector<const char*> extensions;
-        VkPhysicalDeviceFeatures requiredFeatures{};
-        VkPhysicalDeviceFeatures optionalFeatures{};
     };
 
     /**
@@ -248,14 +245,14 @@ private:
     /// Validates whether a physical device meets all requirements.
     bool isDeviceSuitable(
         VkPhysicalDevice physicalDevice,
-        const PhysicalDeviceRequirements& reqs,
+        const DeviceConfig& config,
         const std::vector<IPhysicalDeviceSelector*>& selectors
     );
 
     /// Assigns a suitability score to a physical device.
     int rateDeviceSuitability(
         VkPhysicalDevice physicalDevice,
-        const PhysicalDeviceRequirements& reqs,
+        const DeviceConfig& config,
         const std::vector<IPhysicalDeviceSelector*>& selectors
     );
 
@@ -267,12 +264,13 @@ private:
 
     /// Selects the best physical device available.
     void pickPhysicalDevice(
+        const DeviceConfig& config,
         const std::vector<IPhysicalDeviceSelector*>& selectors
     );
 
     /// Creates the Vulkan logical device.
     void createLogicalDevice(
-        const std::vector<IDeviceConfigProvider*>& providers
+        const DeviceConfig& config
     );
 
     /// Releases all Vulkan resources owned by this instance.
@@ -449,5 +447,5 @@ public:
     const VkFormat& getDepthFormat() const { return depthFormat; }
     const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
     const VkDeviceSize getAtomSize() const { return atomSize; }
-    const VkPhysicalDeviceVulkan12Features getSupportedFeatures12() const { return supportedFeatures12; }
+    const VkPhysicalDeviceVulkan12Features& getSupportedFeatures12() const { return supportedFeatures12; }
 };

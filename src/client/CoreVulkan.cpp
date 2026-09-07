@@ -19,8 +19,33 @@ CoreVulkan::CoreVulkan(
     createInstance(instanceProviders);
     createSurface(window);
 
-    // device extensions
-    pickPhysicalDevice(physicalDeviceSelectors);
+    // Build device configuration BEFORE selecting the GPU
+    DeviceConfig config{};
+    config.extensions = DEVICE_EXTENSIONS;
+
+    // Vulkan 1.0 required features
+    config.requiredFeatures.samplerAnisotropy = VK_TRUE;
+    // config.requiredFeatures.geometryShader = VK_TRUE;
+
+    // Vulkan 1.0 optional features
+    config.optionalFeatures.sampleRateShading = VK_TRUE;
+    config.optionalFeatures.wideLines = VK_TRUE;
+
+    // Vulkan 1.2 required features
+    config.requiredFeatures12.bufferDeviceAddress = VK_TRUE;
+    config.requiredFeatures12.descriptorIndexing = VK_TRUE;
+    config.requiredFeatures12.runtimeDescriptorArray = VK_TRUE;
+    config.requiredFeatures12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    // Vulkan 1.2 optional features
+
+    // Add optional Vulkan 1.2 features here when necessary.
+    for (auto* provider : deviceProviders) {
+        provider->contribute(config);
+    }
+
+    // Select a GPU that satisfies the exact same configuration
+    // that will later be used to create the logical device.
+    pickPhysicalDevice(config, physicalDeviceSelectors);
     msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_4_BIT, physicalDevice);
     atomSize = takeAtomSize(physicalDevice);
     #ifndef NDEBUG
@@ -31,7 +56,7 @@ CoreVulkan::CoreVulkan(
         throw std::runtime_error("failed to find a graphics queue family!");
     }
     updateSwapchainDetails();
-    createLogicalDevice(deviceProviders);
+    createLogicalDevice(config);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
 
@@ -287,22 +312,34 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(
 
 bool CoreVulkan::isDeviceSuitable(
     VkPhysicalDevice physicalDevice,
-    const PhysicalDeviceRequirements& reqs,
+    const DeviceConfig& config,
     const std::vector<IPhysicalDeviceSelector*>& selectors
 ) {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    #ifndef NDEBUG
+        std::cout << "\nChecking GPU: " << properties.deviceName << std::endl;
+    #endif
+
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    if (!indices.isComplete()) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: missing graphics/present queue family" << std::endl;
+        #endif
 
-    if (!indices.isComplete())
         return false;
+    }
 
-    // check Device Extension Support
-    uint32_t extensionCount;
+    // Device extensions
+    uint32_t extensionCount = 0;
     vkEnumerateDeviceExtensionProperties(
         physicalDevice,
         nullptr,
         &extensionCount,
         nullptr
     );
+
     std::vector<VkExtensionProperties> available(extensionCount);
     vkEnumerateDeviceExtensionProperties(
         physicalDevice,
@@ -311,48 +348,130 @@ bool CoreVulkan::isDeviceSuitable(
         available.data()
     );
 
-    for (auto* required : reqs.requiredExtensions) {
+    for (auto* required : config.extensions) {
         bool found = false;
-        for (auto& avail : available) {
+
+        for (const auto& avail : available) {
             if (strcmp(required, avail.extensionName) == 0) {
                 found = true;
                 break;
             }
         }
-        if (!found)
+
+        if (!found) {
+            #ifndef NDEBUG
+                std::cout << "  REJECTED: missing device extension: " << required << std::endl;
+            #endif
+
             return false;
+        }
     }
 
-    // features
-    VkPhysicalDeviceFeatures supported{};
-    vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
+    // Vulkan 1.0 + Vulkan 1.2 features
+    VkPhysicalDeviceVulkan12Features supported12{};
+    supported12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
-    if ((supported.samplerAnisotropy & reqs.requiredFeatures.samplerAnisotropy) != reqs.requiredFeatures.samplerAnisotropy)
+    VkPhysicalDeviceFeatures2 supported2{};
+    supported2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    supported2.pNext = &supported12;
+
+    vkGetPhysicalDeviceFeatures2(
+        physicalDevice,
+        &supported2
+    );
+
+    // Required Vulkan 1.0 features
+    if (config.requiredFeatures.samplerAnisotropy && !supported2.features.samplerAnisotropy) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: samplerAnisotropy" << std::endl;
+        #endif
+
+        return false;
+    }
+
+    // if (config.requiredFeatures.geometryShader && !supported2.features.geometryShader) {
+    //     #ifndef NDEBUG
+    //         std::cout << "  REJECTED: geometryShader" << std::endl;
+    //     #endif
+
+    //     return false;
+
+    // }
+
+    // Required Vulkan 1.2 features
+    if (config.requiredFeatures12.bufferDeviceAddress && !supported12.bufferDeviceAddress) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: bufferDeviceAddress" << std::endl;
+        #endif
+
+        return false;
+    }
+
+    if (config.requiredFeatures12.descriptorIndexing && !supported12.descriptorIndexing) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: descriptorIndexing" << std::endl;
+        #endif
+
+        return false;
+    }
+
+    if (config.requiredFeatures12.runtimeDescriptorArray && !supported12.runtimeDescriptorArray) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: runtimeDescriptorArray" << std::endl;
+        #endif
+
         return false;
 
-    if ((supported.geometryShader & reqs.requiredFeatures.geometryShader) != reqs.requiredFeatures.geometryShader)
-        return false;
+    }
 
-    // swapchain
+    if (config.requiredFeatures12.shaderSampledImageArrayNonUniformIndexing && !supported12.shaderSampledImageArrayNonUniformIndexing) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: shaderSampledImageArrayNonUniformIndexing" << std::endl;
+        #endif
+
+        return false;
+    }
+
+    // Swapchain
     SwapchainSupportDetails swapchainSupportDetails = querySwapchainSupport(physicalDevice);
-    if (swapchainSupportDetails.formats.empty() || swapchainSupportDetails.presentModes.empty())
-        return false;
 
-    // mods
-    for (auto* sel : selectors) {
-        if (!sel->isDeviceCompatible(physicalDevice, reqs))
-            return false;
+    if (swapchainSupportDetails.formats.empty()) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: no swapchain formats" << std::endl;
+        #endif
+        return false;
     }
+
+    if (swapchainSupportDetails.presentModes.empty()) {
+        #ifndef NDEBUG
+            std::cout << "  REJECTED: no swapchain present modes" << std::endl;
+        #endif
+        return false;
+    }
+
+    // Selectors
+    for (auto* sel : selectors) {
+        if (!sel->isDeviceCompatible(physicalDevice, config)) {
+            #ifndef NDEBUG
+                std::cout << "  REJECTED: physical device selector" << std::endl;
+            #endif
+            return false;
+        }
+    }
+
+    #ifndef NDEBUG
+        std::cout << "  ACCEPTED" << std::endl;
+    #endif
 
     return true;
 }
 
 int CoreVulkan::rateDeviceSuitability(
     VkPhysicalDevice physicalDevice,
-    const PhysicalDeviceRequirements& reqs,
+    const DeviceConfig& config,
     const std::vector<IPhysicalDeviceSelector*>& selectors
 ) {
-    if (!isDeviceSuitable(physicalDevice, reqs, selectors))
+    if (!isDeviceSuitable(physicalDevice, config, selectors))
         return 0;
 
     int score = 0;
@@ -370,10 +489,8 @@ int CoreVulkan::rateDeviceSuitability(
     for (auto* sel : selectors) {
         sel->scoreDevice(physicalDevice, score);
     }
-
     return score;
 }
-
 VkSampleCountFlagBits CoreVulkan::findMaxLimitedUsableSampleCount(
     VkSampleCountFlagBits maxDesiredSamples,
     VkPhysicalDevice physicalDevice
@@ -430,12 +547,9 @@ bool CoreVulkan::isMemoryCoherent(
 }
 
 void CoreVulkan::pickPhysicalDevice(
+    const DeviceConfig& config,
     const std::vector<IPhysicalDeviceSelector*>& selectors
 ) {
-    PhysicalDeviceRequirements reqs{};
-    reqs.requiredExtensions = DEVICE_EXTENSIONS;
-    reqs.requiredFeatures.samplerAnisotropy = VK_TRUE;
-    reqs.requiredFeatures.geometryShader = VK_TRUE;
 
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -450,7 +564,7 @@ void CoreVulkan::pickPhysicalDevice(
     int bestScore = 0;
 
     for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device, reqs, selectors);
+        int score = rateDeviceSuitability(device, config, selectors);
         if (score > bestScore) {
             bestScore = score;
             bestDevice = device;
@@ -463,11 +577,33 @@ void CoreVulkan::pickPhysicalDevice(
     }
     physicalDevice = bestDevice;
 
+    // Query supported Vulkan 1.2 features of selected GPU
+    supportedFeatures12 = {};
+    supportedFeatures12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+    VkPhysicalDeviceFeatures2 supported2{};
+    supported2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    supported2.pNext = &supportedFeatures12;
+
+    vkGetPhysicalDeviceFeatures2(
+        physicalDevice,
+        &supported2
+    );
+
     // debug
     #ifndef NDEBUG
         VkPhysicalDeviceProperties deviceProperties;
+
         vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-        std::cout << "GPU name: " << deviceProperties.deviceName << std::endl;
+
+        std::cout << "Device name: " << deviceProperties.deviceName << std::endl;
+
+        std::cout << "API version: "
+        << VK_VERSION_MAJOR(deviceProperties.apiVersion)
+        << "." << VK_VERSION_MINOR(deviceProperties.apiVersion)
+        << "." << VK_VERSION_PATCH(deviceProperties.apiVersion) << std::endl;
+
+        std::cout << "Driver version: " << deviceProperties.driverVersion << std::endl;
     #endif
 }
 
@@ -477,9 +613,8 @@ void CoreVulkan::updateSwapchainDetails()
 };
 
 void CoreVulkan::createLogicalDevice(
-    const std::vector<IDeviceConfigProvider*>& providers
+    const DeviceConfig& config
 ) {
-    // set queue info
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {
         graphicsQueueFamilyIndices.graphicsFamily.value(),
@@ -497,76 +632,113 @@ void CoreVulkan::createLogicalDevice(
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    // base config
-    DeviceConfig config{};
-    config.extensions = DEVICE_EXTENSIONS;
+    // Query supported Vulkan 1.0 + Vulkan 1.2 features
+    VkPhysicalDeviceVulkan12Features supported12{};
+    supported12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
-    config.requiredFeatures.samplerAnisotropy = VK_TRUE;
-    config.optionalFeatures.sampleRateShading = VK_TRUE;
-    config.optionalFeatures.wideLines = VK_TRUE;
+    VkPhysicalDeviceFeatures2 supported2{};
+    supported2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    supported2.pNext = &supported12;
+    vkGetPhysicalDeviceFeatures2(
+        physicalDevice,
+        &supported2
+    );
 
-    for (auto* p : providers) {
-        p->contribute(config);
-    }
+    // Required Vulkan 1.0 features
+    if (config.requiredFeatures.samplerAnisotropy && !supported2.features.samplerAnisotropy)
+        throw std::runtime_error("Device does not support required sampler anisotropy.");
 
-    // resolve feature support
-    supportedFeatures12 = {};
-    supportedFeatures12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    // if (config.requiredFeatures.geometryShader && !supported2.features.geometryShader)
+    //     throw std::runtime_error("Device does not support required geometry shader.");
 
-    VkPhysicalDeviceFeatures2 supportedFeatures2{};
-    supportedFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    supportedFeatures2.pNext = &supportedFeatures12;
+    // Required Vulkan 1.2 features
+    if (config.requiredFeatures12.bufferDeviceAddress && !supported12.bufferDeviceAddress)
+        throw std::runtime_error("Device does not support required buffer device address.");
 
-    vkGetPhysicalDeviceFeatures2(physicalDevice, &supportedFeatures2);
+    if (config.requiredFeatures12.descriptorIndexing && !supported12.descriptorIndexing)
+        throw std::runtime_error("Device does not support required descriptor indexing.");
 
-    // enable features
+    if (config.requiredFeatures12.runtimeDescriptorArray && !supported12.runtimeDescriptorArray)
+        throw std::runtime_error("Device does not support required runtime descriptor array.");
+
+    if (config.requiredFeatures12.shaderSampledImageArrayNonUniformIndexing && !supported12.shaderSampledImageArrayNonUniformIndexing)
+        throw std::runtime_error("Device does not support required shader sampled image array non-uniform indexing.");
+
+    // Build enabled Vulkan 1.0 features
+
+    VkPhysicalDeviceFeatures enabledFeatures{};
+    enabledFeatures.samplerAnisotropy =
+        config.requiredFeatures.samplerAnisotropy ||
+        (config.optionalFeatures.samplerAnisotropy &&
+        supported2.features.samplerAnisotropy);
+
+    // enabledFeatures.geometryShader =
+    //     config.requiredFeatures.geometryShader ||
+    //     (config.optionalFeatures.geometryShader &&
+    //     supported2.features.geometryShader);
+
+    enabledFeatures.sampleRateShading =
+        config.requiredFeatures.sampleRateShading ||
+        (config.optionalFeatures.sampleRateShading &&
+        supported2.features.sampleRateShading);
+
+    enabledFeatures.wideLines =
+        config.requiredFeatures.wideLines ||
+        (config.optionalFeatures.wideLines &&
+        supported2.features.wideLines);
+
+    // Build enabled Vulkan 1.2 features
+
     VkPhysicalDeviceVulkan12Features enabled12{};
     enabled12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
-    if (!supportedFeatures12.bufferDeviceAddress)
-    {
-        throw std::runtime_error(
-            "GPU does not support buffer device address."
-        );
-    }
+    enabled12.bufferDeviceAddress =
+        config.requiredFeatures12.bufferDeviceAddress ||
+        (config.optionalFeatures12.bufferDeviceAddress &&
+        supported12.bufferDeviceAddress);
 
-    enabled12.bufferDeviceAddress = VK_TRUE;
+    enabled12.descriptorIndexing =
+        config.requiredFeatures12.descriptorIndexing ||
+        (config.optionalFeatures12.descriptorIndexing &&
+        supported12.descriptorIndexing);
 
-    if (supportedFeatures12.descriptorIndexing) {
-        enabled12.descriptorIndexing = VK_TRUE;
-        enabled12.runtimeDescriptorArray = supportedFeatures12.runtimeDescriptorArray;
-        enabled12.descriptorBindingPartiallyBound = supportedFeatures12.descriptorBindingPartiallyBound;
-        enabled12.descriptorBindingVariableDescriptorCount = supportedFeatures12.descriptorBindingVariableDescriptorCount;
-        enabled12.shaderSampledImageArrayNonUniformIndexing = supportedFeatures12.shaderSampledImageArrayNonUniformIndexing;
-        enabled12.shaderStorageBufferArrayNonUniformIndexing = supportedFeatures12.shaderStorageBufferArrayNonUniformIndexing;
-        enabled12.descriptorBindingSampledImageUpdateAfterBind = supportedFeatures12.descriptorBindingSampledImageUpdateAfterBind;
-    }
+    enabled12.runtimeDescriptorArray =
+        config.requiredFeatures12.runtimeDescriptorArray ||
+        (config.optionalFeatures12.runtimeDescriptorArray &&
+        supported12.runtimeDescriptorArray);
 
-    VkPhysicalDeviceFeatures2 enabledFeatures2{};
-    enabledFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    enabledFeatures2.features.samplerAnisotropy = config.requiredFeatures.samplerAnisotropy;
-    enabledFeatures2.features.sampleRateShading = config.optionalFeatures.sampleRateShading;
-    enabledFeatures2.features.wideLines = config.optionalFeatures.wideLines;
-    enabledFeatures2.pNext = &enabled12;
+    enabled12.shaderSampledImageArrayNonUniformIndexing =
+        config.requiredFeatures12.shaderSampledImageArrayNonUniformIndexing ||
+        (config.optionalFeatures12.shaderSampledImageArrayNonUniformIndexing &&
+        supported12.shaderSampledImageArrayNonUniformIndexing);
 
-    // device create info
+    VkPhysicalDeviceFeatures2 enabled2{};
+    enabled2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    enabled2.features = enabledFeatures;
+    enabled2.pNext = &enabled12;
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = nullptr;
-    createInfo.pNext = &enabledFeatures2;
-
     createInfo.enabledExtensionCount = static_cast<uint32_t>(config.extensions.size());
     createInfo.ppEnabledExtensionNames = config.extensions.data();
+    createInfo.pNext = &enabled2;
 
-    // #ifndef NDEBUG
-    //     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    //     createInfo.ppEnabledLayerNames = validationLayers.data();
-    // #endif
+    VkResult result = vkCreateDevice(
+        physicalDevice,
+        &createInfo,
+        nullptr,
+        &device
+    );
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
-        throw std::runtime_error("failed to create logical device");
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error(
+            "failed to create logical device"
+        );
+    }
+
 }
 
 VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -684,8 +856,6 @@ void CoreVulkan::CreateDebugCallback()
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create debug messenger");
     }
-
-    std::cout << "Debug messenger active\n";
 }
 
 void CoreVulkan::DestroyDebugCallback()

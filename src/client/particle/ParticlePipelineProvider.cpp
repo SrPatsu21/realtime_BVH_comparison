@@ -116,7 +116,7 @@ void ParticlePipelineProvider::createPipelines(
     VkPipeline pipeline;
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
-        ctx.renderPass,
+        ctx.gBufferRenderPass,
         pipelineLayout,
         shaderStages,
         vertexInputInfo,

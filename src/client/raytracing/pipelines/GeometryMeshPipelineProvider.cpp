@@ -183,7 +183,7 @@ void GeometryMeshPipelineProvider::createPipelines(
 
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
-        ctx.renderPass,
+        ctx.gBufferRenderPass,
         pipelineLayout,
         opaqueStages,
         vertexInputInfo,
@@ -214,7 +214,7 @@ void GeometryMeshPipelineProvider::createPipelines(
 
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
-        ctx.renderPass,
+        ctx.gBufferRenderPass,
         pipelineLayout,
         maskStages,
         vertexInputInfo,
@@ -279,7 +279,7 @@ void GeometryMeshPipelineProvider::createPipelines(
 
     GraphicsPipelineHelper::createPipeline(
         ctx.device,
-        ctx.renderPass,
+        ctx.gBufferRenderPass,
         pipelineLayout,
         blendStages,
         vertexInputInfo,

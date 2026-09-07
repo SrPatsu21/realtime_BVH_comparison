@@ -108,12 +108,6 @@ void RenderInstanceManager::addInstance(
             pipelineFlags
         };
 
-        std::cout << "batch bleed:" << (pipelineFlags & GraphicsPipelineManager::PIPE_BLEND) 
-            << "ou mascara:" << (pipelineFlags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
-            << "ou opaco:" << (pipelineFlags & GraphicsPipelineManager::PIPE_DEPTH_WRITE)
-            << std::endl;
-        std::cout << "modo:" << static_cast<uint32_t>(material.get()->getAlphaMode()) << " cutoff" << material.get()->getAlphaCutoff() << std::endl;
-
         auto it = batches_map.find(key);
 
         if (it != batches_map.end())
