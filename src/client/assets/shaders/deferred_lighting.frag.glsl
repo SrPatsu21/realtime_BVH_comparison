@@ -699,7 +699,14 @@ void main()
                 transparentAlbedo.rgb
             );
 
-        lighting += transparentLighting;
+        float transparentAlpha = transparentAlbedo.a;
+
+        lighting =
+            mix(
+                lighting,
+                transparentLighting,
+                transparentAlpha
+            );
     }
 
     // =========================================================
