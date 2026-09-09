@@ -168,12 +168,11 @@ void Render::createSwapchain(){
 
 void Render::createCameraAndSamplers(){
     // Create camera buff with uniformBuffer
-    iCameraProvider = new CameraBufferManager::DefaultCameraProvider();
-
     cameraBufferManager = new CameraBufferManager(
         coreVulkan->getDevice(),
         bufferManager,
-        Render::MAX_FRAMES_IN_FLIGHT
+        Render::MAX_FRAMES_IN_FLIGHT,
+        window
     );
 
     //MultiSampling implementation
@@ -494,33 +493,21 @@ void Render::initInstances(){
         resourceManager->getMesh("models/Maxwell/Untitled.gltf")
     );
 
-    #ifndef NDEBUG
-        // test
-        // ====================================
-
-        RenderInstanceRegistration* renderInstanceRegistration2 = renderInstanceManager->createRenderInstance(
-            resourceManager->getMesh("models/Maxwell/Untitled.gltf")
-        );
-
-        RenderInstanceRegistration* renderInstanceRegistration3 = renderInstanceManager->createRenderInstance(
-            resourceManager->getMesh("models/Maxwell/Untitled.gltf")
-        );
-
-        renderInstanceManager->removeRenderInstance(renderInstanceRegistration);
-        renderInstanceManager->removeRenderInstance(renderInstanceRegistration2);
-        renderInstanceRegistration = renderInstanceRegistration3;
-
-        // ====================================
-        // end test
-    #endif
-
-    RenderInstance* renderInstance = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
+    RenderInstance * renderInstance = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
     renderInstance->scale = glm::vec3(0.2f);
     renderInstance->position += glm::vec3(1.5f, 0, 0);
 
+    renderInstanceRegistration = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
+    );
+
+    RenderInstance * renderInstance2 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
+    renderInstance2->scale = glm::vec3(0.2f);
+    renderInstance2->position += glm::vec3(1.5f, 1, 0);
+
     //* light
     lightInstanceManager->createLight({
-        .position = glm::vec3(-100.0f, 150.0f, -100.0f),
+        .position = glm::vec3(-3.0f, 150.0f, -3.0f),
         .intensity = 500000.0f,
         .color = glm::vec3(1.0f, 0.95f, 0.85f),
         .radius = 10.0f,
@@ -537,13 +524,11 @@ void Render::updateInstances(
 ){
     // Update UBOs for this frame
     {
-        UniformBufferGlobal ubg{};
-        iCameraProvider->fill(
-            ubg,
-            time,
+        cameraBufferManager->updateCamera(
+            currentFrame,
+            static_cast<float>(deltaTime),
             swapchainManager->getExtent()
         );
-        this->cameraBufferManager->update(currentFrame, ubg);
     }
 
     // update render instances
@@ -777,7 +762,6 @@ void Render::cleanup(){
         if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
         if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
         if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
-        if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if ( bufferManager ){ delete bufferManager; bufferManager = nullptr; }
 

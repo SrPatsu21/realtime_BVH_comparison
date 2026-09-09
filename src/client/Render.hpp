@@ -64,7 +64,6 @@ private:
     FramebufferManager* gBufferFramebufferManager, *deferredLightingFramebufferManager, *transparentFramebufferManager, *compositeFramebufferManager;
 
     CommandManager* commandManager;
-    CameraBufferManager::ICameraProvider* iCameraProvider;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
