@@ -1,6 +1,6 @@
-#include "LightingFramebufferProvider.hpp"
+#include "CompositeFramebufferProvider.hpp"
 
-void LightingFramebufferProvider::build(
+void CompositeFramebufferProvider::build(
     const std::vector<VkImageView>& swapchainImageViews,
     std::size_t swapchainImageViewsSize,
     std::vector<std::vector<VkImageView>>& attachmentsVector
@@ -14,16 +14,10 @@ void LightingFramebufferProvider::build(
     {
         #ifndef NDEBUG
         if (swapchainImageViews[i] == VK_NULL_HANDLE)
-        {
-            throw std::runtime_error(
-                "LightingFramebufferProvider: invalid swapchain image view"
-            );
-        }
+            throw std::runtime_error("CompositeFramebufferProvider: invalid swapchain image view");
         #endif
-        attachmentsVector.push_back(
-            {
-                swapchainImageViews[i]
-            }
+
+        attachmentsVector.push_back({swapchainImageViews[i]}
         );
     }
 }

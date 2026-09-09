@@ -158,6 +158,8 @@ set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
 
 set(SHADERS
+    composite.frag.glsl
+    composite.vert.glsl
     deferred_lighting.frag.glsl
     deferred_lighting.vert.glsl
     geometry_mesh.vert.glsl

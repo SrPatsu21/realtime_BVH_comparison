@@ -7,6 +7,7 @@ struct PipelineCreationContext
     VkDevice device;
     VkRenderPass gBufferRenderPass;
     VkRenderPass lightRenderPass;
+    VkRenderPass compositeRenderPass;
 
     VkDescriptorSetLayout globalLayout;
     VkDescriptorSetLayout materialLayout;
@@ -16,6 +17,7 @@ struct PipelineCreationContext
     VkDescriptorSetLayout gBufferLayout;
     VkDescriptorSetLayout transparentGBufferLayout;
     VkDescriptorSetLayout lightingLayout;
+    VkDescriptorSetLayout deferredLightingLayout;
 
     VkSampleCountFlagBits msaa;
 

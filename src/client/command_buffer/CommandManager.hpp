@@ -10,6 +10,7 @@
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
 #include "../raytracing/buffers/GBufferDescriptorManager.hpp"
 #include "../raytracing/buffers/TransparentGBufferDescriptorManager.hpp"
+#include "../raytracing/buffers/DeferredLightingDescriptorManager.hpp"
 #include "../light/LightInstanceManager.hpp"
 #include <thread>
 
@@ -70,6 +71,10 @@ private:
         std::vector<VkClearValue>& clearValues
     );
 
+    void buildCompositeClearValues(
+        std::vector<VkClearValue>& clearValues
+    );
+
     void beginRenderPass(
         VkCommandBuffer cmd,
         VkRenderPass renderPass,
@@ -99,12 +104,6 @@ private:
 
     void createSecondaryCommandBuffers(
         uint32_t imageCount
-    );
-
-    void beginSecondaryCommandBuffer(
-        VkCommandBuffer cmd,
-        VkRenderPass renderPass,
-        uint32_t subpass
     );
 
     void recordGeometrySecondaryCommandBuffer(
@@ -147,13 +146,15 @@ public:
     void recordCommandBuffer(
         uint32_t imageIndex,
         uint32_t currentFrame,
-        VkRenderPass renderPass,
-        VkRenderPass transparentRenderPass,
-        VkRenderPass lightRenderPass,
+        VkRenderPass GBufferRenderPass,
+        VkRenderPass GBufferTransparentRenderPass,
+        VkRenderPass deferredLightRenderPass,
+        VkRenderPass compositeRenderPass,
         GraphicsPipelineManager* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
         const std::vector<VkFramebuffer>& transparentFramebuffers,
-        const std::vector<VkFramebuffer>&  lightingFramebuffers,
+        const std::vector<VkFramebuffer>& deferredLightingFramebuffers,
+        const std::vector<VkFramebuffer>& compositeFramebuffers,
         VkExtent2D extent,
         GlobalDescriptorManager* globalDescriptorManager,
         InstanceDescriptorManager* instanceDescriptorManager,
@@ -162,6 +163,7 @@ public:
         GBufferDescriptorManager* gBufferDescriptorManager,
         TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager,
         LightInstanceManager* lightInstanceManager,
+        DeferredLightingDescriptorManager* deferredLightingDescriptorManager,
         const std::vector<ParticleData>& particlesData,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

@@ -2,9 +2,12 @@
 #include "graphics_pipeline/pipelines/IPipelineProvider.hpp"
 #include "raytracing/render_pass/GeometryGBufferRenderPassProvider.hpp"
 #include "raytracing/render_pass/TransparentGBufferRenderPassProvider.hpp"
-#include "raytracing/render_pass/LightingRenderPassProvider.hpp"
+#include "raytracing/render_pass/DeferredLightingRenderPassProvider.hpp"
+#include "raytracing/render_pass/CompositeRenderPassProvider.hpp"
 #include "raytracing/frame_buffer/GBufferFramebufferProvider.hpp"
-#include "raytracing/frame_buffer/LightingFramebufferProvider.hpp"
+#include "raytracing/frame_buffer/DeferredLightingFramebufferProvider.hpp"
+#include "raytracing/frame_buffer/CompositeFramebufferProvider.hpp"
+
 #include <chrono>
 
 TextureImage::DefaultTextures Render::defaultTextures =
@@ -296,13 +299,23 @@ void Render::createRenderPasses(){
         std::move(description2)
     );
 
-    LightingRenderPassProvider::build(
+    DeferredLightingRenderPassProvider::build(
         description3,
-        swapchainManager->getImageFormat()
+        coreVulkan->getMsaaSamples()
     );
-    lightRenderPassManager = new RenderPassManager(
+    deferredLightRenderPassManager = new RenderPassManager(
         coreVulkan->getDevice(),
         std::move(description3)
+    );
+
+    RenderPassManager::Description compositeDescription;
+    CompositeRenderPassProvider::build(
+        compositeDescription,
+        swapchainManager->getImageFormat()
+    );
+    compositeRenderPassManager = new RenderPassManager(
+        coreVulkan->getDevice(),
+        std::move(compositeDescription)
     );
 }
 
@@ -390,16 +403,51 @@ void Render::createSwapchainDependentResources(){
     // ==========================
     // Lighting
     // ==========================
+    deferredLightingBuffer = new DeferredLightingBuffer;
+
+    deferredLightingBuffer->create(
+        coreVulkan->getDevice(),
+        coreVulkan->getPhysicalDevice(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples()
+    );
+
+    deferredLightingDescriptorManager =
+        new DeferredLightingDescriptorManager(
+            coreVulkan->getDevice(),
+            deferredLightingBuffer
+        );
+
     attachmentsVector.clear();
-    LightingFramebufferProvider::build(
+
+    DeferredLightingFramebufferProvider::build(
+        deferredLightingBuffer->getView(),
+        swapchainManager->getImageViews().size(),
+        attachmentsVector
+    );
+
+    deferredLightingFramebufferManager =
+        new FramebufferManager(
+            coreVulkan->getDevice(),
+            deferredLightRenderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
+        );
+
+    // ==========================
+    // Composite
+    // ==========================
+    attachmentsVector.clear();
+    CompositeFramebufferProvider::build(
         swapchainManager->getImageViews(),
         swapchainManager->getImageViews().size(),
         attachmentsVector
     );
 
-    lightingFramebufferManager = new FramebufferManager(
+    compositeFramebufferManager = new FramebufferManager(
         coreVulkan->getDevice(),
-        lightRenderPassManager->get(),
+        compositeRenderPassManager->get(),
         swapchainManager->getImageViews().size(),
         swapchainManager->getExtent(),
         attachmentsVector
@@ -419,11 +467,13 @@ void Render::createGraphicsPipelineObjects(){
     pipelineContext.instanceLayout = instanceDescriptorManager->getLayout();
     pipelineContext.particleLayout = particleInstanceDescriptorManager->getLayout();
 
-    pipelineContext.lightRenderPass = lightRenderPassManager->get();
+    pipelineContext.lightRenderPass = deferredLightRenderPassManager->get();
+    pipelineContext.compositeRenderPass = compositeRenderPassManager->get();
 
     pipelineContext.gBufferLayout = gBufferDescriptorManager->getLayout();
     pipelineContext.transparentGBufferLayout = transparentGBufferDescriptorManager->getLayout();
     pipelineContext.lightingLayout = lightInstanceManager->getLightDescriptorManager()->getDescriptorSetLayout();
+    pipelineContext.deferredLightingLayout = deferredLightingDescriptorManager->getLayout();
 
     // Create graphics pipeline
     graphicsPipeline = new GraphicsPipelineManager(
@@ -617,11 +667,13 @@ void Render::drawFrame(){
         currentFrame,
         gBufferRenderPassManager->get(),
         transparentRenderPassManager->get(),
-        lightRenderPassManager->get(),
+        deferredLightRenderPassManager->get(),
+        compositeRenderPassManager->get(),
         graphicsPipeline,
         gBufferFramebufferManager->getFramebuffers(),
         transparentFramebufferManager->getFramebuffers(),
-        lightingFramebufferManager->getFramebuffers(),
+        deferredLightingFramebufferManager->getFramebuffers(),
+        compositeFramebufferManager->getFramebuffers(),
         swapchainManager->getExtent(),
         globalDescriptorManager,
         instanceDescriptorManager,
@@ -630,6 +682,7 @@ void Render::drawFrame(){
         gBufferDescriptorManager,
         transparentGBufferDescriptorManager,
         lightInstanceManager,
+        deferredLightingDescriptorManager,
         particlesData,
         {},
         {},
@@ -812,19 +865,22 @@ void Render::initImagesInFlight(uint32_t swapchainImageCount) {
 void Render::destroySwapchainDependentResources() {
 
     if (this->gBufferFramebufferManager){ delete this->gBufferFramebufferManager; this->gBufferFramebufferManager = nullptr; }
-    if (this->lightingFramebufferManager){ delete this->lightingFramebufferManager; this->lightingFramebufferManager = nullptr; }
+    if (this->deferredLightingFramebufferManager){ delete this->deferredLightingFramebufferManager; this->deferredLightingFramebufferManager = nullptr; }
     if (this->transparentFramebufferManager) { delete this->transparentFramebufferManager; this->transparentFramebufferManager = nullptr; }
+    if (this->compositeFramebufferManager) { delete this->compositeFramebufferManager; this->compositeFramebufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
 
     if (this->gBufferDescriptorManager) { delete this->gBufferDescriptorManager; this->gBufferDescriptorManager = nullptr; }
     if (this->gBuffer) { gBuffer->destroy(coreVulkan->getDevice()); delete this->gBuffer; this->gBuffer = nullptr;}
     if (this->transparentGBufferDescriptorManager) { delete this->transparentGBufferDescriptorManager; this->transparentGBufferDescriptorManager = nullptr; }
     if (this->transparentGBuffer) { this->transparentGBuffer->destroy(coreVulkan->getDevice()); delete this->transparentGBuffer; this->transparentGBuffer = nullptr; }
+    if (this->deferredLightingDescriptorManager) { delete this->deferredLightingDescriptorManager; this->deferredLightingDescriptorManager = nullptr; }
+    if (this->deferredLightingBuffer) { this->deferredLightingBuffer->destroy(coreVulkan->getDevice()); delete this->deferredLightingBuffer; this->deferredLightingBuffer = nullptr; }
 
     if (this->gBufferRenderPassManager){ delete this->gBufferRenderPassManager; this->gBufferRenderPassManager = nullptr; }
     if (this->transparentRenderPassManager){ delete this->transparentRenderPassManager; this->transparentRenderPassManager = nullptr; }
-    if (this->lightRenderPassManager){ delete this->lightRenderPassManager; this->lightRenderPassManager = nullptr; }
-
+    if (this->deferredLightRenderPassManager){ delete this->deferredLightRenderPassManager; this->deferredLightRenderPassManager = nullptr; }
+    if (this->compositeRenderPassManager){ delete this->compositeRenderPassManager; this->compositeRenderPassManager = nullptr; }
 }
 
 void Render::recreateSwapChain()

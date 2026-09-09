@@ -624,6 +624,8 @@ void main()
 {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
 
+    int this_sample = gl_SampleID;
+
     // =========================================================
     // GBuffer
     // =========================================================
@@ -632,7 +634,7 @@ void main()
         texelFetch(
             gPosition,
             pixel,
-            0
+            this_sample
         ).xyz;
 
     vec3 normal =
@@ -640,7 +642,7 @@ void main()
             texelFetch(
                 gNormal,
                 pixel,
-                0
+                this_sample
             ).xyz
         );
 
@@ -648,7 +650,7 @@ void main()
         texelFetch(
             gAlbedo,
             pixel,
-            0
+            this_sample
         ).rgb;
 
     vec3 lighting =
@@ -662,15 +664,15 @@ void main()
     // Transparent GBuffer
     // =========================================================
 
-
     vec4 transparentAlbedo =
         texelFetch(
             tgAlbedo,
             pixel,
-            0
+            this_sample
         );
 
-    bool hasTransparent = transparentAlbedo.a > 0.0;
+    bool hasTransparent =
+        transparentAlbedo.a > 0.0;
 
     if (hasTransparent)
     {
@@ -678,7 +680,7 @@ void main()
             texelFetch(
                 tgPosition,
                 pixel,
-                0
+                this_sample
             ).xyz;
 
         vec3 transparentNormal =
@@ -686,7 +688,7 @@ void main()
                 texelFetch(
                     tgNormal,
                     pixel,
-                    0
+                    this_sample
                 ).xyz
             );
 
@@ -701,9 +703,8 @@ void main()
     }
 
     // =========================================================
-    // OutPut
+    // Output
     // =========================================================
-
     outColor =
         vec4(
             lighting,

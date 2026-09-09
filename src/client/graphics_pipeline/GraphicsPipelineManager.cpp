@@ -2,6 +2,7 @@
 #include "../particle/ParticlePipelineProvider.hpp"
 #include "../raytracing/pipelines/GeometryMeshPipelineProvider.hpp"
 #include "../raytracing/pipelines/LightingPipelineProvider.hpp"
+#include "../raytracing/pipelines/CompositePipelineProvider.hpp"
 
 GraphicsPipelineManager::GraphicsPipelineManager(
     VkDevice device,
@@ -15,11 +16,13 @@ GraphicsPipelineManager::GraphicsPipelineManager(
     scissor = { {0, 0}, swapchainExtent };
 
     GeometryMeshPipelineProvider geometryMeshPipelineProvider;
-    ParticlePipelineProvider particleProvider;
+    // ParticlePipelineProvider particleProvider;
     LightingPipelineProvider lightingProvider;
+    CompositePipelineProvider compositeProvider;
 
     geometryMeshPipelineProvider.createPipelines(*this, ctx);
     lightingProvider.createPipelines(*this, ctx);
+    compositeProvider.createPipelines(*this, ctx);
 
     //! danger
     // particleProvider.createPipelines(*this, ctx);

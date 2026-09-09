@@ -2,13 +2,13 @@
 
 #include "../../CoreVulkan.hpp"
 
-class LightingFramebufferProvider
+class DeferredLightingFramebufferProvider
 {
 public:
 
     static void build(
-        const std::vector<VkImageView>& swapchainImageViews,
-        std::size_t swapchainImageViewsSize,
+        VkImageView lightingView,
+        std::size_t framebufferCount,
         std::vector<std::vector<VkImageView>>& attachmentsVector
     );
 };

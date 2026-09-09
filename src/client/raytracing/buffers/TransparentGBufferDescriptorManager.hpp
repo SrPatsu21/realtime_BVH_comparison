@@ -27,11 +27,6 @@ public:
         return descriptorSetLayout;
     }
 
-    VkDescriptorPool getPool() const noexcept
-    {
-        return descriptorPool;
-    }
-
     VkDescriptorSet getDescriptorSet() const noexcept
     {
         return descriptorSet;

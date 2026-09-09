@@ -6,6 +6,7 @@
 #include "../particle/ParticleRecord.hpp"
 #include "../raytracing/record/GeometryRecord.hpp"
 #include "../raytracing/record/LightingRecord.hpp"
+#include "../raytracing/record/CompositeRecord.hpp"
 
 CommandManager::CommandManager(
     VkDevice device,
@@ -244,6 +245,21 @@ void CommandManager::buildLightingClearValues(
     clearValues[0] = color;
 }
 
+void CommandManager::buildCompositeClearValues(
+    std::vector<VkClearValue>& clearValues
+)
+{
+    VkClearValue color{};
+    color.color = {
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f
+    };
+
+    clearValues.push_back(color);
+}
+
 void CommandManager::beginRenderPass(
     VkCommandBuffer cmd,
     VkRenderPass renderPass,
@@ -293,13 +309,15 @@ void CommandManager::setViewportAndScissor(
 void CommandManager::recordCommandBuffer(
     uint32_t imageIndex,
     uint32_t currentFrame,
-    VkRenderPass renderPass,
-    VkRenderPass transparentRenderPass,
-    VkRenderPass lightRenderPass,
+    VkRenderPass GBufferRenderPass,
+    VkRenderPass GBufferTransparentRenderPass,
+    VkRenderPass deferredLightRenderPass,
+    VkRenderPass compositeRenderPass,
     GraphicsPipelineManager* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
     const std::vector<VkFramebuffer>& transparentFramebuffers,
-    const std::vector<VkFramebuffer>&  lightingFramebuffers,
+    const std::vector<VkFramebuffer>& deferredLightingFramebuffers,
+    const std::vector<VkFramebuffer>& compositeFramebuffers,
     VkExtent2D extent,
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
@@ -308,6 +326,7 @@ void CommandManager::recordCommandBuffer(
     GBufferDescriptorManager* gBufferDescriptorManager,
     TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager,
     LightInstanceManager* lightInstanceManager,
+    DeferredLightingDescriptorManager* deferredLightingDescriptorManager,
     const std::vector<ParticleData>& particlesData,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -333,11 +352,11 @@ void CommandManager::recordCommandBuffer(
         buildGBufferClearValues(
             clearValues
         );
-        uint32_t currentOffset;
+        uint32_t currentOffset = 0;
 
         beginRenderPass(
             cmd,
-            renderPass,
+            GBufferRenderPass,
             framebuffers[imageIndex],
             extent,
             clearValues,
@@ -374,7 +393,7 @@ void CommandManager::recordCommandBuffer(
 
         beginRenderPass(
             cmd,
-            transparentRenderPass,
+            GBufferTransparentRenderPass,
             transparentFramebuffers[imageIndex],
             extent,
             clearValues,
@@ -412,8 +431,8 @@ void CommandManager::recordCommandBuffer(
 
         beginRenderPass(
             cmd,
-            lightRenderPass,
-            lightingFramebuffers[imageIndex],
+            deferredLightRenderPass,
+            deferredLightingFramebuffers[imageIndex],
             extent,
             clearValues,
             VK_SUBPASS_CONTENTS_INLINE
@@ -438,6 +457,40 @@ void CommandManager::recordCommandBuffer(
             lightSet,
             transparentGBufferSet,
             config
+        );
+        vkCmdEndRenderPass(cmd);
+    }
+
+    clearValues.clear();
+
+    // ----------------------------------
+    // Composite
+    // ----------------------------------
+    {
+        buildCompositeClearValues(clearValues);
+
+        beginRenderPass(
+            cmd,
+            compositeRenderPass,
+            compositeFramebuffers[imageIndex],
+            extent,
+            clearValues,
+            VK_SUBPASS_CONTENTS_INLINE
+        );
+
+        setViewportAndScissor(
+            cmd,
+            graphicsPipeline,
+            viewportProviders,
+            scissorProviders
+        );
+
+        VkDescriptorSet deferredLightingSet = deferredLightingDescriptorManager->getDescriptorSet();
+
+        CompositeRecord::record(
+            cmd,
+            graphicsPipeline,
+            deferredLightingSet
         );
     }
 

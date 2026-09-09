@@ -33,7 +33,8 @@ public:
 
         // type
         PIPE_GEOMETRY = 1 << 8,
-        PIPE_LIGHTING = 1 << 9
+        PIPE_LIGHTING = 1 << 9,
+        PIPE_COMPOSITE = 1 << 10
         //next 9-15
     };
 

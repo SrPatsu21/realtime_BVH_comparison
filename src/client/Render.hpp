@@ -20,7 +20,7 @@
 #include "ConfigTable.hpp"
 #include "raytracing/buffers/GBufferDescriptorManager.hpp"
 #include "raytracing/buffers/TransparentGBufferDescriptorManager.hpp"
-#include "raytracing/buffers/LightingDescriptorManager.hpp"
+#include "raytracing/buffers/DeferredLightingDescriptorManager.hpp"
 #include "light/LightInstanceManager.hpp"
 
 class Render {
@@ -48,23 +48,29 @@ private:
     CoreVulkan* coreVulkan;
     SwapchainManager* swapchainManager;
 
-    RenderPassManager* gBufferRenderPassManager, *lightRenderPassManager, *transparentRenderPassManager;
+    RenderPassManager* gBufferRenderPassManager, *deferredLightRenderPassManager, *transparentRenderPassManager, *compositeRenderPassManager;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
     GBuffer* gBuffer;
+    DeferredLightingBuffer* deferredLightingBuffer;
+    DeferredLightingDescriptorManager* deferredLightingDescriptorManager;
     TransparentGBuffer* transparentGBuffer;
     GBufferDescriptorManager* gBufferDescriptorManager;
     TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager;
-    // LightingDescriptorManager* lightingDescriptorManager;
     MaterialDescriptorManager* materialDescriptorManager;
+
     GraphicsPipelineManager* graphicsPipeline;
-    FramebufferManager* gBufferFramebufferManager, *lightingFramebufferManager, *transparentFramebufferManager;
+
+    FramebufferManager* gBufferFramebufferManager, *deferredLightingFramebufferManager, *transparentFramebufferManager, *compositeFramebufferManager;
+
     CommandManager* commandManager;
     CameraBufferManager::ICameraProvider* iCameraProvider;
+
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
+
     RenderInstanceManager* renderInstanceManager;
     LightInstanceManager* lightInstanceManager;
     ResourceManager* resourceManager;

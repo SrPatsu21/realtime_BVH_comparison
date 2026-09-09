@@ -1,34 +1,19 @@
-#include "LightingRenderPassProvider.hpp"
+#include "DeferredLightingRenderPassProvider.hpp"
 
 #include "../../render_pass/RenderPassHelper.hpp"
 
-// ================================================================
-// Lighting Render Pass
-// ================================================================
-
-void LightingRenderPassProvider::build(
+void DeferredLightingRenderPassProvider::build(
     RenderPassManager::Description& description,
-    VkFormat swapchainImageFormat
-)
-{
-    // ------------------------------------------------------------
-    // Lighting output
-    //
-    // The lighting pass renders directly into the swapchain image.
-    // ------------------------------------------------------------
-
+    VkSampleCountFlagBits msaaSamples
+) {
     const uint32_t colorAttachment =
         RenderPassHelper::addColorAttachment(
             description,
-            swapchainImageFormat,
-            VK_SAMPLE_COUNT_1_BIT,
+            VK_FORMAT_R16G16B16A16_SFLOAT,
+            msaaSamples,
             VK_ATTACHMENT_STORE_OP_STORE,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
-
-    // ------------------------------------------------------------
-    // Subpass
-    // ------------------------------------------------------------
 
     const uint32_t subpass =
         RenderPassHelper::addSubpass(
@@ -40,10 +25,6 @@ void LightingRenderPassProvider::build(
         subpass,
         colorAttachment
     );
-
-    // ------------------------------------------------------------
-    // External -> Lighting dependency
-    // ------------------------------------------------------------
 
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;

@@ -3,11 +3,11 @@
 #include "../../CoreVulkan.hpp"
 #include "../../render_pass/RenderPassManager.hpp"
 
-class LightingRenderPassProvider
+class DeferredLightingRenderPassProvider
 {
 public:
     static void build(
         RenderPassManager::Description& description,
-        VkFormat swapchainImageFormat
+        VkSampleCountFlagBits msaaSamples
     );
 };
