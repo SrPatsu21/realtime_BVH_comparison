@@ -25,7 +25,7 @@ void TLASInstanceBuilder::build(
         primitives
     );
 
-    BVHBuilder<BVHNode>::build(
+    BuilderType::build(
         nodes,
         primitives
     );

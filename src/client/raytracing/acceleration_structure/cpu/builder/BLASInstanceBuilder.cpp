@@ -4,12 +4,13 @@
 
 void BLASInstanceBuilder::build(
     const Mesh& mesh,
-    std::vector<BVHNode>& nodes,
+    std::vector<NodeType>& nodes,
     std::vector<BLASInstance>& instances
 )
 {
     nodes.clear();
     instances.clear();
+
     std::vector<PrimitiveRef> primitives;
 
     buildPrimitives(
@@ -23,7 +24,7 @@ void BLASInstanceBuilder::build(
         return;
     }
 
-    BVHBuilder<BVHNode>::build(
+    BuilderType::build(
         nodes,
         primitives
     );
@@ -89,7 +90,7 @@ void BLASInstanceBuilder::buildPrimitives(
 }
 
 void BLASInstanceBuilder::buildInstances(
-    const std::vector<BVHNode>& nodes,
+    const std::vector<NodeType>& nodes,
     const std::vector<PrimitiveRef>& primitives,
     std::vector<BLASInstance>& instances
 )
@@ -99,7 +100,7 @@ void BLASInstanceBuilder::buildInstances(
     if (nodes.empty())
         return;
 
-    for (const BVHNode& node : nodes)
+    for (const NodeType& node : nodes)
     {
         if (!node.leaf)
             continue;

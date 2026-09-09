@@ -3,20 +3,25 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
-#include "../node/TLASInstance.hpp"
-#include "../node/BVHNode.hpp"
+
+#include "../../utils/accelerationStructureConfig.hpp"
+
 #include "../primitives/PrimitiveRef.hpp"
 #include "../primitives/TLASBuildInput.hpp"
+#include "../node/TLASInstance.hpp"
 
 class TLASInstanceBuilder
 {
 public:
 
+    using NodeType = DefaultTLASNode;
+    using BuilderType = DefaultTLASBuilder;
+
     static void build(
         const std::vector<TLASBuildInput>& inputs,
         const std::vector<uint32_t>& blasIndices,
         std::vector<PrimitiveRef>& primitives,
-        std::vector<BVHNode>& nodes,
+        std::vector<NodeType>& nodes,
         std::vector<TLASInstance>& instances
     );
 
@@ -31,7 +36,7 @@ private:
         const std::vector<TLASBuildInput>& inputs,
         const std::vector<uint32_t>& blasIndices,
         const std::vector<PrimitiveRef>& primitives,
-        const std::vector<BVHNode>& nodes,
+        const std::vector<NodeType>& nodes,
         std::vector<TLASInstance>& instances
     );
 };

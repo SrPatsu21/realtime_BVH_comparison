@@ -1,25 +1,25 @@
 #pragma once
 
-#include <vector>
-#include <cstdint>
+#include "../../utils/accelerationStructureConfig.hpp"
 
-#include "../node/BLASInstance.hpp"
-#include "../node/BVHNode.hpp"
 #include "../primitives/PrimitiveRef.hpp"
-
+#include "../node/BLASInstance.hpp"
 #include "../../../../batch/mesh/Mesh.hpp"
-
-class Mesh;
 
 class BLASInstanceBuilder
 {
 public:
 
+    using NodeType = DefaultBLASNode;
+    using BuilderType = DefaultBLASBuilder;
+
     static void build(
         const Mesh& mesh,
-        std::vector<BVHNode>& nodes,
+        std::vector<NodeType>& nodes,
         std::vector<BLASInstance>& instances
     );
+
+private:
 
     static void buildPrimitives(
         const Mesh& mesh,
@@ -27,7 +27,7 @@ public:
     );
 
     static void buildInstances(
-        const std::vector<BVHNode>& nodes,
+        const std::vector<NodeType>& nodes,
         const std::vector<PrimitiveRef>& primitives,
         std::vector<BLASInstance>& instances
     );
