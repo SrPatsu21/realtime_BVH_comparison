@@ -41,6 +41,11 @@ public:
         std::string normalPath;
         std::string metallicRoughnessPath;
 
+        glm::vec4 baseColorFactor{1.0f};
+
+        float metallicFactor = 1.0f;
+        float roughnessFactor = 1.0f;
+
         Material::AlphaMode alphaMode = Material::AlphaMode::OPAQUE;
         float alphaCutoff = 0.5f;
     };

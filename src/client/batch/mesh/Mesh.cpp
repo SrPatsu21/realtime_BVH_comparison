@@ -33,43 +33,84 @@ void Mesh::load(
     std::filesystem::path modelPath(path);
     std::filesystem::path directory = modelPath.parent_path();
 
-    // MATERIAIS
     materials.resize(scene->mNumMaterials);
 
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial* mat = scene->mMaterials[i];
         MaterialData material{};
 
+        // ---------------------------------------------------------
+        // BASE COLOR FACTOR
+        // ---------------------------------------------------------
+        aiColor4D baseColor;
+
+        if (mat->Get( AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
+            material.baseColorFactor = {baseColor.r, baseColor.g, baseColor.b, baseColor.a};
+
+        // ---------------------------------------------------------
+        // METALLIC FACTOR
+        // ---------------------------------------------------------
+
+        float metallicFactor = 1.0f;
+
+        if (mat->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS)
+            material.metallicFactor = metallicFactor;
+
+        // ---------------------------------------------------------
+        // ROUGHNESS FACTOR
+        // ---------------------------------------------------------
+
+        float roughnessFactor = 1.0f;
+
+        if (mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor) == AI_SUCCESS)
+            material.roughnessFactor = roughnessFactor;
+
+        // ---------------------------------------------------------
+        // TEXTURES
+        // ---------------------------------------------------------
+
         aiString pathStr;
 
         if (mat->GetTextureCount(aiTextureType_BASE_COLOR) > 0) {
-            mat->GetTexture(aiTextureType_BASE_COLOR, 0, &pathStr);
-            material.baseColorPath =
-                (directory / pathStr.C_Str()).string();
+            if (mat->GetTexture(aiTextureType_BASE_COLOR, 0, &pathStr) == AI_SUCCESS)
+                material.baseColorPath = (directory / pathStr.C_Str()).string();
         }
 
         if (mat->GetTextureCount(aiTextureType_NORMALS) > 0) {
-            mat->GetTexture(aiTextureType_NORMALS, 0, &pathStr);
-            material.normalPath =
-                (directory / pathStr.C_Str()).string();
+            if (mat->GetTexture(aiTextureType_NORMALS, 0, &pathStr) == AI_SUCCESS)
+                material.normalPath = (directory / pathStr.C_Str()).string();
         }
 
         if (mat->GetTextureCount(aiTextureType_METALNESS) > 0) {
-            mat->GetTexture(aiTextureType_METALNESS, 0, &pathStr);
-            material.metallicRoughnessPath =
-                (directory / pathStr.C_Str()).string();
+            if (mat->GetTexture(aiTextureType_METALNESS, 0, &pathStr) == AI_SUCCESS)
+                material.metallicRoughnessPath = (directory / pathStr.C_Str()).string();
         }
+
+        // ---------------------------------------------------------
+        // ALPHA MODE
+        // ---------------------------------------------------------
 
         aiString alphaMode;
 
-        if (mat->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
+        if (mat->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS)
+        {
             std::string mode = alphaMode.C_Str();
 
             if (mode == "MASK")
+            {
                 material.alphaMode = Material::AlphaMode::MASK;
-            else if (mode == "BLEND")
+            } else if (mode == "BLEND")
+            {
                 material.alphaMode = Material::AlphaMode::BLEND;
+            } else
+            {
+                material.alphaMode = Material::AlphaMode::OPAQUE;
+            }
         }
+
+        // ---------------------------------------------------------
+        // ALPHA CUTOFF
+        // ---------------------------------------------------------
 
         float alphaCutoff = 0.5f;
 

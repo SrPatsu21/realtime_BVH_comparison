@@ -3,8 +3,21 @@
 #include "../../BufferManager.hpp"
 
 #include <array>
-#include <vector>
 #include <stdexcept>
+
+namespace
+{
+    struct MaterialGPU
+    {
+        glm::vec4 baseColorFactor;
+
+        float metallicFactor;
+        float roughnessFactor;
+
+        uint32_t alphaMode;
+        float alphaCutoff;
+    };
+}
 
 Material::Material(
     VkDevice device,
@@ -13,40 +26,44 @@ Material::Material(
     std::shared_ptr<TextureImage> baseColorHandle,
     std::shared_ptr<TextureImage> normalHandle,
     std::shared_ptr<TextureImage> metallicRoughnessHandle,
-    AlphaMode alphaMode,
-    float alphaCutoff
+    const Properties& properties
 ) :
     device(device),
-    baseColorHandle(baseColorHandle),
-    normalHandle(normalHandle),
-    metallicRoughnessHandle(metallicRoughnessHandle),
-    alphaMode(alphaMode),
-    alphaCutoff(alphaCutoff)
+    baseColorHandle(std::move(baseColorHandle)),
+    normalHandle(std::move(normalHandle)),
+    metallicRoughnessHandle(std::move(metallicRoughnessHandle)),
+    properties(properties)
 {
-    std::vector<float> materialData = {
-        alphaCutoff
+    std::vector<MaterialGPU> materialData = {
+        {
+            properties.baseColorFactor,
+            properties.metallicFactor,
+            properties.roughnessFactor,
+            static_cast<uint32_t>(properties.alphaMode),
+            properties.alphaCutoff
+        }
     };
 
-    materialAlphaBuffer = bufferManager->createDeviceBuffer(
+    materialBuffer = bufferManager->createDeviceBuffer(
         materialData,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        materialAlphaMemory,
+        materialMemory,
         nullptr
     );
 
     auto albedo =
-        baseColorHandle
-            ? baseColorHandle
+        this->baseColorHandle
+            ? this->baseColorHandle
             : Render::defaultTextures.white;
 
     auto normal =
-        normalHandle
-            ? normalHandle
+        this->normalHandle
+            ? this->normalHandle
             : Render::defaultTextures.normal;
 
     auto metallic =
-        metallicRoughnessHandle
-            ? metallicRoughnessHandle
+        this->metallicRoughnessHandle
+            ? this->metallicRoughnessHandle
             : Render::defaultTextures.metallic;
 
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -57,14 +74,8 @@ Material::Material(
     VkDescriptorSetLayout layout = descriptorManager->getLayout();
     allocInfo.pSetLayouts = &layout;
 
-    if (vkAllocateDescriptorSets(
-        device,
-        &allocInfo,
-        &descriptorSet
-    ) != VK_SUCCESS)
-    {
+    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
         throw std::runtime_error("Failed to allocate material descriptor set");
-    }
 
     VkDescriptorImageInfo albedoInfo{};
     albedoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -82,9 +93,9 @@ Material::Material(
     metallicInfo.sampler = metallic->getSampler();
 
     VkDescriptorBufferInfo materialInfo{};
-    materialInfo.buffer = materialAlphaBuffer;
+    materialInfo.buffer = materialBuffer;
     materialInfo.offset = 0;
-    materialInfo.range = sizeof(float);
+    materialInfo.range = sizeof(MaterialGPU);
 
     std::array<VkWriteDescriptorSet, 4> writes{};
 
@@ -95,6 +106,7 @@ Material::Material(
     writes[0].descriptorCount = 1;
     writes[0].pImageInfo = &albedoInfo;
 
+
     writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[1].dstSet = descriptorSet;
     writes[1].dstBinding = 1;
@@ -102,8 +114,10 @@ Material::Material(
     writes[1].descriptorCount = 1;
     writes[1].pImageInfo = &normalInfo;
 
+
     writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[2].dstSet = descriptorSet;
+
     writes[2].dstBinding = 2;
     writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writes[2].descriptorCount = 1;
@@ -127,9 +141,9 @@ Material::Material(
 
 Material::~Material()
 {
-    if (materialAlphaBuffer != VK_NULL_HANDLE)
-        vkDestroyBuffer(device, materialAlphaBuffer, nullptr);
+    if (materialBuffer != VK_NULL_HANDLE)
+        vkDestroyBuffer(device, materialBuffer, nullptr);
 
-    if (materialAlphaMemory != VK_NULL_HANDLE)
-        vkFreeMemory(device, materialAlphaMemory, nullptr);
+    if (materialMemory != VK_NULL_HANDLE)
+        vkFreeMemory(device, materialMemory, nullptr);
 }

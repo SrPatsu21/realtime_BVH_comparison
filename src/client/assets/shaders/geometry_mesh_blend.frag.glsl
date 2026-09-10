@@ -4,12 +4,34 @@ layout(set = 1, binding = 0) uniform sampler2D albedoTex;
 layout(set = 1, binding = 1) uniform sampler2D normalTex;
 layout(set = 1, binding = 2) uniform sampler2D metallicRoughnessTex;
 
+struct MaterialData
+{
+    vec4 baseColorFactor;
+
+    float metallicFactor;
+    float roughnessFactor;
+
+    uint alphaMode;
+    float alphaCutoff;
+};
+
+layout(std430, set = 1, binding = 3) readonly buffer MaterialBuffer
+{
+    MaterialData material;
+};
+
+// --------------------------------------------------
+// Vertex inputs
+// --------------------------------------------------
+
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 1) in vec3 fragNormal;
 layout(location = 2) in vec3 fragWorldPos;
 layout(location = 3) in vec4 fragTangent;
 
+// --------------------------------------------------
 // Transparent GBuffer attachments
+// --------------------------------------------------
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -23,7 +45,8 @@ void main()
     // --------------------------------------------------
 
     vec4 albedo =
-        texture(albedoTex, fragTexCoord);
+        texture(albedoTex, fragTexCoord) *
+        material.baseColorFactor;
 
     // --------------------------------------------------
     // Normal map
@@ -47,11 +70,19 @@ void main()
     // Metallic / Roughness
     // --------------------------------------------------
 
-    vec4 mr = texture(metallicRoughnessTex, fragTexCoord);
+    vec4 mr =
+        texture(
+            metallicRoughnessTex,
+            fragTexCoord
+        );
 
-    float metallic = mr.b;
+    float metallic =
+        mr.b *
+        material.metallicFactor;
 
-    float roughness = mr.g;
+    float roughness =
+        mr.g *
+        material.roughnessFactor;
 
     // --------------------------------------------------
     // Transparent GBuffer

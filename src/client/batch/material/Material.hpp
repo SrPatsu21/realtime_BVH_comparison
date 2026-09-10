@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vulkan/vulkan.h>
+#include <glm/vec4.hpp>
 
 class TextureImage;
 class MaterialDescriptorManager;
@@ -18,6 +19,15 @@ public:
         BLEND  = 4
     };
 
+    struct Properties {
+        glm::vec4 baseColorFactor{1.0f};
+
+        float metallicFactor = 1.0f;
+        float roughnessFactor = 1.0f;
+
+        AlphaMode alphaMode = AlphaMode::OPAQUE;
+        float alphaCutoff = 0.5f;
+    };
 
     Material(
         VkDevice device,
@@ -26,15 +36,30 @@ public:
         std::shared_ptr<TextureImage> baseColorHandle,
         std::shared_ptr<TextureImage> normalHandle,
         std::shared_ptr<TextureImage> metallicRoughnessHandle,
-        AlphaMode alphaMode = AlphaMode::OPAQUE,
-        float alphaCutoff = 0.5f
+        const Properties& properties
     );
 
     ~Material();
 
-    VkDescriptorSet getDescriptorSet() const { return descriptorSet; }
-    AlphaMode getAlphaMode() const { return alphaMode; }
-    float getAlphaCutoff() const { return alphaCutoff; }
+    VkDescriptorSet getDescriptorSet() const
+    {
+        return descriptorSet;
+    }
+
+    const Properties& getProperties() const
+    {
+        return properties;
+    }
+
+    AlphaMode getAlphaMode() const
+    {
+        return properties.alphaMode;
+    }
+
+    float getAlphaCutoff() const
+    {
+        return properties.alphaCutoff;
+    }
 
 private:
 
@@ -46,9 +71,8 @@ private:
     std::shared_ptr<TextureImage> normalHandle;
     std::shared_ptr<TextureImage> metallicRoughnessHandle;
 
-    AlphaMode alphaMode;
-    float alphaCutoff;
+    Properties properties;
 
-    VkBuffer materialAlphaBuffer{};
-    VkDeviceMemory materialAlphaMemory{};
+    VkBuffer materialBuffer{};
+    VkDeviceMemory materialMemory{};
 };

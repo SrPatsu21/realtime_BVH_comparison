@@ -47,6 +47,12 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
             matData.baseColorPath + "|" +
             matData.normalPath + "|" +
             matData.metallicRoughnessPath + "|" +
+            std::to_string(matData.baseColorFactor.r) + "|" +
+            std::to_string(matData.baseColorFactor.g) + "|" +
+            std::to_string(matData.baseColorFactor.b) + "|" +
+            std::to_string(matData.baseColorFactor.a) + "|" +
+            std::to_string(matData.metallicFactor) + "|" +
+            std::to_string(matData.roughnessFactor) + "|" +
             std::to_string(static_cast<uint32_t>(matData.alphaMode)) + "|" +
             std::to_string(matData.alphaCutoff);
 
@@ -73,6 +79,13 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
             if (!matData.metallicRoughnessPath.empty())
                 mrHandle = getTexture(matData.metallicRoughnessPath);
 
+            Material::Properties properties;
+            properties.baseColorFactor = matData.baseColorFactor;
+            properties.metallicFactor = matData.metallicFactor;
+            properties.roughnessFactor = matData.roughnessFactor;
+            properties.alphaMode = matData.alphaMode;
+            properties.alphaCutoff = matData.alphaCutoff;
+
             material = std::make_shared<Material>(
                 device,
                 bufferManager,
@@ -80,8 +93,7 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
                 baseColorHandle,
                 normalHandle,
                 mrHandle,
-                matData.alphaMode,
-                matData.alphaCutoff
+                properties
             );
 
             materials[key] = material;
@@ -110,6 +122,12 @@ ResourceManager::getMaterialForSubMesh(
         matData.baseColorPath + "|" +
         matData.normalPath + "|" +
         matData.metallicRoughnessPath + "|" +
+        std::to_string(matData.baseColorFactor.r) + "|" +
+        std::to_string(matData.baseColorFactor.g) + "|" +
+        std::to_string(matData.baseColorFactor.b) + "|" +
+        std::to_string(matData.baseColorFactor.a) + "|" +
+        std::to_string(matData.metallicFactor) + "|" +
+        std::to_string(matData.roughnessFactor) + "|" +
         std::to_string(static_cast<uint32_t>(matData.alphaMode)) + "|" +
         std::to_string(matData.alphaCutoff);
 
@@ -134,6 +152,13 @@ ResourceManager::getMaterialForSubMesh(
         if (!matData.metallicRoughnessPath.empty())
             mrHandle = getTexture(matData.metallicRoughnessPath);
 
+        Material::Properties properties;
+        properties.baseColorFactor = matData.baseColorFactor;
+        properties.metallicFactor = matData.metallicFactor;
+        properties.roughnessFactor = matData.roughnessFactor;
+        properties.alphaMode = matData.alphaMode;
+        properties.alphaCutoff = matData.alphaCutoff;
+
         material = std::make_shared<Material>(
             device,
             bufferManager,
@@ -141,8 +166,7 @@ ResourceManager::getMaterialForSubMesh(
             baseColorHandle,
             normalHandle,
             mrHandle,
-            matData.alphaMode,
-            matData.alphaCutoff
+            properties
         );
 
         materials[key] = material;
