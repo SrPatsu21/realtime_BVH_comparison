@@ -88,6 +88,8 @@ void TLASInstanceBuilder::createInstances(
             TLASInstance instance{};
             instance.bounds = input.bounds;
             instance.inverseTransform = input.inverseTransform;
+            instance.vertexAddress = input.vertexAddress;
+            instance.indexAddress = input.indexAddress;
             instance.blasIndex = blasIndices[inputIndex];
             instance.nodeOffset = 0;
             instance.nodeCount = 0;

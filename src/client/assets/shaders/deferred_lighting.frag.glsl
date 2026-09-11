@@ -19,9 +19,9 @@ struct BVHNode
     uint left;
     uint right;
 
+    // uint firstPrimitive; = left
+    // uint primitiveCount; = right
     uint leaf;
-    uint firstPrimitive;
-    uint primitiveCount;
     uint pad0;
 };
 
@@ -37,6 +37,9 @@ struct TLASInstance
 
     mat4 inverseTransform;
 
+    uvec2 vertexAddress;
+    uvec2 indexAddress;
+
     uint blasIndex;
     uint nodeOffset;
     uint nodeCount;
@@ -50,9 +53,6 @@ struct TLASInstance
 
 struct BLASInstance
 {
-    uvec2 vertexAddress;
-    uvec2 indexAddress;
-
     uint firstTriangle;
     uint triangleCount;
 
@@ -300,24 +300,19 @@ bool traceBLAS(
     uint stack[64];
     uint stackSize = 0;
 
-    stack[stackSize++] =
-        tlasInstance.nodeOffset;
+    stack[stackSize++] = tlasInstance.nodeOffset;
 
     while (stackSize > 0)
     {
-        uint nodeIndex =
+        uint localNodeIndex =
             stack[--stackSize];
 
-        if (
-            nodeIndex <
-            tlasInstance.nodeOffset ||
-            nodeIndex >=
-            tlasInstance.nodeOffset +
-            tlasInstance.nodeCount
-        )
-        {
+        if (localNodeIndex >= tlasInstance.nodeCount)
             continue;
-        }
+
+        uint nodeIndex =
+            tlasInstance.nodeOffset +
+            localNodeIndex;
 
         BVHNode node = blasNodes[nodeIndex];
 
@@ -334,9 +329,9 @@ bool traceBLAS(
 
         if (node.leaf != 0)
         {
-            uint first = node.firstPrimitive;
+            uint first = node.left;
 
-            uint count = node.primitiveCount;
+            uint count = node.right;
 
             for (uint i = 0; i < count; ++i)
             {
@@ -349,16 +344,13 @@ bool traceBLAS(
 
                 VertexBuffer vertices =
                     VertexBuffer(
-                        instance.vertexAddress
+                        tlasInstance.vertexAddress
                     );
 
                 IndexBuffer indices =
                     IndexBuffer(
-                        instance.indexAddress
+                        tlasInstance.indexAddress
                     );
-
-                uint firstTriangle =
-                    instance.firstTriangle;
 
                 for (
                     uint triangle = 0;
@@ -366,13 +358,11 @@ bool traceBLAS(
                     ++triangle
                 )
                 {
-                    uint triangleIndex = firstTriangle + triangle;
+                    uint triangleIndex = instance.firstTriangle + triangle;
 
-                    uint index0 = indices.indices[triangleIndex * 3 + 0];
-
-                    uint index1 = indices.indices[triangleIndex * 3 + 1];
-
-                    uint index2 = indices.indices[triangleIndex * 3 + 2];
+                    uint index0 = indices.indices[triangleIndex + 0];
+                    uint index1 = indices.indices[triangleIndex + 1];
+                    uint index2 = indices.indices[triangleIndex + 2];
 
                     vec3 v0 = vertices.positions[index0];
                     vec3 v1 = vertices.positions[index1];
@@ -443,11 +433,9 @@ bool traceTLAS(
 
         if (node.leaf != 0)
         {
-            uint first =
-                node.firstPrimitive;
+            uint first = node.left;
 
-            uint count =
-                node.primitiveCount;
+            uint count = node.right;
 
             for (uint i = 0; i < count; ++i)
             {
@@ -497,16 +485,12 @@ bool traceTLAS(
         if (stackSize + 2 > 64)
             return false;
 
-        stack[stackSize++] =
-            node.left;
-
-        stack[stackSize++] =
-            node.right;
+        stack[stackSize++] = node.left;
+        stack[stackSize++] = node.right;
     }
 
     return false;
 }
-
 
 // =========================================================
 // Shadow ray

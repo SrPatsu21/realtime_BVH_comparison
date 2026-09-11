@@ -221,4 +221,15 @@ Mesh::Mesh(
         );
 
     indexCount = static_cast<uint32_t>(indices.size());
+
+    // Address
+    VkBufferDeviceAddressInfo info{
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO
+    };
+    info.buffer = vertexBufferManager->getVertexBuffer();
+
+    vertexAddress = static_cast<uint64_t>(vkGetBufferDeviceAddress(device, &info));
+
+    info.buffer = indexBufferManager->getIndexBuffer();
+    indexAddress = static_cast<uint64_t>(vkGetBufferDeviceAddress(device, &info));;
 }

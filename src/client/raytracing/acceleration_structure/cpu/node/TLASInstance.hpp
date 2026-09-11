@@ -5,12 +5,15 @@
 
 struct TLASInstance
 {
-    AABB bounds;
+    AABB bounds; // 64
 
-    glm::mat4 inverseTransform;
+    glm::mat4 inverseTransform; // 4*4*32 512
 
-    uint32_t blasIndex;
-    uint32_t nodeOffset;
-    uint32_t nodeCount;
-    uint32_t instanceOffset;
+    uint64_t vertexAddress; //8
+    uint64_t indexAddress; //8
+
+    uint32_t blasIndex; // 4
+    uint32_t nodeOffset; // 4
+    uint32_t nodeCount; // 4
+    uint32_t instanceOffset; // 4
 };

@@ -289,6 +289,9 @@ void RenderInstanceManager::rebuildTLAS()
                 instance.getModelMatrix()
             );
 
+        input.vertexAddress = instance.registrations.back().renderBatch->getKey().mesh.get()->getVertexDeviceAddress();
+        input.indexAddress = instance.registrations.back().renderBatch->getKey().mesh.get()->getIndexDeviceAddress();
+
         inputs.emplace_back(
             input
         );
@@ -299,46 +302,6 @@ void RenderInstanceManager::rebuildTLAS()
     );
 
     tlas = accelerationStructureManager->getTLAS();
-
-    #ifndef NDEBUG
-
-        std::cout
-            << "tlas instances size "
-            << tlas.instances.size()
-            << '\n';
-
-        for (const auto& instance : tlas.instances)
-        {
-            std::cout
-                << "[blasIndex="
-                << instance.blasIndex
-                << "] "
-                << "min=("
-                << instance.bounds.min.x
-                << ", "
-                << instance.bounds.min.y
-                << ", "
-                << instance.bounds.min.z
-                << ") "
-                << "max=("
-                << instance.bounds.max.x
-                << ", "
-                << instance.bounds.max.y
-                << ", "
-                << instance.bounds.max.z
-                << ") "
-                << '\n';
-        }
-
-        std::cout
-            << "end tlas\n";
-
-        accelerationStructureManager->printBVH(
-            tlas.nodes,
-            0
-        );
-
-    #endif
 }
 // ========================
 // BatchKey helpers

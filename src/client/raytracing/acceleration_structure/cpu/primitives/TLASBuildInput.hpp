@@ -8,8 +8,10 @@
 struct TLASBuildInput
 {
     AABB bounds;
-
     glm::mat4 inverseTransform;
+
+    uint64_t vertexAddress;
+    uint64_t indexAddress;
 
     AS<DefaultBLASNode, BLASInstance>* blas;
 };

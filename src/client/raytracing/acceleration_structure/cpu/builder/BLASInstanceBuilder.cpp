@@ -81,7 +81,7 @@ void BLASInstanceBuilder::buildPrimitives(
         PrimitiveRef primitive{};
 
         primitive.bounds = bounds;
-        primitive.index = triangle;
+        primitive.index = triangle * 3;
 
         primitives.emplace_back(
             primitive
@@ -114,8 +114,6 @@ void BLASInstanceBuilder::buildInstances(
 
         BLASInstance instance{};
 
-        instance.vertexAddress = 0;
-        instance.indexAddress = 0;
         instance.firstTriangle = firstPrimitive.index;
         instance.triangleCount = node.primitiveCount;
         instance.materialOffset = 0;

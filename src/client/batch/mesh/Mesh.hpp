@@ -72,6 +72,9 @@ protected:
     std::unique_ptr<VertexBufferManager> vertexBufferManager;
     std::unique_ptr<IndexBufferManager> indexBufferManager;
 
+    uint64_t vertexAddress;
+    uint64_t indexAddress;
+
     std::vector<SubMesh> subMeshes;
     std::vector<MaterialData> materials;
 
@@ -140,6 +143,16 @@ public:
 
     const std::vector<Mesh::SubMesh>& getSubMeshes() const { return subMeshes; }
     const std::vector<Mesh::MaterialData>& getMaterials() const { return materials; }
+
+    uint64_t getIndexDeviceAddress() const
+    {
+        return indexAddress;
+    }
+
+    uint64_t getVertexDeviceAddress() const
+    {
+        return vertexAddress;
+    }
 
     const std::vector<Vertex>& getVertices() const { return cpuVertices; }
     const std::vector<uint32_t>& getIndices() const { return cpuIndices; }
