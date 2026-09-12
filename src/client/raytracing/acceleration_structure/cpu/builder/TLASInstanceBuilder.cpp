@@ -6,11 +6,10 @@ void TLASInstanceBuilder::build(
     const std::vector<TLASBuildInput>& inputs,
     const std::vector<uint32_t>& blasIndices,
     std::vector<PrimitiveRef>& primitives,
-    std::vector<BVHNode>& nodes,
+    std::vector<NodeType>& nodes,
     std::vector<TLASInstance>& instances
 )
 {
-    primitives.clear();
     nodes.clear();
     instances.clear();
 
@@ -24,6 +23,9 @@ void TLASInstanceBuilder::build(
         inputs,
         primitives
     );
+
+    if (primitives.empty())
+        return;
 
     BuilderType::build(
         nodes,
@@ -46,6 +48,8 @@ void TLASInstanceBuilder::createPrimitives(
     std::vector<PrimitiveRef>& primitives
 )
 {
+    primitives.clear();
+
     primitives.reserve(inputs.size());
 
     for (uint32_t i = 0; i < static_cast<uint32_t>(inputs.size()); ++i)
@@ -53,7 +57,7 @@ void TLASInstanceBuilder::createPrimitives(
         PrimitiveRef primitive{};
         primitive.bounds = inputs[i].bounds;
         primitive.index = i;
-
+        primitive.count = 1;
         primitives.emplace_back(
             primitive
         );
@@ -64,40 +68,39 @@ void TLASInstanceBuilder::createInstances(
     const std::vector<TLASBuildInput>& inputs,
     const std::vector<uint32_t>& blasIndices,
     const std::vector<PrimitiveRef>& primitives,
-    const std::vector<BVHNode>& nodes,
+    const std::vector<NodeType>& nodes,
     std::vector<TLASInstance>& instances
 )
 {
-    instances.reserve(inputs.size());
+    instances.clear();
 
-    for (const BVHNode& node : nodes)
+    if (primitives.empty())
+        return;
+
+    instances.reserve(primitives.size());
+
+    for ( const PrimitiveRef& primitive : primitives)
     {
-        if (!node.leaf)
-            continue;
+        const uint32_t inputIndex = primitive.index;
 
-        if (node.primitiveCount == 0)
-            continue;
+        if (inputIndex >= inputs.size())
+            throw std::runtime_error("TLASInstanceBuilder: primitive input index out of range");
 
-        for (uint32_t i = 0; i < node.primitiveCount; ++i)
-        {
-            const uint32_t primitiveIndex = node.firstPrimitive + i;
-            const PrimitiveRef& primitive = primitives[primitiveIndex];
-            const uint32_t inputIndex = primitive.index;
-            const TLASBuildInput& input = inputs[inputIndex];
+        const TLASBuildInput& input = inputs[inputIndex];
 
-            TLASInstance instance{};
-            instance.bounds = input.bounds;
-            instance.inverseTransform = input.inverseTransform;
-            instance.vertexAddress = input.vertexAddress;
-            instance.indexAddress = input.indexAddress;
-            instance.blasIndex = blasIndices[inputIndex];
-            instance.nodeOffset = 0;
-            instance.nodeCount = 0;
-            instance.instanceOffset = 0;
+        TLASInstance instance{};
+        instance.bounds = input.bounds;
+        instance.inverseTransform = input.inverseTransform;
+        instance.vertexAddress = input.vertexAddress;
+        instance.indexAddress = input.indexAddress;
+        instance.blasIndex = blasIndices[inputIndex];
 
-            instances.emplace_back(
-                instance
-            );
-        }
+        instance.nodeOffset = 0;
+        instance.nodeCount = 0;
+        instance.instanceOffset = 0;
+
+        instances.emplace_back(
+            instance
+        );
     }
 }

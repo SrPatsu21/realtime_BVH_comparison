@@ -30,7 +30,6 @@ void BLASInstanceBuilder::build(
     );
 
     buildInstances(
-        nodes,
         primitives,
         instances
     );
@@ -43,45 +42,73 @@ void BLASInstanceBuilder::buildPrimitives(
     std::vector<PrimitiveRef>& primitives
 )
 {
-    const auto& vertices = mesh.getVertices();
-    const auto& indices = mesh.getIndices();
+    const auto& vertices =
+        mesh.getVertices();
 
-    const uint32_t triangleCount = static_cast<uint32_t>(indices.size() / 3);
+    const auto& indices =
+        mesh.getIndices();
+
+    const uint32_t triangleCount =
+        static_cast<uint32_t>(
+            indices.size() / 3
+        );
 
     primitives.clear();
-    primitives.reserve(triangleCount);
 
-    for (uint32_t triangle = 0; triangle < triangleCount; ++triangle)
+    if (triangleCount == 0)
+        return;
+
+    const uint32_t primitiveCount =
+        (
+            triangleCount +
+            TRIANGLES_PER_PRIMITIVE -
+            1
+        ) /
+        TRIANGLES_PER_PRIMITIVE;
+
+    primitives.reserve(
+        primitiveCount
+    );
+
+    for (
+        uint32_t triangleStart = 0;
+        triangleStart < triangleCount;
+        triangleStart += TRIANGLES_PER_PRIMITIVE
+    )
     {
-        const uint32_t i0 =
-            indices[triangle * 3 + 0];
-
-        const uint32_t i1 =
-            indices[triangle * 3 + 1];
-
-        const uint32_t i2 =
-            indices[triangle * 3 + 2];
-
-        const glm::vec3& v0 =
-            vertices[i0].pos;
-
-        const glm::vec3& v1 =
-            vertices[i1].pos;
-
-        const glm::vec3& v2 =
-            vertices[i2].pos;
+        const uint32_t trianglesInPrimitive =
+            std::min(
+                TRIANGLES_PER_PRIMITIVE,
+                triangleCount - triangleStart
+            );
 
         AABB bounds;
+
         bounds.reset();
 
-        bounds.expand(v0);
-        bounds.expand(v1);
-        bounds.expand(v2);
+        for (
+            uint32_t triangle = 0;
+            triangle < trianglesInPrimitive;
+            ++triangle
+        )
+        {
+            const uint32_t triangleIndex = triangleStart + triangle;
+
+            const uint32_t indexOffset = triangleIndex * 3;
+
+            const uint32_t i0 = indices[indexOffset + 0];
+            const uint32_t i1 = indices[indexOffset + 1];
+            const uint32_t i2 = indices[indexOffset + 2];
+
+            bounds.expand(vertices[i0].pos);
+            bounds.expand(vertices[i1].pos);
+            bounds.expand(vertices[i2].pos);
+        }
 
         PrimitiveRef primitive{};
-
         primitive.bounds = bounds;
-        primitive.index = triangle * 3;
+        primitive.index = triangleStart;
+        primitive.count = trianglesInPrimitive;
 
         primitives.emplace_back(
             primitive
@@ -90,34 +117,29 @@ void BLASInstanceBuilder::buildPrimitives(
 }
 
 void BLASInstanceBuilder::buildInstances(
-    const std::vector<NodeType>& nodes,
     const std::vector<PrimitiveRef>& primitives,
     std::vector<BLASInstance>& instances
 )
 {
     instances.clear();
 
-    if (nodes.empty())
+    if (primitives.empty())
         return;
 
-    for (const NodeType& node : nodes)
+    instances.reserve(
+        primitives.size()
+    );
+
+    for (
+        const PrimitiveRef& primitive :
+        primitives
+    )
     {
-        if (!node.leaf)
-            continue;
-
-        if (node.primitiveCount == 0)
-            continue;
-
-        const uint32_t primitiveIndex = node.firstPrimitive;
-
-        const PrimitiveRef& firstPrimitive = primitives[primitiveIndex];
-
         BLASInstance instance{};
-
-        instance.firstTriangle = firstPrimitive.index;
-        instance.triangleCount = node.primitiveCount;
+        instance.bounds = primitive.bounds;
+        instance.firstTriangle = primitive.index;
+        instance.triangleCount = primitive.count;
         instance.materialOffset = 0;
-
         instance.pad0 = 0;
 
         instances.emplace_back(

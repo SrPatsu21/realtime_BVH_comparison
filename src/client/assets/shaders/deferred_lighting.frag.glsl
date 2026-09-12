@@ -19,8 +19,6 @@ struct BVHNode
     uint left;
     uint right;
 
-    // uint firstPrimitive; = left
-    // uint primitiveCount; = right
     uint leaf;
     uint pad0;
 };
@@ -53,6 +51,9 @@ struct TLASInstance
 
 struct BLASInstance
 {
+    vec4 boundsMin;
+    vec4 boundsMax;
+
     uint firstTriangle;
     uint triangleCount;
 
@@ -300,7 +301,7 @@ bool traceBLAS(
     uint stack[64];
     uint stackSize = 0;
 
-    stack[stackSize++] = tlasInstance.nodeOffset;
+    stack[stackSize++] = 0;
 
     while (stackSize > 0)
     {
@@ -329,56 +330,81 @@ bool traceBLAS(
 
         if (node.leaf != 0)
         {
-            uint first = node.left;
+            VertexBuffer vertices =
+                VertexBuffer(
+                    tlasInstance.vertexAddress
+                );
 
-            uint count = node.right;
+            IndexBuffer indices =
+                IndexBuffer(
+                    tlasInstance.indexAddress
+                );
 
-            for (uint i = 0; i < count; ++i)
+            uint instanceIndex =tlasInstance.instanceOffset + node.left;
+
+            BLASInstance instance = blasInstances[instanceIndex];
+
+            for (
+                uint triangle = 0;
+                triangle < instance.triangleCount;
+                ++triangle
+            )
             {
-                uint instanceIndex =
-                    tlasInstance.instanceOffset +
-                    first +
-                    i;
+                uint triangleIndex = instance.firstTriangle + triangle;
 
-                BLASInstance instance = blasInstances[instanceIndex];
+                uint indexOffset = triangleIndex * 3;
 
-                VertexBuffer vertices =
-                    VertexBuffer(
-                        tlasInstance.vertexAddress
-                    );
+                uint index0 = indices.indices[indexOffset + 0];
+                uint index1 = indices.indices[indexOffset + 1];
+                uint index2 = indices.indices[indexOffset + 2];
 
-                IndexBuffer indices =
-                    IndexBuffer(
-                        tlasInstance.indexAddress
-                    );
+                vec3 v0 = vertices.positions[index0];
+                vec3 v1 = vertices.positions[index1];
+                vec3 v2 = vertices.positions[index2];
 
-                for (
-                    uint triangle = 0;
-                    triangle < instance.triangleCount;
-                    ++triangle
-                )
+                if (intersectTriangle(
+                        origin,
+                        direction,
+                        v0,
+                        v1,
+                        v2,
+                        maxDistance
+                    ))
                 {
-                    uint triangleIndex = instance.firstTriangle + triangle;
+                    return true;
+                }
+            }
+            instanceIndex = tlasInstance.instanceOffset + node.right;
+            instance = blasInstances[instanceIndex];
 
-                    uint index0 = indices.indices[triangleIndex + 0];
-                    uint index1 = indices.indices[triangleIndex + 1];
-                    uint index2 = indices.indices[triangleIndex + 2];
+            for (
+                uint triangle = 0;
+                triangle < instance.triangleCount;
+                ++triangle
+            )
+            {
+                uint triangleIndex = instance.firstTriangle + triangle;
 
-                    vec3 v0 = vertices.positions[index0];
-                    vec3 v1 = vertices.positions[index1];
-                    vec3 v2 = vertices.positions[index2];
+                uint indexOffset = triangleIndex * 3;
 
-                    if (intersectTriangle(
-                            origin,
-                            direction,
-                            v0,
-                            v1,
-                            v2,
-                            maxDistance
-                        ))
-                    {
-                        return true;
-                    }
+                uint index0 = indices.indices[indexOffset + 0];
+                uint index1 = indices.indices[indexOffset + 1];
+                uint index2 = indices.indices[indexOffset + 2];
+
+                vec3 v0 = vertices.positions[index0];
+                vec3 v1 = vertices.positions[index1];
+                vec3 v2 = vertices.positions[index2];
+
+                if (intersectTriangle(
+                        origin,
+                        direction,
+                        v0,
+                        v1,
+                        v2,
+                        maxDistance
+                    ))
+                {
+                    return true;
                 }
             }
 
@@ -389,10 +415,10 @@ bool traceBLAS(
             return false;
 
         stack[stackSize++] =
-            node.left;
+            node.right;
 
         stack[stackSize++] =
-            node.right;
+            node.left;
     }
 
     return false;
@@ -433,33 +459,64 @@ bool traceTLAS(
 
         if (node.leaf != 0)
         {
-            uint first = node.left;
+            TLASInstance instance =
+                tlasInstances[node.left];
 
-            uint count = node.right;
+            vec3 localOrigin =
+                (
+                    instance.inverseTransform *
+                    vec4(origin, 1.0)
+                ).xyz;
 
-            for (uint i = 0; i < count; ++i)
+            vec3 localDirectionRaw =
+                (
+                    instance.inverseTransform *
+                    vec4(direction, 0.0)
+                ).xyz;
+
+            float directionScale =
+                length(localDirectionRaw);
+
+            if (directionScale >= 0.000001)
             {
-                TLASInstance instance =
-                    tlasInstances[first + i];
+                vec3 localDirection =
+                    localDirectionRaw /
+                    directionScale;
 
-                vec3 localOrigin =
-                    (
-                        instance.inverseTransform *
-                        vec4(origin, 1.0)
-                    ).xyz;
+                float localMaxDistance =
+                    maxDistance *
+                    directionScale;
 
-                vec3 localDirectionRaw =
-                    (
-                        instance.inverseTransform *
-                        vec4(direction, 0.0)
-                    ).xyz;
+                if (traceBLAS(
+                        instance,
+                        localOrigin,
+                        localDirection,
+                        localMaxDistance
+                    ))
+                {
+                    return true;
+                }
+            }
+            instance =
+                tlasInstances[node.right];
 
-                float directionScale =
-                    length(localDirectionRaw);
+            localOrigin =
+                (
+                    instance.inverseTransform *
+                    vec4(origin,1.0)
+                ).xyz;
 
-                if (directionScale < 0.000001)
-                    continue;
+            localDirectionRaw =
+                (
+                    instance.inverseTransform *
+                    vec4(direction, 0.0)
+                ).xyz;
 
+            directionScale =
+                length(localDirectionRaw);
+
+            if (directionScale >= 0.000001)
+            {
                 vec3 localDirection =
                     localDirectionRaw /
                     directionScale;
@@ -485,8 +542,9 @@ bool traceTLAS(
         if (stackSize + 2 > 64)
             return false;
 
-        stack[stackSize++] = node.left;
         stack[stackSize++] = node.right;
+
+        stack[stackSize++] = node.left;
     }
 
     return false;

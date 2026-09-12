@@ -4,9 +4,11 @@
 
 struct BLASInstance
 {
-    uint32_t firstTriangle;
-    uint32_t triangleCount;
+    AABB bounds; // 64
 
-    uint32_t materialOffset;
-    uint32_t pad0;
-}; //16
+    uint32_t firstTriangle; //4
+    uint32_t triangleCount; //4
+
+    uint32_t materialOffset; //4
+    uint32_t pad0; //4
+}; //16 + 64
