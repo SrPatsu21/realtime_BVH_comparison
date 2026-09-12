@@ -43,7 +43,13 @@ void main()
 
     fragNormal = normalize(normalMatrix * inNormal);
 
-    fragTangent = inTangent;
+    vec3 worldTangent = mat3(model) * inTangent.xyz;
+
+    fragTangent =
+        vec4(
+            normalize(worldTangent),
+            inTangent.w
+        );
 
     fragWorldPos = worldPos.xyz;
 }

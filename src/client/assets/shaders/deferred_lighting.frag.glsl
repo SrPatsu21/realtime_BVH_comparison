@@ -6,7 +6,6 @@
 layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 
-
 // =========================================================
 // BVH
 // =========================================================
@@ -66,10 +65,18 @@ struct BLASInstance
 // Buffer references
 // =========================================================
 
+struct Vertex
+{
+    vec3 pos;
+    vec3 normal;
+    vec4 tangent;
+    vec2 texCoord;
+};
+
 layout(buffer_reference, std430)
 readonly buffer VertexBuffer
 {
-    vec3 positions[];
+    float data[];
 };
 
 layout(buffer_reference, std430)
@@ -77,6 +84,20 @@ readonly buffer IndexBuffer
 {
     uint indices[];
 };
+
+vec3 loadVertexPosition(
+    VertexBuffer vertices,
+    uint vertexIndex
+)
+{
+    const uint base = vertexIndex * 12u;
+
+    return vec3(
+        vertices.data[base + 0u],
+        vertices.data[base + 1u],
+        vertices.data[base + 2u]
+    );
+}
 
 
 // =========================================================
@@ -340,7 +361,7 @@ bool traceBLAS(
                     tlasInstance.indexAddress
                 );
 
-            uint instanceIndex =tlasInstance.instanceOffset + node.left;
+            uint instanceIndex = tlasInstance.instanceOffset + node.left;
 
             BLASInstance instance = blasInstances[instanceIndex];
 
@@ -358,9 +379,9 @@ bool traceBLAS(
                 uint index1 = indices.indices[indexOffset + 1];
                 uint index2 = indices.indices[indexOffset + 2];
 
-                vec3 v0 = vertices.positions[index0];
-                vec3 v1 = vertices.positions[index1];
-                vec3 v2 = vertices.positions[index2];
+                vec3 v0 = loadVertexPosition(vertices, index0);
+                vec3 v1 = loadVertexPosition(vertices, index1);
+                vec3 v2 = loadVertexPosition(vertices, index2);
 
                 if (intersectTriangle(
                         origin,
@@ -391,9 +412,9 @@ bool traceBLAS(
                 uint index1 = indices.indices[indexOffset + 1];
                 uint index2 = indices.indices[indexOffset + 2];
 
-                vec3 v0 = vertices.positions[index0];
-                vec3 v1 = vertices.positions[index1];
-                vec3 v2 = vertices.positions[index2];
+                vec3 v0 = loadVertexPosition(vertices, index0);
+                vec3 v1 = loadVertexPosition(vertices, index1);
+                vec3 v2 = loadVertexPosition(vertices, index2);
 
                 if (intersectTriangle(
                         origin,
@@ -414,16 +435,12 @@ bool traceBLAS(
         if (stackSize + 2 > 64)
             return false;
 
-        stack[stackSize++] =
-            node.right;
-
-        stack[stackSize++] =
-            node.left;
+        stack[stackSize++] = node.right;
+        stack[stackSize++] = node.left;
     }
 
     return false;
 }
-
 
 // =========================================================
 // TLAS
