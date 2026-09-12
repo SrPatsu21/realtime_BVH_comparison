@@ -365,70 +365,88 @@ bool traceBLAS(
 
             BLASInstance instance = blasInstances[instanceIndex];
 
-            for (
-                uint triangle = 0;
-                triangle < instance.triangleCount;
-                ++triangle
-            )
+            if (intersectAABB(
+                    origin,
+                    direction,
+                    instance.boundsMin.xyz,
+                    instance.boundsMax.xyz,
+                    maxDistance
+                ))
             {
-                uint triangleIndex = instance.firstTriangle + triangle;
-
-                uint indexOffset = triangleIndex * 3;
-
-                uint index0 = indices.indices[indexOffset + 0];
-                uint index1 = indices.indices[indexOffset + 1];
-                uint index2 = indices.indices[indexOffset + 2];
-
-                vec3 v0 = loadVertexPosition(vertices, index0);
-                vec3 v1 = loadVertexPosition(vertices, index1);
-                vec3 v2 = loadVertexPosition(vertices, index2);
-
-                if (intersectTriangle(
-                        origin,
-                        direction,
-                        v0,
-                        v1,
-                        v2,
-                        maxDistance
-                    ))
+                for (
+                    uint triangle = 0;
+                    triangle < instance.triangleCount;
+                    ++triangle
+                )
                 {
-                    return true;
+                    uint triangleIndex = instance.firstTriangle + triangle;
+
+                    uint indexOffset = triangleIndex * 3;
+
+                    uint index0 = indices.indices[indexOffset + 0];
+                    uint index1 = indices.indices[indexOffset + 1];
+                    uint index2 = indices.indices[indexOffset + 2];
+
+                    vec3 v0 = loadVertexPosition(vertices, index0);
+                    vec3 v1 = loadVertexPosition(vertices, index1);
+                    vec3 v2 = loadVertexPosition(vertices, index2);
+
+                    if (intersectTriangle(
+                            origin,
+                            direction,
+                            v0,
+                            v1,
+                            v2,
+                            maxDistance
+                        ))
+                    {
+                        return true;
+                    }
                 }
             }
+
             instanceIndex = tlasInstance.instanceOffset + node.right;
             instance = blasInstances[instanceIndex];
 
-            for (
-                uint triangle = 0;
-                triangle < instance.triangleCount;
-                ++triangle
-            )
+            if (intersectAABB(
+                    origin,
+                    direction,
+                    instance.boundsMin.xyz,
+                    instance.boundsMax.xyz,
+                    maxDistance
+                ))
             {
-                uint triangleIndex = instance.firstTriangle + triangle;
-
-                uint indexOffset = triangleIndex * 3;
-
-                uint index0 = indices.indices[indexOffset + 0];
-                uint index1 = indices.indices[indexOffset + 1];
-                uint index2 = indices.indices[indexOffset + 2];
-
-                vec3 v0 = loadVertexPosition(vertices, index0);
-                vec3 v1 = loadVertexPosition(vertices, index1);
-                vec3 v2 = loadVertexPosition(vertices, index2);
-
-                if (intersectTriangle(
-                        origin,
-                        direction,
-                        v0,
-                        v1,
-                        v2,
-                        maxDistance
-                    ))
+                for (
+                    uint triangle = 0;
+                    triangle < instance.triangleCount;
+                    ++triangle
+                )
                 {
-                    return true;
+                    uint triangleIndex = instance.firstTriangle + triangle;
+
+                    uint indexOffset = triangleIndex * 3;
+
+                    uint index0 = indices.indices[indexOffset + 0];
+                    uint index1 = indices.indices[indexOffset + 1];
+                    uint index2 = indices.indices[indexOffset + 2];
+
+                    vec3 v0 = loadVertexPosition(vertices, index0);
+                    vec3 v1 = loadVertexPosition(vertices, index1);
+                    vec3 v2 = loadVertexPosition(vertices, index2);
+
+                    if (intersectTriangle(
+                            origin,
+                            direction,
+                            v0,
+                            v1,
+                            v2,
+                            maxDistance
+                        ))
+                    {
+                        return true;
+                    }
                 }
             }
-
             continue;
         }
 
