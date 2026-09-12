@@ -242,7 +242,7 @@ bool intersectTriangle(
     float maxDistance
 )
 {
-    const float epsilon = 0.000001;
+    const float epsilon =  0.00001;
 
     vec3 edge1 = v1 - v0;
     vec3 edge2 = v2 - v0;
@@ -630,7 +630,7 @@ vec3 calculateLighting(
         if (NdotL <= 0.0)
             continue;
 
-        const float shadowBias = 0.001;
+        const float shadowBias = 0.01;
 
         vec3 shadowOrigin =
             position +

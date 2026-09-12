@@ -497,8 +497,17 @@ void Render::initInstances(){
 
     RenderInstance * renderInstance0 = renderInstanceManager->getRenderInstance(floor->indexInVector);
     renderInstance0->scale = glm::vec3(10.0f);
-    renderInstance0->position += glm::vec3(0, 4, 0);
+    renderInstance0->position += glm::vec3(0, 3, 0);
     renderInstance0->updateModelMatrix();
+
+    renderInstanceRegistration = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/floor/Untitled.gltf")
+    );
+
+    RenderInstance * renderInstance4 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
+    renderInstance4->scale = glm::vec3(0.2f);
+    renderInstance4->position += glm::vec3(0, 4, 0);
+    renderInstance4->updateModelMatrix();
 
     //* cat
     renderInstanceRegistration = renderInstanceManager->createRenderInstance(
@@ -507,7 +516,7 @@ void Render::initInstances(){
 
     RenderInstance * renderInstance1 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
     renderInstance1->scale = glm::vec3(0.2f);
-    renderInstance1->position += glm::vec3(0, 0, 0);
+    renderInstance1->position += glm::vec3(0, 1, 0);
     renderInstance1->updateModelMatrix();
 
     renderInstanceRegistration = renderInstanceManager->createRenderInstance(
@@ -516,17 +525,17 @@ void Render::initInstances(){
 
     RenderInstance * renderInstance2 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
     renderInstance2->scale = glm::vec3(0.2f);
-    renderInstance2->position += glm::vec3(0, 1, 0);
+    renderInstance2->position += glm::vec3(2, 5, 0);
     renderInstance2->updateModelMatrix();
 
     //* light
     lightInstanceManager->createLight({
-        .position = glm::vec3(0.0f, 10.0f, 0.0f),
-        .intensity = 100.0f,
+        .position = glm::vec3(0.0f, 100.0f, 0.0f),
+        .intensity = 20000.0f,
         .color = glm::vec3(1.0f, 1.0f, 1.0f),
         .radius = 10.0f,
         .type = Config::LightType::Point,
-        .range = 50.0f,
+        .range = 1000.0f,
         ._pad0 = 0.0f,
         ._pad1 = 0.0f
     });
@@ -547,17 +556,17 @@ void Render::updateInstances(
 
     // update render instances
     {
-        // std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
-        // std::size_t renderInstancesSize = renderInstances.size();
-        // for (size_t i = 0; i < renderInstancesSize; i++)
-        // {
-        //     renderInstances[i].rotation = glm::vec3(
-        //         0.5* time,
-        //         0.3,
-        //         0.6
-        //     );
-        //     renderInstances[i].updateModelMatrix();
-        // }
+        std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
+        std::size_t renderInstancesSize = renderInstances.size();
+        for (size_t i = 1; i < renderInstancesSize; i++)
+        {
+            renderInstances[i].rotation = glm::vec3(
+                0.5* time,
+                0.3,
+                0.6
+            );
+            renderInstances[i].updateModelMatrix();
+        }
 
         uint32_t currentOffset = 0;
         renderInstanceManager->forEachBatch(
@@ -624,7 +633,7 @@ void Render::updateInstances(
     this->lightInstanceManager->update(currentFrame);
 
     //TLAS
-    // renderInstanceManager->rebuildTLAS();
+    renderInstanceManager->rebuildTLAS();
 }
 
 void Render::drawFrame(){

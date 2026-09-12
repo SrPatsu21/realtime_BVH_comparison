@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iomanip>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -105,6 +107,20 @@ public:
     static void printBVH(
         const std::vector<NodeType>& nodes,
         uint32_t index = 0
+    );
+
+    static void printBLAS(
+        const BLAS& blas
+    );
+
+    template<typename T>
+    static void printRawBytes(
+        const T& value
+    );
+
+    template<typename T>
+    static void printVectorRawBytes(
+        const std::vector<T>& values
     );
 };
 
@@ -278,15 +294,14 @@ AccelerationStructureManager<
         return it->second;
 
     std::shared_ptr<BLAS> blas = std::make_shared<BLAS>();
-    BLAS* as = blas.get();
 
     BLASInstanceBuilder::build(
         *mesh,
-        as->nodes,
-        as->instances
+        blas.get()->nodes,
+        blas.get()->instances
     );
 
-    as->index = blasVector.size();
+    blas.get()->index = blasVector.size();
 
     blasVector.emplace_back(
         blas
@@ -298,6 +313,10 @@ AccelerationStructureManager<
     );
 
     uploadBLAS();
+
+    printBLAS(
+        *blas.get()
+    );
 
     return blas;
 }
@@ -471,13 +490,9 @@ AccelerationStructureManager<
     BLBuilderType
 >::uploadTLAS()
 {
-    tlas.nodeOffset = 0;
-
     tlas.nodeCount = static_cast<uint32_t>(
             tlas.nodes.size()
         );
-
-    tlas.instanceOffset = 0;
 
     tlas.instanceCount = static_cast<uint32_t>(
             tlas.instances.size()
@@ -512,8 +527,306 @@ AccelerationStructureManager<
             0
         );
     }
-}
 
+    std::cout
+        << "\n"
+        << "========================================\n"
+        << "                  TLAS\n"
+        << "========================================\n";
+
+    std::cout
+        << "\n--- TLAS STRUCTURE ---\n";
+
+    std::cout
+        << "sizeof(TLAS): "
+        << sizeof(TLAS)
+        << " bytes\n";
+
+    std::cout
+        << "sizeof(TLNodeType): "
+        << sizeof(TLNodeType)
+        << " bytes\n";
+
+    std::cout
+        << "sizeof(TLASInstance): "
+        << sizeof(TLASInstance)
+        << " bytes\n";
+
+    std::cout
+        << "\n--- GPU OFFSETS ---\n";
+
+    std::cout
+        << "nodeOffset: "
+        << tlas.nodeOffset
+        << '\n';
+
+    std::cout
+        << "nodeCount: "
+        << tlas.nodeCount
+        << '\n';
+
+    std::cout
+        << "instanceOffset: "
+        << tlas.instanceOffset
+        << '\n';
+
+    std::cout
+        << "instanceCount: "
+        << tlas.instanceCount
+        << '\n';
+
+    std::cout
+        << "\n--- CPU VECTORS ---\n";
+
+    std::cout
+        << "nodes.size(): "
+        << tlas.nodes.size()
+        << '\n';
+
+    std::cout
+        << "nodes.capacity(): "
+        << tlas.nodes.capacity()
+        << '\n';
+
+    std::cout
+        << "nodes bytes: "
+        << tlas.nodes.size() * sizeof(TLNodeType)
+        << '\n';
+
+    std::cout
+        << "instances.size(): "
+        << tlas.instances.size()
+        << '\n';
+
+    std::cout
+        << "instances.capacity(): "
+        << tlas.instances.capacity()
+        << '\n';
+
+    std::cout
+        << "instances bytes: "
+        << tlas.instances.size() * sizeof(TLASInstance)
+        << '\n';
+
+    // =====================================================
+    // TLAS NODES
+    // =====================================================
+
+    std::cout
+        << "\n"
+        << "========================================\n"
+        << "              TLAS NODES\n"
+        << "========================================\n";
+
+    for (
+        uint32_t i = 0;
+        i < tlas.nodes.size();
+        ++i
+    )
+    {
+        const auto& node =
+            tlas.nodes[i];
+
+        std::cout
+            << "\nNODE ["
+            << i
+            << "]\n";
+
+        std::cout
+            << "  address: "
+            << static_cast<const void*>(&node)
+            << '\n';
+
+        std::cout
+            << "  offset in vector: "
+            << i * sizeof(TLNodeType)
+            << " bytes\n";
+
+        std::cout
+            << "  bounds.min = ("
+            << node.bounds.min.x
+            << ", "
+            << node.bounds.min.y
+            << ", "
+            << node.bounds.min.z
+            << ")\n";
+
+        std::cout
+            << "  bounds.max = ("
+            << node.bounds.max.x
+            << ", "
+            << node.bounds.max.y
+            << ", "
+            << node.bounds.max.z
+            << ")\n";
+
+        std::cout
+            << "  leaf = "
+            << node.leaf
+            << '\n';
+
+        if (node.leaf)
+        {
+            std::cout
+                << "  left = "
+                << node.left
+                << '\n';
+
+            std::cout
+                << "  right = "
+                << node.right
+                << '\n';
+        }
+        else
+        {
+            std::cout
+                << "  left = "
+                << node.left
+                << '\n';
+
+            std::cout
+                << "  right = "
+                << node.right
+                << '\n';
+
+            std::cout
+                << "  left valid = "
+                << (
+                    node.left <
+                    tlas.nodes.size()
+                )
+                << '\n';
+
+            std::cout
+                << "  right valid = "
+                << (
+                    node.right <
+                    tlas.nodes.size()
+                )
+                << '\n';
+        }
+
+        std::cout
+            << "  RAW BYTES:\n";
+
+        printRawBytes(
+            node
+        );
+    }
+
+    // =====================================================
+    // TLAS INSTANCES
+    // =====================================================
+
+    std::cout
+        << "\n"
+        << "========================================\n"
+        << "           TLAS INSTANCES\n"
+        << "========================================\n";
+
+    for (
+        uint32_t i = 0;
+        i < tlas.instances.size();
+        ++i
+    )
+    {
+        const TLASInstance& instance =
+            tlas.instances[i];
+
+        std::cout
+            << "\nINSTANCE ["
+            << i
+            << "]\n";
+
+        std::cout
+            << "  address: "
+            << static_cast<const void*>(&instance)
+            << '\n';
+
+        std::cout
+            << "  offset in vector: "
+            << i * sizeof(TLASInstance)
+            << " bytes\n";
+
+        std::cout
+            << "  sizeof: "
+            << sizeof(TLASInstance)
+            << " bytes\n";
+
+        /*
+         * Os campos abaixo são os que aparecem
+         * no seu código.
+         */
+
+        std::cout
+            << "  blasIndex = "
+            << instance.blasIndex
+            << '\n';
+
+        std::cout
+            << "  nodeOffset = "
+            << instance.nodeOffset
+            << '\n';
+
+        std::cout
+            << "  nodeCount = "
+            << instance.nodeCount
+            << '\n';
+
+        std::cout
+            << "  instanceOffset = "
+            << instance.instanceOffset
+            << '\n';
+
+        /*
+         * Se sua TLASInstance tiver esses campos,
+         * você pode adicionar aqui.
+         *
+         * Exemplo:
+         *
+         * std::cout
+         *     << "  transform = ..."
+         *     << '\n';
+         */
+
+        std::cout
+            << "  RAW BYTES:\n";
+
+        printRawBytes(
+            instance
+        );
+    }
+
+    // =====================================================
+    // RAW VECTOR DATA
+    // =====================================================
+
+    std::cout
+        << "\n"
+        << "========================================\n"
+        << "          TLAS RAW VECTOR DATA\n"
+        << "========================================\n";
+
+    std::cout
+        << "\n--- NODES RAW ---\n";
+
+    printVectorRawBytes(
+        tlas.nodes
+    );
+
+    std::cout
+        << "\n--- INSTANCES RAW ---\n";
+
+    printVectorRawBytes(
+        tlas.instances
+    );
+
+    std::cout
+        << "\n"
+        << "========================================\n"
+        << "             TLAS END\n"
+        << "========================================\n";
+}
 // =========================================================
 // debug
 // =========================================================
@@ -533,58 +846,425 @@ AccelerationStructureManager<
 )
 {
     if (index >= nodes.size())
-        return;
+    {
+        std::cout
+            << "    INVALID NODE INDEX: "
+            << index
+            << '\n';
 
-    const NodeType& node = nodes[index];
+        return;
+    }
+
+    const NodeType& node =
+        nodes[index];
 
     std::cout
-        << "["
+        << "\n----------------------------------------\n";
+
+    std::cout
+        << "NODE ["
         << index
-        << "] "
-        << "min=("
+        << "]\n";
+
+    std::cout
+        << "  sizeof(NodeType): "
+        << sizeof(NodeType)
+        << " bytes\n";
+
+    std::cout
+        << "  bounds.min = ("
         << node.bounds.min.x
         << ", "
         << node.bounds.min.y
         << ", "
         << node.bounds.min.z
-        << ") "
-        << "max=("
+        << ")\n";
+
+    std::cout
+        << "  bounds.max = ("
         << node.bounds.max.x
         << ", "
         << node.bounds.max.y
         << ", "
         << node.bounds.max.z
-        << ") ";
+        << ")\n";
+
+    std::cout
+        << "  leaf = "
+        << node.leaf
+        << '\n';
 
     if (node.leaf)
     {
         std::cout
-            << "LEAF first="
+            << "  firstPrimitive = "
             << node.firstPrimitive
-            << " count="
-            << node.primitiveCount;
+            << '\n';
+
+        std::cout
+            << "  primitiveCount = "
+            << node.primitiveCount
+            << '\n';
     }
     else
     {
         std::cout
-            << "INTERNAL left="
+            << "  left = "
             << node.left
-            << " right="
-            << node.right;
+            << '\n';
+
+        std::cout
+            << "  right = "
+            << node.right
+            << '\n';
     }
 
-    std::cout << '\n';
+    std::cout
+        << "  RAW BYTES:\n";
 
-    if (!node.leaf)
+    printRawBytes(
+        node
+    );
+
+    std::cout
+        << "----------------------------------------\n";
+}
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+void
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::printBLAS(
+    const BLAS& blas
+)
+{
+    std::cout
+        << "\n"
+        << "========================================\n"
+        << "                  BLAS\n"
+        << "========================================\n";
+
+    std::cout
+        << "BLAS index: "
+        << blas.index
+        << '\n';
+
+    std::cout
+        << "sizeof(BLAS): "
+        << sizeof(BLAS)
+        << " bytes\n";
+
+    std::cout
+        << "\n--- GPU OFFSETS ---\n";
+
+    std::cout
+        << "nodeOffset: "
+        << blas.nodeOffset
+        << '\n';
+
+    std::cout
+        << "nodeCount: "
+        << blas.nodeCount
+        << '\n';
+
+    std::cout
+        << "instanceOffset: "
+        << blas.instanceOffset
+        << '\n';
+
+    std::cout
+        << "instanceCount: "
+        << blas.instanceCount
+        << '\n';
+
+    std::cout
+        << "\n--- CPU VECTORS ---\n";
+
+    std::cout
+        << "nodes.size(): "
+        << blas.nodes.size()
+        << '\n';
+
+    std::cout
+        << "nodes.capacity(): "
+        << blas.nodes.capacity()
+        << '\n';
+
+    std::cout
+        << "nodes bytes: "
+        << blas.nodes.size() * sizeof(BLNodeType)
+        << '\n';
+
+    std::cout
+        << "instances.size(): "
+        << blas.instances.size()
+        << '\n';
+
+    std::cout
+        << "instances.capacity(): "
+        << blas.instances.capacity()
+        << '\n';
+
+    std::cout
+        << "instances bytes: "
+        << blas.instances.size() * sizeof(BLASInstance)
+        << '\n';
+
+    std::cout
+        << "\n--- NODE TYPE ---\n";
+
+    std::cout
+        << "sizeof(BLNodeType): "
+        << sizeof(BLNodeType)
+        << '\n';
+
+    std::cout
+        << "\n--- INSTANCE TYPE ---\n";
+
+    std::cout
+        << "sizeof(BLASInstance): "
+        << sizeof(BLASInstance)
+        << '\n';
+
+    std::cout
+        << "\n--- NODES ---\n";
+
+    for (
+        uint32_t i = 0;
+        i < blas.nodes.size();
+        ++i
+    )
     {
-        printBVH(
-            nodes,
-            node.left
-        );
+        const auto& node =
+            blas.nodes[i];
 
-        printBVH(
-            nodes,
-            node.right
+        std::cout
+            << "\nNODE ["
+            << i
+            << "]\n";
+
+        std::cout
+            << "  address: "
+            << static_cast<const void*>(&node)
+            << '\n';
+
+        std::cout
+            << "  min = ("
+            << node.bounds.min.x
+            << ", "
+            << node.bounds.min.y
+            << ", "
+            << node.bounds.min.z
+            << ")\n";
+
+        std::cout
+            << "  max = ("
+            << node.bounds.max.x
+            << ", "
+            << node.bounds.max.y
+            << ", "
+            << node.bounds.max.z
+            << ")\n";
+
+        std::cout
+            << "  leaf = "
+            << node.leaf
+            << '\n';
+
+        std::cout
+            << "  left = "
+            << node.left
+            << '\n';
+
+        std::cout
+            << "  right = "
+            << node.right
+            << '\n';
+
+        std::cout
+            << "  RAW:\n";
+
+        printRawBytes(
+            node
+        );
+    }
+
+    std::cout
+        << "\n--- BLAS INSTANCES ---\n";
+
+    for (
+        uint32_t i = 0;
+        i < blas.instances.size();
+        ++i
+    )
+    {
+        const BLASInstance& instance =
+            blas.instances[i];
+
+        std::cout
+            << "\nINSTANCE ["
+            << i
+            << "]\n";
+
+        std::cout
+            << "  address: "
+            << static_cast<const void*>(&instance)
+            << '\n';
+
+        std::cout
+            << "  min = ("
+            << instance.bounds.min.x
+            << ", "
+            << instance.bounds.min.y
+            << ", "
+            << instance.bounds.min.z
+            << ")\n";
+
+        std::cout
+            << "  max = ("
+            << instance.bounds.max.x
+            << ", "
+            << instance.bounds.max.y
+            << ", "
+            << instance.bounds.max.z
+            << ")\n";
+
+        std::cout
+            << "  firstTriangle = "
+            << instance.firstTriangle
+            << '\n';
+
+        std::cout
+            << "  triangleCount = "
+            << instance.triangleCount
+            << '\n';
+
+        std::cout
+            << "  materialOffset = "
+            << instance.materialOffset
+            << '\n';
+
+        std::cout
+            << "  sizeof(BLASInstance) = "
+            << sizeof(BLASInstance)
+            << " bytes\n";
+
+        std::cout
+            << "  RAW:\n";
+
+        printRawBytes(
+            instance
+        );
+    }
+
+    std::cout
+        << "\n========================================\n";
+}
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+template<typename T>
+void
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::printRawBytes(
+    const T& value
+)
+{
+    const uint8_t* bytes =
+        reinterpret_cast<const uint8_t*>(&value);
+
+    std::cout
+        << "    sizeof: "
+        << sizeof(T)
+        << " bytes\n";
+
+    for (
+        size_t i = 0;
+        i < sizeof(T);
+        ++i
+    )
+    {
+        if (i % 16 == 0)
+        {
+            std::cout
+                << "    "
+                << std::setw(4)
+                << std::setfill('0')
+                << std::hex
+                << i
+                << ": ";
+        }
+
+        std::cout
+            << std::setw(2)
+            << std::setfill('0')
+            << std::hex
+            << static_cast<uint32_t>(bytes[i])
+            << " ";
+
+        if (i % 16 == 15 || i == sizeof(T) - 1)
+        {
+            std::cout
+                << std::dec
+                << '\n';
+        }
+    }
+
+    std::cout
+        << std::dec
+        << std::setfill(' ');
+}
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+template<typename T>
+void
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::printVectorRawBytes(
+    const std::vector<T>& values
+)
+{
+    std::cout
+        << "    vector size: "
+        << values.size()
+        << '\n';
+
+    std::cout
+        << "    element size: "
+        << sizeof(T)
+        << " bytes\n";
+
+    std::cout
+        << "    total bytes: "
+        << values.size() * sizeof(T)
+        << '\n';
+
+    for (
+        size_t i = 0;
+        i < values.size();
+        ++i
+    )
+    {
+        std::cout
+            << "\n    element["
+            << i
+            << "]\n";
+
+        printRawBytes(
+            values[i]
         );
     }
 }
+
