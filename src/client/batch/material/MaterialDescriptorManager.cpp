@@ -20,11 +20,11 @@ MaterialDescriptorManager::MaterialDescriptorManager(
     if (materialBuffer == VK_NULL_HANDLE)
         throw std::invalid_argument("MaterialDescriptorManager: materialBuffer is null");
 
-    if (maxTextures == 0)
-        throw std::invalid_argument("MaterialDescriptorManager: maxTextures must be greater than zero");
+    if (maxTextures < 3)
+        throw std::invalid_argument("MaterialDescriptorManager: maxTextures must be at least 3");
     #endif
 
-    std::vector<VkDescriptorSetLayoutBinding> bindings(4);
+    std::vector<VkDescriptorSetLayoutBinding> bindings(2);
 
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -65,7 +65,7 @@ MaterialDescriptorManager::MaterialDescriptorManager(
 
     VkDescriptorPoolSize samplerPool{};
     samplerPool.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerPool.descriptorCount = maxTextures * 3;
+    samplerPool.descriptorCount = maxTextures;
 
     poolSizes.push_back(samplerPool);
 
@@ -91,8 +91,14 @@ MaterialDescriptorManager::MaterialDescriptorManager(
     allocateInfo.descriptorSetCount = 1;
     allocateInfo.pSetLayouts = &descriptorSetLayout;
 
-    if (vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(
+            device,
+            &allocateInfo,
+            &descriptorSet
+        ) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to allocate material descriptor set");
+    }
 
     VkDescriptorBufferInfo materialBufferInfo{};
     materialBufferInfo.buffer = materialBuffer;
@@ -149,41 +155,13 @@ void MaterialDescriptorManager::updateTextures()
         );
     #endif
 
-    std::vector<VkDescriptorImageInfo> baseColorInfos(
-        maxTextures
-    );
-    std::vector<VkDescriptorImageInfo> normalInfos(
-        maxTextures
-    );
-    std::vector<VkDescriptorImageInfo> metallicRoughnessInfos(
-        maxTextures
-    );
-
-    const std::shared_ptr<TextureImage>& defaultWhite = textureManager->defaultWhite;
-    const std::shared_ptr<TextureImage>& defaultNormal = textureManager->defaultNormal;
-    const std::shared_ptr<TextureImage>& defaultMetallic = textureManager->defaultMetallic;
-
-    for (uint32_t i = 0; i < maxTextures; i++)
-    {
-        baseColorInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        baseColorInfos[i].imageView = defaultWhite->getImageView();
-        baseColorInfos[i].sampler = defaultWhite->getSampler();
-
-        normalInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        normalInfos[i].imageView = defaultNormal->getImageView();
-        normalInfos[i].sampler = defaultNormal->getSampler();
-
-        metallicRoughnessInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        metallicRoughnessInfos[i].imageView = defaultMetallic->getImageView();
-        metallicRoughnessInfos[i].sampler = defaultMetallic->getSampler();
-    }
-
-    uint32_t textureCount = textureManager->getTextureCount();
+    uint32_t textureCount =
+        textureManager->getTextureCount();
 
     if (textureCount > maxTextures)
         textureCount = maxTextures;
 
-    for (uint32_t i = 1; i < textureCount; i++)
+    for (uint32_t i = 0; i < textureCount; i++)
     {
         const std::shared_ptr<TextureImage>& texture =
             textureManager->getTexture(i);
@@ -191,42 +169,8 @@ void MaterialDescriptorManager::updateTextures()
         if (!texture)
             continue;
 
-        baseColorInfos[i].imageView = texture->getImageView();
-        baseColorInfos[i].sampler = texture->getSampler();
-
-        normalInfos[i].imageView = texture->getImageView();
-        normalInfos[i].sampler = texture->getSampler();
-
-        metallicRoughnessInfos[i].imageView = texture->getImageView();
-        metallicRoughnessInfos[i].sampler = texture->getSampler();
+        updateTexture(i);
     }
-
-    std::vector<VkWriteDescriptorSet> writes(3);
-    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[0].dstSet = descriptorSet;
-    writes[0].dstBinding = 1;
-    writes[0].dstArrayElement = 0;
-    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[0].descriptorCount = maxTextures;
-    writes[0].pImageInfo = baseColorInfos.data();
-
-    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[1].dstSet = descriptorSet;
-    writes[1].dstBinding = 2;
-    writes[1].dstArrayElement = 0;
-    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[1].descriptorCount = maxTextures;
-    writes[1].pImageInfo = normalInfos.data();
-
-    writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[2].dstSet = descriptorSet;
-    writes[2].dstBinding = 3;
-    writes[2].dstArrayElement = 0;
-    writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[2].descriptorCount = maxTextures;
-    writes[2].pImageInfo = metallicRoughnessInfos.data();
-
-    vkUpdateDescriptorSets(device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 
 void MaterialDescriptorManager::updateTexture(
@@ -241,9 +185,6 @@ void MaterialDescriptorManager::updateTexture(
         throw std::out_of_range("MaterialDescriptorManager: texture index out of range");
     #endif
 
-    if (textureIndex == 0)
-        return;
-
     const std::shared_ptr<TextureImage>& texture =
         textureManager->getTexture(textureIndex);
 
@@ -255,30 +196,20 @@ void MaterialDescriptorManager::updateTexture(
     imageInfo.imageView = texture->getImageView();
     imageInfo.sampler = texture->getSampler();
 
-    VkWriteDescriptorSet writes[3]{};
-    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[0].dstSet = descriptorSet;
-    writes[0].dstBinding = 1;
-    writes[0].dstArrayElement = textureIndex;
-    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[0].descriptorCount = 1;
-    writes[0].pImageInfo = &imageInfo;
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = descriptorSet;
+    write.dstBinding = 1;
+    write.dstArrayElement = textureIndex;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.descriptorCount = 1;
+    write.pImageInfo = &imageInfo;
 
-    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[1].dstSet = descriptorSet;
-    writes[1].dstBinding = 2;
-    writes[1].dstArrayElement = textureIndex;
-    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[1].descriptorCount = 1;
-    writes[1].pImageInfo = &imageInfo;
-
-    writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[2].dstSet = descriptorSet;
-    writes[2].dstBinding = 3;
-    writes[2].dstArrayElement = textureIndex;
-    writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[2].descriptorCount = 1;
-    writes[2].pImageInfo = &imageInfo;
-
-    vkUpdateDescriptorSets(device, 3, writes, 0, nullptr);
+    vkUpdateDescriptorSets(
+        device,
+        1,
+        &write,
+        0,
+        nullptr
+    );
 }

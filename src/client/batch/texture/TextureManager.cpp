@@ -70,6 +70,12 @@ TextureManager::TextureManager(
     textures.push_back(
         defaultWhite
     );
+    textures.push_back(
+        defaultNormal
+    );
+    textures.push_back(
+        defaultMetallic
+    );
 }
 
 TextureManager::~TextureManager()

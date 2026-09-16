@@ -22,9 +22,7 @@ layout(set = 1, binding = 0) readonly buffer MaterialBuffer
     MaterialGPU materials[];
 };
 
-layout(set = 1, binding = 1) uniform sampler2D baseColorTextures[1024];
-layout(set = 1, binding = 2) uniform sampler2D normalTextures[1024];
-layout(set = 1, binding = 3) uniform sampler2D metallicRoughnessTextures[1024];
+layout(set = 1, binding = 1) uniform sampler2D textures[1024];
 
 layout(push_constant) uniform MaterialPushConstant
 {
@@ -59,7 +57,7 @@ void main()
 
     vec4 albedo =
         texture(
-            baseColorTextures[material.baseColorTexture],
+            textures[material.baseColorTexture],
             fragTexCoord
         ) *
         material.baseColorFactor;
@@ -73,7 +71,7 @@ void main()
 
     vec3 tangentNormal =
         texture(
-            normalTextures[material.normalTexture],
+            textures[material.normalTexture],
             fragTexCoord
         ).xyz * 2.0 - 1.0;
 
@@ -95,7 +93,7 @@ void main()
 
     vec4 mr =
         texture(
-            metallicRoughnessTextures[
+            textures[
                 material.metallicRoughnessTexture
             ],
             fragTexCoord
