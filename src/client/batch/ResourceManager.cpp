@@ -1,23 +1,42 @@
 #include "ResourceManager.hpp"
 
+#include <stdexcept>
+
 ResourceManager::ResourceManager(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
-    BufferManager* bufferManager,
-    MaterialDescriptorManager* descriptorManager
+    BufferManager* bufferManager
 ) :
     physicalDevice(physicalDevice),
     device(device),
     bufferManager(bufferManager),
-    descriptorManager(descriptorManager),
-    samplerManager(physicalDevice, device)
+    samplerManager(physicalDevice, device),
+    textureManager(
+        physicalDevice,
+        device,
+        bufferManager,
+        &samplerManager,
+        1024
+    ),
+    materialManager(
+        device,
+        bufferManager,
+        &textureManager,
+        1024,
+        1024
+    )
 {
-    accelerationStructureManager = new AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>(bufferManager);
+    accelerationStructureManager =
+        new AccelerationStructureManager<
+            DefaultTLASBuilder,
+            DefaultBLASBuilder
+        >(bufferManager);
 }
 
 std::shared_ptr<Mesh> ResourceManager::getMesh(
     const std::string& meshPath
-) {
+)
+{
     auto [it, inserted] = meshes.try_emplace(meshPath);
 
     if (!inserted)
@@ -26,190 +45,78 @@ std::shared_ptr<Mesh> ResourceManager::getMesh(
             return mesh;
     }
 
-    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(
-        meshPath,
-        device,
-        bufferManager
+    MeshImportData importData =
+        AssimpModelLoader::load(meshPath);
+
+    std::shared_ptr<Mesh> mesh =
+        std::make_shared<Mesh>(
+            device,
+            bufferManager,
+            importData.vertices,
+            importData.indices,
+            importData.subMeshes
+        );
+
+    std::vector<uint32_t> materialIndices;
+    materialIndices.resize(
+        importData.materials.size()
     );
-    it->second = mesh;
+
+    for (uint32_t i = 0; i < importData.materials.size(); i++)
+    {
+        const auto& materialData =
+            importData.materials[i];
+
+        MaterialData material{};
+
+        material.baseColorFactor = materialData.baseColorFactor;
+        material.metallicFactor = materialData.metallicFactor;
+        material.roughnessFactor = materialData.roughnessFactor;
+
+        material.alphaMode = static_cast<MaterialData::AlphaMode>(materialData.alphaMode);
+        material.alphaCutoff = materialData.alphaCutoff;
+
+        if (!materialData.baseColorPath.empty())
+            material.baseColor = textureManager.createTexture(materialData.baseColorPath);
+
+        if (!materialData.normalPath.empty())
+            material.normal = textureManager.createTexture(materialData.normalPath);
+
+        if (!materialData.metallicRoughnessPath.empty())
+            material.metallicRoughness = textureManager.createTexture(materialData.metallicRoughnessPath);
+
+        materialIndices[i] =
+            materialManager.createMaterial(
+                mesh.get(),
+                i,
+                material
+            );
+    }
+
+    for (uint32_t i = 0; i < importData.subMeshes.size(); i++)
+    {
+        uint32_t assimpMaterialIndex = importData.subMeshes[i].materialIndex;
+
+        if (assimpMaterialIndex >= materialIndices.size())
+            throw std::runtime_error("Invalid material index in imported SubMesh");
+
+        importData.subMeshes[i].materialIndex = materialIndices[assimpMaterialIndex];
+    }
+
+
+    mesh->setSubMeshes(importData.subMeshes);
+
+    accelerationStructureManager->createBLAS(
+        mesh.get(),
+        importData.vertices,
+        importData.indices,
+        mesh.get()->getSubMeshes()
+    );
+    meshes[meshPath] = mesh;
 
     return mesh;
 }
 
-std::vector<std::shared_ptr<Material>>
-ResourceManager::getMaterialsForMesh(const Mesh& mesh)
-{
-    std::vector<std::shared_ptr<Material>> result;
-
-    for (const auto& matData : mesh.getMaterials())
-    {
-        std::string key =
-            matData.baseColorPath + "|" +
-            matData.normalPath + "|" +
-            matData.metallicRoughnessPath + "|" +
-            std::to_string(matData.baseColorFactor.r) + "|" +
-            std::to_string(matData.baseColorFactor.g) + "|" +
-            std::to_string(matData.baseColorFactor.b) + "|" +
-            std::to_string(matData.baseColorFactor.a) + "|" +
-            std::to_string(matData.metallicFactor) + "|" +
-            std::to_string(matData.roughnessFactor) + "|" +
-            std::to_string(static_cast<uint32_t>(matData.alphaMode)) + "|" +
-            std::to_string(matData.alphaCutoff);
-
-        std::shared_ptr<Material> material = nullptr;
-
-        auto it = materials.find(key);
-        if (it != materials.end())
-        {
-            material = it->second.lock();
-        }
-
-        if (!material)
-        {
-            std::shared_ptr<TextureImage> baseColorHandle = nullptr;
-            std::shared_ptr<TextureImage> normalHandle = nullptr;
-            std::shared_ptr<TextureImage> mrHandle = nullptr;
-
-            if (!matData.baseColorPath.empty())
-                baseColorHandle = getTexture(matData.baseColorPath);
-
-            if (!matData.normalPath.empty())
-                normalHandle = getTexture(matData.normalPath);
-
-            if (!matData.metallicRoughnessPath.empty())
-                mrHandle = getTexture(matData.metallicRoughnessPath);
-
-            Material::Properties properties;
-            properties.baseColorFactor = matData.baseColorFactor;
-            properties.metallicFactor = matData.metallicFactor;
-            properties.roughnessFactor = matData.roughnessFactor;
-            properties.alphaMode = matData.alphaMode;
-            properties.alphaCutoff = matData.alphaCutoff;
-
-            material = std::make_shared<Material>(
-                device,
-                bufferManager,
-                descriptorManager,
-                baseColorHandle,
-                normalHandle,
-                mrHandle,
-                properties
-            );
-
-            materials[key] = material;
-        }
-
-        result.push_back(material);
-    }
-
-    return result;
-}
-
-std::shared_ptr<Material>
-ResourceManager::getMaterialForSubMesh(
-    const Mesh& mesh,
-    const Mesh::SubMesh& subMesh
-)
-{
-    const auto& materialsData = mesh.getMaterials();
-
-    if (subMesh.materialIndex >= materialsData.size())
-        throw std::runtime_error("Invalid material index in SubMesh");
-
-    const auto& matData = materialsData[subMesh.materialIndex];
-
-    std::string key =
-        matData.baseColorPath + "|" +
-        matData.normalPath + "|" +
-        matData.metallicRoughnessPath + "|" +
-        std::to_string(matData.baseColorFactor.r) + "|" +
-        std::to_string(matData.baseColorFactor.g) + "|" +
-        std::to_string(matData.baseColorFactor.b) + "|" +
-        std::to_string(matData.baseColorFactor.a) + "|" +
-        std::to_string(matData.metallicFactor) + "|" +
-        std::to_string(matData.roughnessFactor) + "|" +
-        std::to_string(static_cast<uint32_t>(matData.alphaMode)) + "|" +
-        std::to_string(matData.alphaCutoff);
-
-    std::shared_ptr<Material> material = nullptr;
-
-    auto it = materials.find(key);
-    if (it != materials.end())
-        material = it->second.lock();
-
-    if (!material)
-    {
-        std::shared_ptr<TextureImage> baseColorHandle = nullptr;
-        std::shared_ptr<TextureImage> normalHandle = nullptr;
-        std::shared_ptr<TextureImage> mrHandle = nullptr;
-
-        if (!matData.baseColorPath.empty())
-            baseColorHandle = getTexture(matData.baseColorPath);
-
-        if (!matData.normalPath.empty())
-            normalHandle = getTexture(matData.normalPath);
-
-        if (!matData.metallicRoughnessPath.empty())
-            mrHandle = getTexture(matData.metallicRoughnessPath);
-
-        Material::Properties properties;
-        properties.baseColorFactor = matData.baseColorFactor;
-        properties.metallicFactor = matData.metallicFactor;
-        properties.roughnessFactor = matData.roughnessFactor;
-        properties.alphaMode = matData.alphaMode;
-        properties.alphaCutoff = matData.alphaCutoff;
-
-        material = std::make_shared<Material>(
-            device,
-            bufferManager,
-            descriptorManager,
-            baseColorHandle,
-            normalHandle,
-            mrHandle,
-            properties
-        );
-
-        materials[key] = material;
-    }
-
-    return material;
-}
-
-std::shared_ptr<TextureImage>
-ResourceManager::getTexture(const std::string& path)
-{
-    auto it = textures.find(path);
-
-    if (it != textures.end())
-    {
-        if (auto handle = it->second.lock())
-            return handle;
-    }
-
-    TextureAsset asset(path, physicalDevice);
-
-    std::shared_ptr<TextureImage> textureImage = std::make_shared<TextureImage>(
-        physicalDevice,
-        device,
-        bufferManager,
-        samplerManager.getSampler(asset.getRecommendedSamplerDesc()),
-        asset,
-        &TextureImage::DefaultImageTransitionPolicy::instance()
-    );
-
-    textures[path] = textureImage;
-
-    return textureImage;
-}
-
-
 ResourceManager::~ResourceManager(){
     delete accelerationStructureManager;
-}
-
-void ResourceManager::CleanupMaps()
-{
-    CleanupMap(meshes);
-    CleanupMap(textures);
-    CleanupMap(materials);
 }

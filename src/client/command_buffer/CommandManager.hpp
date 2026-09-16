@@ -5,7 +5,7 @@
 #include "../graphics_pipeline/GraphicsPipelineManager.hpp"
 #include "../batch/RenderInstanceManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
-#include "../batch/material/MaterialDescriptorManager.hpp"
+#include "../batch/material/MaterialManager.hpp"
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
 #include "../raytracing/buffers/GBufferDescriptorManager.hpp"
@@ -106,27 +106,27 @@ private:
         uint32_t imageCount
     );
 
-    void recordGeometrySecondaryCommandBuffer(
-        VkCommandBuffer secondaryCommandBuffer,
+    // void recordGeometrySecondaryCommandBuffer(
+    //     VkCommandBuffer secondaryCommandBuffer,
 
-        VkRenderPass renderPass,
+    //     VkRenderPass renderPass,
 
-        uint32_t currentFrame,
+    //     uint32_t currentFrame,
 
-        GraphicsPipelineManager* graphicsPipeline,
+    //     GraphicsPipelineManager* graphicsPipeline,
 
-        VkDescriptorSet globalSet,
-        VkDescriptorSet instanceSet,
+    //     VkDescriptorSet globalSet,
+    //     VkDescriptorSet instanceSet,
 
-        RenderInstanceManager* renderInstanceManager,
+    //     RenderInstanceManager* renderInstanceManager,
 
-        uint32_t firstBatch,
-        uint32_t lastBatch,
-        uint32_t firstInstanceOffset,
+    //     uint32_t firstBatch,
+    //     uint32_t lastBatch,
+    //     uint32_t firstInstanceOffset,
 
-        const std::vector<IViewportProvider*>& viewportProviders,
-        const std::vector<IScissorProvider*>& scissorProviders
-    );
+    //     const std::vector<IViewportProvider*>& viewportProviders,
+    //     const std::vector<IScissorProvider*>& scissorProviders
+    // );
 
 public:
     void allocateCommandBuffers(
@@ -162,6 +162,7 @@ public:
         RenderInstanceManager* renderInstanceManager,
         GBufferDescriptorManager* gBufferDescriptorManager,
         TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager,
+        MaterialManager* materialManager,
         LightInstanceManager* lightInstanceManager,
         DeferredLightingDescriptorManager* deferredLightingDescriptorManager,
         const std::vector<ParticleData>& particlesData,

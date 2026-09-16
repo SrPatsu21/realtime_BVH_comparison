@@ -24,6 +24,7 @@ LightingPipelineLayoutProvider::createPipelineLayouts(
     GraphicsPipelineHelper::createPipelineLayout(
         ctx.device,
         0,
+        VK_SHADER_STAGE_VERTEX_BIT,
         descriptorLayouts,
         pipelineLayout
     );

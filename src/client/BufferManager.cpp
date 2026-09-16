@@ -447,3 +447,50 @@ VkDeviceAddress BufferManager::getBufferDeviceAddress(
         &info
     );
 }
+
+VkBuffer BufferManager::createDeviceBuffer(
+    VkDeviceSize size,
+    VkBufferUsageFlags usage,
+    VkDeviceMemory& memory,
+    VkDeviceAddress* address
+)
+{
+    VkBuffer buffer;
+
+    createBuffer(
+        size,
+        usage |
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        buffer
+    );
+
+    allocateBufferMemory(
+        buffer,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        memory,
+        true
+    );
+
+    vkBindBufferMemory(
+        device,
+        buffer,
+        memory,
+        0
+    );
+
+    if (address)
+    {
+        VkBufferDeviceAddressInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        info.buffer = buffer;
+
+        *address =
+            vkGetBufferDeviceAddress(
+                device,
+                &info
+            );
+    }
+
+    return buffer;
+}

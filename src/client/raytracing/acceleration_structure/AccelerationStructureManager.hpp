@@ -94,6 +94,13 @@ public:
         const std::vector<TLASBuildInput>& inputs
     );
 
+    std::shared_ptr<BLAS> createBLAS(
+        const Mesh* mesh,
+        const std::vector<Vertex>& vertices,
+        const std::vector<uint32_t>& indices,
+        const std::vector<SubMesh>& subMeshes
+    );
+
     // get
 
     TLAS& getTLAS() { return tlas; }
@@ -275,7 +282,6 @@ AccelerationStructureManager<
     }
 }
 
-
 // =========================================================
 // getBLAS
 // =========================================================
@@ -299,18 +305,52 @@ AccelerationStructureManager<
 {
     auto it = blasMap.find(mesh);
 
+    if (it == blasMap.end())
+        return nullptr;
+
+    return it->second;
+}
+
+template<
+    typename TLBuilderType,
+    typename BLBuilderType
+>
+std::shared_ptr<
+    typename AccelerationStructureManager<
+        TLBuilderType,
+        BLBuilderType
+    >::BLAS
+>
+AccelerationStructureManager<
+    TLBuilderType,
+    BLBuilderType
+>::createBLAS(
+    const Mesh* mesh,
+    const std::vector<Vertex>& vertices,
+    const std::vector<uint32_t>& indices,
+    const std::vector<SubMesh>& subMeshes
+)
+{
+    auto it = blasMap.find(mesh);
+
     if (it != blasMap.end())
         return it->second;
 
-    std::shared_ptr<BLAS> blas = std::make_shared<BLAS>();
+    std::shared_ptr<BLAS> blas =
+        std::make_shared<BLAS>();
 
     BLASInstanceBuilder::build(
-        *mesh,
-        blas.get()->nodes,
-        blas.get()->instances
+        vertices,
+        indices,
+        subMeshes,
+        blas->nodes,
+        blas->instances
     );
 
-    blas.get()->index = blasVector.size();
+    if (blas->nodes.empty())
+        throw std::runtime_error("AccelerationStructureManager: BLAS contains no nodes");
+
+    blas->index = static_cast<uint32_t>(blasVector.size());
 
     blasVector.emplace_back(
         blas
@@ -367,11 +407,7 @@ AccelerationStructureManager<
     for (const TLASBuildInput& input : inputs)
     {
         if (!input.blas)
-        {
-            throw std::runtime_error(
-                "TLAS input contains null BLAS"
-            );
-        }
+            throw std::runtime_error("TLAS input contains null BLAS");
 
         blasIndices.emplace_back(
             input.blas->index

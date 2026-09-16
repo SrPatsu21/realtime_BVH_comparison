@@ -5,9 +5,13 @@
 #include <string>
 
 #include "mesh/Mesh.hpp"
-#include "material/Material.hpp"
+#include "AssimpModelLoader.hpp"
+
+#include "material/MaterialManager.hpp"
+
+#include "texture/TextureManager.hpp"
 #include "texture/SamplerManager.hpp"
-#include "texture/TextureImage.hpp"
+
 #include "../raytracing/acceleration_structure/AccelerationStructureManager.hpp"
 #include "../raytracing/acceleration_structure/utils/accelerationStructureConfig.hpp"
 
@@ -17,25 +21,29 @@ private:
     VkPhysicalDevice physicalDevice;
     VkDevice device;
     BufferManager* bufferManager;
+
     SamplerManager samplerManager;
-    MaterialDescriptorManager* descriptorManager;
+
+    TextureManager textureManager;
+    MaterialManager materialManager;
+
     AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>* accelerationStructureManager;
 
     std::unordered_map<std::string, std::weak_ptr<Mesh>> meshes;
-    std::unordered_map<std::string, std::weak_ptr<TextureImage>> textures;
-    std::unordered_map<std::string, std::weak_ptr<Material>> materials;
 
     static void buildPrimitiveRefs(
         const Mesh& mesh,
         std::vector<PrimitiveRef>& primitives
     );
+
 public:
+
     ResourceManager(
         VkPhysicalDevice physicalDevice,
         VkDevice device,
-        BufferManager* bufferManager,
-        MaterialDescriptorManager* descriptorManager
+        BufferManager* bufferManager
     );
+
     ~ResourceManager();
 
     BufferManager* getBufferManager(){
@@ -46,18 +54,9 @@ public:
         const std::string& meshPath
     );
 
-    std::vector<std::shared_ptr<Material>> getMaterialsForMesh(
-        const Mesh& mesh
-    );
+    TextureManager* getTextureManager() { return &textureManager; }
 
-    std::shared_ptr<Material> getMaterialForSubMesh(
-        const Mesh& mesh,
-        const Mesh::SubMesh& subMesh
-    );
-
-    std::shared_ptr<TextureImage> getTexture(
-        const std::string& path
-    );
+    MaterialManager* getMaterialManager(){ return &materialManager; }
 
     AccelerationStructureManager<DefaultTLASBuilder, DefaultBLASBuilder>* getAccelerationStructureManager(){
         return accelerationStructureManager;

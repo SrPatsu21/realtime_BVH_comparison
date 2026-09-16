@@ -18,6 +18,7 @@ public:
         GraphicsPipelineManager* graphicsPipeline,
 
         VkDescriptorSet globalSet,
+        VkDescriptorSet materialSet,
         VkDescriptorSet instanceSet,
 
         RenderInstanceManager* renderInstanceManager,

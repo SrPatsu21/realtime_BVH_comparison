@@ -26,6 +26,7 @@ void ParticlePipelineProvider::createPipelines(
     VkPipelineLayout pipelineLayout;
     GraphicsPipelineHelper::createPipelineLayout(
         ctx.device,
+        0,
         sizeof(ParticleData),
         {
             ctx.globalLayout,

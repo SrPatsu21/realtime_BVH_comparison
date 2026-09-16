@@ -69,32 +69,32 @@ void RenderInstanceManager::addInstance(
 ) {
     instance->getRegistrations().reserve(mesh->getSubMeshes().size());
 
-    const std::vector<Mesh::SubMesh>& meshes = mesh->getSubMeshes();
-
+    const std::vector<SubMesh>& meshes = mesh->getSubMeshes();
+    MaterialManager* materialManager = resourceManager->getMaterialManager();
     for (size_t i = 0; i < meshes.size(); i++)
     {
-        auto material = resourceManager->getMaterialForSubMesh(*mesh, meshes[i]);
+        const MaterialCPU* material = materialManager->getMaterial(meshes[i].materialIndex);
 
         GraphicsPipelineManager::PipelineFlags pipelineFlags =
             GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
             GraphicsPipelineManager::PIPE_DEPTH_TEST;
 
-        switch (material->getAlphaMode())
+        switch (material->alphaMode)
         {
-            case Material::AlphaMode::OPAQUE:
+            case MaterialData::AlphaMode::OPAQUE:
                 pipelineFlags |=
                     GraphicsPipelineManager::PIPE_CULL_BACK |
                     GraphicsPipelineManager::PIPE_DEPTH_WRITE;
                 break;
 
-            case Material::AlphaMode::MASK:
+            case MaterialData::AlphaMode::MASK:
                 pipelineFlags |=
                     GraphicsPipelineManager::PIPE_CULL_BACK |
                     GraphicsPipelineManager::PIPE_DEPTH_WRITE |
                     GraphicsPipelineManager::PIPE_ALPHA_TEST;
                 break;
 
-            case Material::AlphaMode::BLEND:
+            case MaterialData::AlphaMode::BLEND:
                 pipelineFlags |=
                     GraphicsPipelineManager::PIPE_CULL_NONE |
                     GraphicsPipelineManager::PIPE_BLEND;
@@ -104,7 +104,7 @@ void RenderInstanceManager::addInstance(
         BatchKey key = {
             mesh,
             &meshes[i],
-            material,
+            meshes[i].materialIndex,
             pipelineFlags
         };
 
@@ -315,7 +315,7 @@ void RenderInstanceManager::findBatchKey(
 {
     key.mesh = resourceManager->getMesh(meshPath);
     key.subMesh = &key.mesh->getSubMeshes()[subMeshIndex];
-    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.subMesh);
+    key.material = key.subMesh->materialIndex;
     key.pipelineFlags =
         GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
         GraphicsPipelineManager::PIPE_CULL_NONE |
@@ -332,7 +332,7 @@ BatchKey RenderInstanceManager::findBatchKey(
     BatchKey key;
     key.mesh = resourceManager->getMesh(meshPath);
     key.subMesh = &key.mesh->getSubMeshes()[subMeshIndex];
-    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.subMesh);
+    key.material = key.subMesh->materialIndex;
     key.pipelineFlags =
         GraphicsPipelineManager::PIPE_TOPO_TRIANGLES |
         GraphicsPipelineManager::PIPE_CULL_NONE |

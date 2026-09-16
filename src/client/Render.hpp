@@ -26,7 +26,6 @@
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-    static TextureImage::DefaultTextures defaultTextures;
     bool framebufferResized = false;
     Config::ConfigTable config;
 

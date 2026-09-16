@@ -16,7 +16,8 @@ GraphicsPipelineManager::PipelineFlags MeshPipelineLayoutProvider::createPipelin
 
     GraphicsPipelineHelper::createPipelineLayout(
         ctx.device,
-        sizeof(InstanceData),
+        sizeof(uint32_t),
+        VK_SHADER_STAGE_FRAGMENT_BIT,
         {
             ctx.globalLayout,
             ctx.materialLayout,

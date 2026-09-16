@@ -62,13 +62,6 @@ public:
         DefaultImageTransitionPolicy() = default;
     };
 
-    struct DefaultTextures
-    {
-        std::shared_ptr<TextureImage> white;
-        std::shared_ptr<TextureImage> normal;
-        std::shared_ptr<TextureImage> metallic;
-    };
-
 private:
     VkDevice device{VK_NULL_HANDLE};
 
@@ -80,6 +73,7 @@ private:
     uint32_t mipLevels{0};
     uint32_t layers{1};
     VkFormat format{VK_FORMAT_UNDEFINED};
+    uint32_t index{0};
 
     /**
      * @brief Creates a Vulkan image from a TextureAsset and uploads its data.
@@ -142,6 +136,7 @@ public:
         BufferManager* bufferManager,
         VkSampler sampler,
         const TextureAsset& asset,
+        uint32_t index,
         TextureImage::IImageTransitionPolicy* transitionPolicy
     );
 
@@ -174,6 +169,7 @@ public:
     uint32_t getMipLevels() const { return mipLevels; }
     VkFormat getFormat() const { return format; }
     VkSampler getSampler() const { return sampler; }
+    uint32_t getIndex() const { return index; }
 };
 
 class TextureFactory

@@ -1,11 +1,9 @@
 #pragma once
 
 #include <vector>
-#include <cstdint>
 
 #include "../../utils/accelerationStructureConfig.hpp"
 
-#include "../node/BVHNode.hpp"
 #include "../node/BLASInstance.hpp"
 #include "../primitives/PrimitiveRef.hpp"
 #include "../builder/BVHBuilder.hpp"
@@ -22,7 +20,9 @@ public:
 
 
     static void build(
-        const Mesh& mesh,
+        const std::vector<Vertex>& vertices,
+        const std::vector<uint32_t>& indices,
+        const std::vector<SubMesh>& subMeshes,
         std::vector<NodeType>& nodes,
         std::vector<BLASInstance>& instances
     );
@@ -30,7 +30,9 @@ public:
 private:
 
     static void buildPrimitives(
-        const Mesh& mesh,
+        const std::vector<Vertex>& vertices,
+        const std::vector<uint32_t>& indices,
+        const std::vector<SubMesh>& subMeshes,
         std::vector<PrimitiveRef>& primitives
     );
 

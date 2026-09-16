@@ -1,10 +1,6 @@
 #version 450
 
-layout(set = 1, binding = 0) uniform sampler2D albedoTex;
-layout(set = 1, binding = 1) uniform sampler2D normalTex;
-layout(set = 1, binding = 2) uniform sampler2D metallicRoughnessTex;
-
-struct MaterialData
+struct MaterialGPU
 {
     vec4 baseColorFactor;
 
@@ -13,12 +9,27 @@ struct MaterialData
 
     uint alphaMode;
     float alphaCutoff;
+
+    uint baseColorTexture;
+    uint normalTexture;
+    uint metallicRoughnessTexture;
+
+    uint _padding0;
 };
 
-layout(std430, set = 1, binding = 3) readonly buffer MaterialBuffer
+layout(set = 1, binding = 0) readonly buffer MaterialBuffer
 {
-    MaterialData material;
+    MaterialGPU materials[];
 };
+
+layout(set = 1, binding = 1) uniform sampler2D baseColorTextures[1024];
+layout(set = 1, binding = 2) uniform sampler2D normalTextures[1024];
+layout(set = 1, binding = 3) uniform sampler2D metallicRoughnessTextures[1024];
+
+layout(push_constant) uniform MaterialPushConstant
+{
+    uint materialIndex;
+} materialPush;
 
 // --------------------------------------------------
 // Vertex inputs
@@ -40,19 +51,28 @@ layout(location = 3) out vec4 outMaterial;
 
 void main()
 {
+    MaterialGPU material = materials[materialPush.materialIndex];
+
     // --------------------------------------------------
     // Albedo
     // --------------------------------------------------
 
     vec4 albedo =
-        texture(albedoTex, fragTexCoord) *
+        texture(
+            baseColorTextures[material.baseColorTexture],
+            fragTexCoord
+        ) *
         material.baseColorFactor;
 
     // --------------------------------------------------
     // Normal map
     // --------------------------------------------------
 
-    vec3 tangentNormal = texture(normalTex, fragTexCoord).xyz * 2.0 - 1.0;
+    vec3 tangentNormal =
+        texture(
+            normalTextures[material.normalTexture],
+            fragTexCoord
+        ).xyz * 2.0 - 1.0;
 
     vec3 N = normalize(fragNormal);
 
@@ -72,7 +92,9 @@ void main()
 
     vec4 mr =
         texture(
-            metallicRoughnessTex,
+            metallicRoughnessTextures[
+                material.metallicRoughnessTexture
+            ],
             fragTexCoord
         );
 

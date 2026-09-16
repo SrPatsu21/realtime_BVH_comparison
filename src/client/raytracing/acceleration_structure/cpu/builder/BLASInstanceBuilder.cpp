@@ -1,9 +1,18 @@
 #include "BLASInstanceBuilder.hpp"
 
+#include <cstdint>
+
+#include "../../utils/accelerationStructureConfig.hpp"
+
+#include "../node/BVHNode.hpp"
+#include "../node/BLASInstance.hpp"
+#include "../primitives/PrimitiveRef.hpp"
 #include "../builder/BVHBuilder.hpp"
 
 void BLASInstanceBuilder::build(
-    const Mesh& mesh,
+    const std::vector<Vertex>& vertices,
+    const std::vector<uint32_t>& indices,
+    const std::vector<SubMesh>& subMeshes,
     std::vector<NodeType>& nodes,
     std::vector<BLASInstance>& instances
 )
@@ -14,7 +23,9 @@ void BLASInstanceBuilder::build(
     std::vector<PrimitiveRef> primitives;
 
     buildPrimitives(
-        mesh,
+        vertices,
+        indices,
+        subMeshes,
         primitives
     );
 
@@ -38,17 +49,15 @@ void BLASInstanceBuilder::build(
 }
 
 void BLASInstanceBuilder::buildPrimitives(
-    const Mesh& mesh,
+    const std::vector<Vertex>& vertices,
+    const std::vector<uint32_t>& indices,
+    const std::vector<SubMesh>& subMeshes,
     std::vector<PrimitiveRef>& primitives
 )
 {
-    const auto& vertices = mesh.getVertices();
-    const auto& indices = mesh.getIndices();
-    const auto& subMeshes = mesh.getSubMeshes();
-
     primitives.clear();
 
-    for (const Mesh::SubMesh& subMesh : subMeshes)
+    for (const SubMesh& subMesh : subMeshes)
     {
         const uint32_t triangleCount = subMesh.indexCount / 3;
 
@@ -89,7 +98,6 @@ void BLASInstanceBuilder::buildPrimitives(
 
                 const uint32_t indexOffset =
                     subMesh.firstIndex + triangleIndex * 3;
-
                 const uint32_t i0 = indices[indexOffset + 0];
                 const uint32_t i1 = indices[indexOffset + 1];
                 const uint32_t i2 = indices[indexOffset + 2];

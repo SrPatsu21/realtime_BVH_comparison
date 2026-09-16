@@ -325,6 +325,7 @@ void CommandManager::recordCommandBuffer(
     RenderInstanceManager* renderInstanceManager,
     GBufferDescriptorManager* gBufferDescriptorManager,
     TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager,
+    MaterialManager* materialManager,
     LightInstanceManager* lightInstanceManager,
     DeferredLightingDescriptorManager* deferredLightingDescriptorManager,
     const std::vector<ParticleData>& particlesData,
@@ -376,6 +377,7 @@ void CommandManager::recordCommandBuffer(
             cmd,
             graphicsPipeline,
             globalSet,
+            materialManager->getDescriptorSet(),
             instanceSet,
             renderInstanceManager,
             0,
@@ -411,6 +413,7 @@ void CommandManager::recordCommandBuffer(
             cmd,
             graphicsPipeline,
             globalSet,
+            materialManager->getDescriptorSet(),
             instanceSet,
             renderInstanceManager,
             renderInstanceManager->getBatchRanges().blendStart,
@@ -517,57 +520,57 @@ void CommandManager::recordCommandBuffer(
     }
 }
 
-void CommandManager::recordGeometrySecondaryCommandBuffer(
-    VkCommandBuffer secondaryCommandBuffer,
+// void CommandManager::recordGeometrySecondaryCommandBuffer(
+//     VkCommandBuffer secondaryCommandBuffer,
 
-    VkRenderPass renderPass,
+//     VkRenderPass renderPass,
 
-    uint32_t currentFrame,
+//     uint32_t currentFrame,
 
-    GraphicsPipelineManager* graphicsPipeline,
+//     GraphicsPipelineManager* graphicsPipeline,
 
-    VkDescriptorSet globalSet,
-    VkDescriptorSet instanceSet,
+//     VkDescriptorSet globalSet,
+//     VkDescriptorSet instanceSet,
 
-    RenderInstanceManager* renderInstanceManager,
+//     RenderInstanceManager* renderInstanceManager,
 
-    uint32_t firstBatch,
-    uint32_t lastBatch,
-    uint32_t firstInstanceOffset,
+//     uint32_t firstBatch,
+//     uint32_t lastBatch,
+//     uint32_t firstInstanceOffset,
 
-    const std::vector<IViewportProvider*>& viewportProviders,
-    const std::vector<IScissorProvider*>& scissorProviders
-)
-{
-    beginSecondaryCommandBuffer(
-        secondaryCommandBuffer,
-        renderPass,
-        VK_NULL_HANDLE,
-        0
-    );
+//     const std::vector<IViewportProvider*>& viewportProviders,
+//     const std::vector<IScissorProvider*>& scissorProviders
+// )
+// {
+//     beginSecondaryCommandBuffer(
+//         secondaryCommandBuffer,
+//         renderPass,
+//         VK_NULL_HANDLE,
+//         0
+//     );
 
-    setViewportAndScissor(
-        secondaryCommandBuffer,
-        graphicsPipeline,
-        viewportProviders,
-        scissorProviders
-    );
+//     setViewportAndScissor(
+//         secondaryCommandBuffer,
+//         graphicsPipeline,
+//         viewportProviders,
+//         scissorProviders
+//     );
 
-    GeometryRecord::record(
-        secondaryCommandBuffer,
-        graphicsPipeline,
-        globalSet,
-        instanceSet,
-        renderInstanceManager,
-        firstBatch,
-        lastBatch,
-        firstInstanceOffset
-    );
+//     GeometryRecord::record(
+//         secondaryCommandBuffer,
+//         graphicsPipeline,
+//         globalSet,
+//         instanceSet,
+//         renderInstanceManager,
+//         firstBatch,
+//         lastBatch,
+//         firstInstanceOffset
+//     );
 
-    if (vkEndCommandBuffer(secondaryCommandBuffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error(
-            "failed to record geometry secondary command buffer!"
-        );
-    }
-}
+//     if (vkEndCommandBuffer(secondaryCommandBuffer) != VK_SUCCESS)
+//     {
+//         throw std::runtime_error(
+//             "failed to record geometry secondary command buffer!"
+//         );
+//     }
+// }

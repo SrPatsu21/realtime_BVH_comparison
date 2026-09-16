@@ -9,8 +9,8 @@
 struct BatchKey
 {
     std::shared_ptr<Mesh> mesh;
-    const Mesh::SubMesh* subMesh;
-    std::shared_ptr<Material> material;
+    const SubMesh* subMesh;
+    uint32_t material;
     GraphicsPipelineManager::PipelineFlags pipelineFlags;
 
     bool operator==(const BatchKey& other) const;
@@ -30,9 +30,30 @@ struct BatchKeyHasher
 
         hash_combine(std::hash<GraphicsPipelineManager::PipelineFlags>()(key.pipelineFlags));
         hash_combine(std::hash<Mesh*>()(key.mesh.get()));
-        hash_combine(std::hash<const Mesh::SubMesh*>()(key.subMesh));
-        hash_combine(std::hash<Material*>()(key.material.get()));
+        hash_combine(std::hash<const SubMesh*>()(key.subMesh));
+        hash_combine(std::hash<uint32_t>()(key.material));
 
         return seed;
     }
 };
+
+inline bool BatchKey::operator==(
+    const BatchKey& other
+) const {
+    return material == other.material && subMesh == other.subMesh && mesh == other.mesh && pipelineFlags == other.pipelineFlags;
+}
+
+inline bool BatchKey::operator<(
+    const BatchKey& other
+) const {
+    if (pipelineFlags != other.pipelineFlags)
+        return pipelineFlags < other.pipelineFlags;
+
+    if (material != other.material)
+        return material < other.material;
+
+    if (mesh.get() != other.mesh.get())
+        return mesh.get() < other.mesh.get();
+
+    return subMesh < other.subMesh;
+}

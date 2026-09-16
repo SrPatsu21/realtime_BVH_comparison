@@ -10,13 +10,6 @@
 
 #include <chrono>
 
-TextureImage::DefaultTextures Render::defaultTextures =
-{
-    nullptr,
-    nullptr,
-    nullptr
-};
-
 Render::Render(){
 
     config.lighting.flags =
@@ -180,48 +173,14 @@ void Render::createCameraAndSamplers(){
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice()
     );
-
-    Render::defaultTextures.white = TextureFactory::createSolidRGBA8(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        bufferManager,
-        samplerManagerForStaticTextures,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        255, 255, 255, 255
-    );
-
-    Render::defaultTextures.normal = TextureFactory::createSolidRGBA8(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        bufferManager,
-        samplerManagerForStaticTextures,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        128, 128, 255, 255
-    );
-
-    Render::defaultTextures.metallic = TextureFactory::createSolidRGBA8(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        bufferManager,
-        samplerManagerForStaticTextures,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        0, 255, 0, 255
-    );
 }
 
 void Render::createDescriptorManagers(){
 
-    materialDescriptorManager = new MaterialDescriptorManager(
-        coreVulkan->getDevice(),
-        maxMaterials,
-        {}
-    );
-
     resourceManager = new ResourceManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
-        bufferManager,
-        materialDescriptorManager
+        bufferManager
     );
 
     auto accelerationStructureManager = resourceManager->getAccelerationStructureManager();
@@ -462,7 +421,7 @@ void Render::createGraphicsPipelineObjects(){
         .config = &config
     };
     pipelineContext.globalLayout = globalDescriptorManager->getLayout();
-    pipelineContext.materialLayout = materialDescriptorManager->getLayout();
+    pipelineContext.materialLayout = resourceManager->getMaterialManager()->getDescriptorSetLayout();
     pipelineContext.instanceLayout = instanceDescriptorManager->getLayout();
     pipelineContext.particleLayout = particleInstanceDescriptorManager->getLayout();
 
@@ -497,7 +456,7 @@ void Render::initInstances(){
 
     RenderInstance * renderInstance0 = renderInstanceManager->getRenderInstance(floor->indexInVector);
     renderInstance0->scale = glm::vec3(10.0f);
-    renderInstance0->position += glm::vec3(0, 3, 0);
+    renderInstance0->position += glm::vec3(0, 0, 0);
     renderInstance0->updateModelMatrix();
 
     renderInstanceRegistration = renderInstanceManager->createRenderInstance(
@@ -692,6 +651,7 @@ void Render::drawFrame(){
         renderInstanceManager,
         gBufferDescriptorManager,
         transparentGBufferDescriptorManager,
+        resourceManager->getMaterialManager(),
         lightInstanceManager,
         deferredLightingDescriptorManager,
         particlesData,
@@ -771,12 +731,6 @@ void Render::cleanup(){
         if (lightInstanceManager){ delete lightInstanceManager; lightInstanceManager = nullptr; }
 
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
-        if (defaultTextures.metallic)
-        {
-            defaultTextures.metallic.reset();
-            defaultTextures.normal.reset();
-            defaultTextures.white.reset();
-        }
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
 
@@ -785,7 +739,6 @@ void Render::cleanup(){
 
         // 5) Not Swapchain Dependents
         if (globalDescriptorManager){ delete globalDescriptorManager; globalDescriptorManager = nullptr; }
-        if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
         if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
         if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }

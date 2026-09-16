@@ -6,6 +6,7 @@ void GeometryRecord::record(
     GraphicsPipelineManager* graphicsPipeline,
 
     VkDescriptorSet globalSet,
+    VkDescriptorSet materialSet,
     VkDescriptorSet instanceSet,
 
     RenderInstanceManager* renderInstanceManager,
@@ -18,7 +19,6 @@ void GeometryRecord::record(
     VkPipelineLayout layout = VK_NULL_HANDLE;
 
     Mesh* lastMesh = nullptr;
-    Material* lastMaterial = nullptr;
 
     GraphicsPipelineManager::PipelineFlags lastPipeline = 0;
 
@@ -29,9 +29,8 @@ void GeometryRecord::record(
         const BatchKey& key = batch.getKey();
 
         const std::shared_ptr<Mesh>& mesh = key.mesh;
-        const Mesh::SubMesh* subMesh = key.subMesh;
-        const std::shared_ptr<Material>& material = key.material;
-
+        const SubMesh* subMesh = key.subMesh;
+        const uint32_t materialIndex = key.material;
         const auto pipelineFlags = key.pipelineFlags | GraphicsPipelineManager::PIPE_GEOMETRY;
 
         const uint32_t instanceCount = static_cast<uint32_t>(batch.getInstancesData().size());
@@ -74,27 +73,22 @@ void GeometryRecord::record(
             );
         }
 
-        if (material.get() != lastMaterial)
+        VkDescriptorSet descriptorSets[] =
         {
-            lastMaterial = material.get();
+            globalSet,
+            materialSet
+        };
 
-            VkDescriptorSet descriptorSets[] =
-            {
-                globalSet,
-                material->getDescriptorSet()
-            };
-
-            vkCmdBindDescriptorSets(
-                cmd,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                layout,
-                0,
-                2,
-                descriptorSets,
-                0,
-                nullptr
-            );
-        }
+        vkCmdBindDescriptorSets(
+            cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            layout,
+            0,
+            2,
+            descriptorSets,
+            0,
+            nullptr
+        );
 
         vkCmdBindDescriptorSets(
             cmd,
@@ -105,6 +99,15 @@ void GeometryRecord::record(
             &instanceSet,
             0,
             nullptr
+        );
+
+        vkCmdPushConstants(
+            cmd,
+            layout,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(uint32_t),
+            &materialIndex
         );
 
         vkCmdDrawIndexed(

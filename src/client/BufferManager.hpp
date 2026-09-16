@@ -270,6 +270,13 @@ public:    /**
         VkDeviceAddress* address
     );
 
+    VkBuffer createDeviceBuffer(
+        VkDeviceSize size,
+        VkBufferUsageFlags usage,
+        VkDeviceMemory& memory,
+        VkDeviceAddress* address
+    );
+
     /**
      * @brief Destroys the BufferManager and releases internal resources.
      */

@@ -60,6 +60,7 @@ public:
     static void createPipelineLayout(
         VkDevice device,
         uint32_t pushConstantRangeSize,
+        VkShaderStageFlags pushConstantStageFlags,
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
         VkPipelineLayout& out
     );

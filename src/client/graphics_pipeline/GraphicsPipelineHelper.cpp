@@ -39,6 +39,7 @@ void GraphicsPipelineHelper::createVertexInputState(
 void GraphicsPipelineHelper::createPipelineLayout(
     VkDevice device,
     uint32_t pushConstantRangeSize,
+    VkShaderStageFlags pushConstantStageFlags,
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
     VkPipelineLayout& pipelineLayout
 ) {
@@ -50,7 +51,7 @@ void GraphicsPipelineHelper::createPipelineLayout(
     VkPushConstantRange pushConstantRange{};
 
     if (pushConstantRangeSize > 0) {
-        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantRange.stageFlags = pushConstantStageFlags;
         pushConstantRange.offset = 0;
         pushConstantRange.size = pushConstantRangeSize;
 

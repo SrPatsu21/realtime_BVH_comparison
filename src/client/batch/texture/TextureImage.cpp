@@ -83,10 +83,12 @@ TextureImage::TextureImage(
     BufferManager* bufferManager,
     VkSampler sampler,
     const TextureAsset& asset,
+    uint32_t index,
     TextureImage::IImageTransitionPolicy* transitionPolicy
 ) :
     device(device),
-    sampler(sampler)
+    sampler(sampler),
+    index(index)
 {
     createImageFromAsset(
         physicalDevice,
