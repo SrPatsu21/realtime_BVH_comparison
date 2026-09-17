@@ -14,6 +14,7 @@ public:
         VkDescriptorSet gBufferSet,
         VkDescriptorSet lightSet,
         VkDescriptorSet transparentGBufferSet,
+        VkDescriptorSet materialSet,
         const Config::ConfigTable& config
     );
 };

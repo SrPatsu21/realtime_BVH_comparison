@@ -18,7 +18,8 @@ LightingPipelineLayoutProvider::createPipelineLayouts(
         ctx.globalLayout,
         ctx.gBufferLayout,
         ctx.lightingLayout,
-        ctx.transparentGBufferLayout
+        ctx.transparentGBufferLayout,
+        ctx.materialLayout
     };
 
     GraphicsPipelineHelper::createPipelineLayout(

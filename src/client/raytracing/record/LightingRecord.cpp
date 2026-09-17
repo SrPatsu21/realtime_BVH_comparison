@@ -7,6 +7,7 @@ void LightingRecord::record(
     VkDescriptorSet gBufferSet,
     VkDescriptorSet lightSet,
     VkDescriptorSet transparentGBufferSet,
+    VkDescriptorSet materialSet,
     const Config::ConfigTable& config
 )
 {
@@ -30,7 +31,8 @@ void LightingRecord::record(
         globalSet,
         gBufferSet,
         lightSet,
-        transparentGBufferSet
+        transparentGBufferSet,
+        materialSet
     };
 
     vkCmdBindDescriptorSets(
@@ -38,7 +40,7 @@ void LightingRecord::record(
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         layout,
         0,
-        4,
+        5,
         descriptorSets,
         0,
         nullptr

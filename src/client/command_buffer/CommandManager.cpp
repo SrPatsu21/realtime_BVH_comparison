@@ -459,6 +459,7 @@ void CommandManager::recordCommandBuffer(
             gBufferSet,
             lightSet,
             transparentGBufferSet,
+            materialManager->getDescriptorSet(),
             config
         );
         vkCmdEndRenderPass(cmd);

@@ -99,6 +99,18 @@ vec3 loadVertexPosition(
     );
 }
 
+vec2 loadVertexTexCoord(
+    VertexBuffer vertices,
+    uint vertexIndex
+)
+{
+    const uint base = vertexIndex * 12u;
+
+    return vec2(
+        vertices.data[base + 10u],
+        vertices.data[base + 11u]
+    );
+}
 
 // =========================================================
 // Acceleration structure buffers
@@ -128,6 +140,16 @@ readonly buffer TLASInstanceBuffer
     TLASInstance tlasInstances[];
 };
 
+// =========================================================
+// Ray
+// =========================================================
+
+struct RayHit
+{
+    float distance;
+    uint materialIndex;
+    vec2 uv;
+};
 
 // =========================================================
 // GBuffer
@@ -191,6 +213,34 @@ layout(set = 3, binding = 3)
 uniform sampler2DMS tgMaterial;
 
 // =========================================================
+// Material
+// =========================================================
+
+struct MaterialGPU
+{
+    vec4 baseColorFactor;
+
+    float metallicFactor;
+    float roughnessFactor;
+
+    uint alphaMode;
+    float alphaCutoff;
+
+    uint baseColorTexture;
+    uint normalTexture;
+    uint metallicRoughnessTexture;
+
+    uint _padding0;
+};
+
+layout(set = 4, binding = 0) readonly buffer MaterialBuffer
+{
+    MaterialGPU materials[];
+};
+
+layout(set = 4, binding = 1) uniform sampler2D textures[1024];
+
+// =========================================================
 // AABB
 // =========================================================
 
@@ -239,10 +289,13 @@ bool intersectTriangle(
     vec3 v0,
     vec3 v1,
     vec3 v2,
-    float maxDistance
+    float maxDistance,
+    out float hitDistance,
+    out float hitU,
+    out float hitV
 )
 {
-    const float epsilon =  0.00001;
+    const float epsilon = 0.00001;
 
     vec3 edge1 = v1 - v0;
     vec3 edge2 = v2 - v0;
@@ -299,11 +352,15 @@ bool intersectTriangle(
         ) *
         inverseDeterminant;
 
-    return
-        distance > epsilon &&
-        distance < maxDistance;
-}
+    if (distance <= epsilon || distance >= maxDistance)
+        return false;
 
+    hitDistance = distance;
+    hitU = u;
+    hitV = v;
+
+    return true;
+}
 
 // =========================================================
 // BLAS
@@ -313,11 +370,18 @@ bool traceBLAS(
     TLASInstance tlasInstance,
     vec3 origin,
     vec3 direction,
-    float maxDistance
+    float maxDistance,
+    out RayHit closestHit
 )
 {
+    closestHit.distance = maxDistance;
+    closestHit.materialIndex = 0u;
+    closestHit.uv = vec2(0.0);
+
     if (tlasInstance.nodeCount == 0)
         return false;
+
+    bool foundHit = false;
 
     uint stack[64];
     uint stackSize = 0;
@@ -343,7 +407,7 @@ bool traceBLAS(
                 direction,
                 node.min.xyz,
                 node.max.xyz,
-                maxDistance
+                closestHit.distance
             ))
         {
             continue;
@@ -361,103 +425,137 @@ bool traceBLAS(
                     tlasInstance.indexAddress
                 );
 
-            uint instanceIndex = tlasInstance.instanceOffset + node.left;
+            uint instanceIndex =
+                tlasInstance.instanceOffset +
+                node.left;
 
-            BLASInstance instance = blasInstances[instanceIndex];
-
-            if (intersectAABB(
-                    origin,
-                    direction,
-                    instance.boundsMin.xyz,
-                    instance.boundsMax.xyz,
-                    maxDistance
-                ))
+            for (uint side = 0u; side < 2u; ++side)
             {
-                for (
-                    uint triangle = 0;
-                    triangle < instance.triangleCount;
-                    ++triangle
-                )
+                BLASInstance instance =
+                    blasInstances[instanceIndex];
+
+                if (intersectAABB(
+                        origin,
+                        direction,
+                        instance.boundsMin.xyz,
+                        instance.boundsMax.xyz,
+                        closestHit.distance
+                    ))
                 {
-                    uint triangleIndex = instance.firstTriangle + triangle;
-
-                    uint indexOffset = triangleIndex * 3;
-
-                    uint index0 = indices.indices[indexOffset + 0];
-                    uint index1 = indices.indices[indexOffset + 1];
-                    uint index2 = indices.indices[indexOffset + 2];
-
-                    vec3 v0 = loadVertexPosition(vertices, index0);
-                    vec3 v1 = loadVertexPosition(vertices, index1);
-                    vec3 v2 = loadVertexPosition(vertices, index2);
-
-                    if (intersectTriangle(
-                            origin,
-                            direction,
-                            v0,
-                            v1,
-                            v2,
-                            maxDistance
-                        ))
+                    for (
+                        uint triangle = 0;
+                        triangle < instance.triangleCount;
+                        ++triangle
+                    )
                     {
-                        return true;
+                        uint triangleIndex =
+                            instance.firstTriangle +
+                            triangle;
+
+                        uint indexOffset =
+                            triangleIndex * 3u;
+
+                        uint index0 =
+                            indices.indices[indexOffset + 0u];
+
+                        uint index1 =
+                            indices.indices[indexOffset + 1u];
+
+                        uint index2 =
+                            indices.indices[indexOffset + 2u];
+
+                        vec3 v0 =
+                            loadVertexPosition(
+                                vertices,
+                                index0
+                            );
+
+                        vec3 v1 =
+                            loadVertexPosition(
+                                vertices,
+                                index1
+                            );
+
+                        vec3 v2 =
+                            loadVertexPosition(
+                                vertices,
+                                index2
+                            );
+
+                        float hitDistance;
+                        float hitU;
+                        float hitV;
+
+                        if (intersectTriangle(
+                                origin,
+                                direction,
+                                v0,
+                                v1,
+                                v2,
+                                closestHit.distance,
+                                hitDistance,
+                                hitU,
+                                hitV
+                            ))
+                        {
+                            vec2 uv0 =
+                                loadVertexTexCoord(
+                                    vertices,
+                                    index0
+                                );
+
+                            vec2 uv1 =
+                                loadVertexTexCoord(
+                                    vertices,
+                                    index1
+                                );
+
+                            vec2 uv2 =
+                                loadVertexTexCoord(
+                                    vertices,
+                                    index2
+                                );
+
+                            float hitW =
+                                1.0 -
+                                hitU -
+                                hitV;
+
+                            closestHit.distance =
+                                hitDistance;
+
+                            closestHit.materialIndex =
+                                instance.materialOffset;
+
+                            closestHit.uv =
+                                uv0 * hitW +
+                                uv1 * hitU +
+                                uv2 * hitV;
+
+                            foundHit = true;
+                        }
                     }
+                }
+
+                if (side == 0u)
+                {
+                    instanceIndex =
+                        tlasInstance.instanceOffset +
+                        node.right;
                 }
             }
 
-            instanceIndex = tlasInstance.instanceOffset + node.right;
-            instance = blasInstances[instanceIndex];
-
-            if (intersectAABB(
-                    origin,
-                    direction,
-                    instance.boundsMin.xyz,
-                    instance.boundsMax.xyz,
-                    maxDistance
-                ))
-            {
-                for (
-                    uint triangle = 0;
-                    triangle < instance.triangleCount;
-                    ++triangle
-                )
-                {
-                    uint triangleIndex = instance.firstTriangle + triangle;
-
-                    uint indexOffset = triangleIndex * 3;
-
-                    uint index0 = indices.indices[indexOffset + 0];
-                    uint index1 = indices.indices[indexOffset + 1];
-                    uint index2 = indices.indices[indexOffset + 2];
-
-                    vec3 v0 = loadVertexPosition(vertices, index0);
-                    vec3 v1 = loadVertexPosition(vertices, index1);
-                    vec3 v2 = loadVertexPosition(vertices, index2);
-
-                    if (intersectTriangle(
-                            origin,
-                            direction,
-                            v0,
-                            v1,
-                            v2,
-                            maxDistance
-                        ))
-                    {
-                        return true;
-                    }
-                }
-            }
             continue;
         }
 
         if (stackSize + 2 > 64)
-            return false;
+            continue;
 
         stack[stackSize++] = node.right;
         stack[stackSize++] = node.left;
     }
 
-    return false;
+    return foundHit;
 }
 
 // =========================================================
@@ -467,9 +565,16 @@ bool traceBLAS(
 bool traceTLAS(
     vec3 origin,
     vec3 direction,
-    float maxDistance
+    float maxDistance,
+    out RayHit closestHit
 )
 {
+    closestHit.distance = maxDistance;
+    closestHit.materialIndex = 0u;
+    closestHit.uv = vec2(0.0);
+
+    bool foundHit = false;
+
     uint stack[64];
     uint stackSize = 0;
 
@@ -477,16 +582,18 @@ bool traceTLAS(
 
     while (stackSize > 0)
     {
-        uint nodeIndex = stack[--stackSize];
+        uint nodeIndex =
+            stack[--stackSize];
 
-        BVHNode node = tlasNodes[nodeIndex];
+        BVHNode node =
+            tlasNodes[nodeIndex];
 
         if (!intersectAABB(
                 origin,
                 direction,
                 node.min.xyz,
                 node.max.xyz,
-                maxDistance
+                closestHit.distance
             ))
         {
             continue;
@@ -494,80 +601,69 @@ bool traceTLAS(
 
         if (node.leaf != 0)
         {
-            TLASInstance instance =
-                tlasInstances[node.left];
-
-            vec3 localOrigin =
-                (
-                    instance.inverseTransform *
-                    vec4(origin, 1.0)
-                ).xyz;
-
-            vec3 localDirectionRaw =
-                (
-                    instance.inverseTransform *
-                    vec4(direction, 0.0)
-                ).xyz;
-
-            float directionScale =
-                length(localDirectionRaw);
-
-            if (directionScale >= 0.000001)
+            for (uint side = 0u; side < 2u; ++side)
             {
+                uint instanceIndex =
+                    side == 0u ?
+                    node.left :
+                    node.right;
+
+                TLASInstance instance =
+                    tlasInstances[instanceIndex];
+
+                vec3 localOrigin =
+                    (
+                        instance.inverseTransform *
+                        vec4(origin, 1.0)
+                    ).xyz;
+
+                vec3 localDirectionRaw =
+                    (
+                        instance.inverseTransform *
+                        vec4(direction, 0.0)
+                    ).xyz;
+
+                float directionScale =
+                    length(localDirectionRaw);
+
+                if (directionScale < 0.000001)
+                    continue;
+
                 vec3 localDirection =
                     localDirectionRaw /
                     directionScale;
 
                 float localMaxDistance =
-                    maxDistance *
+                    closestHit.distance *
                     directionScale;
+
+                RayHit localHit;
 
                 if (traceBLAS(
                         instance,
                         localOrigin,
                         localDirection,
-                        localMaxDistance
+                        localMaxDistance,
+                        localHit
                     ))
                 {
-                    return true;
-                }
-            }
-            instance =
-                tlasInstances[node.right];
+                    float worldDistance =
+                        localHit.distance /
+                        directionScale;
 
-            localOrigin =
-                (
-                    instance.inverseTransform *
-                    vec4(origin,1.0)
-                ).xyz;
+                    if (worldDistance < closestHit.distance)
+                    {
+                        closestHit.distance =
+                            worldDistance;
 
-            localDirectionRaw =
-                (
-                    instance.inverseTransform *
-                    vec4(direction, 0.0)
-                ).xyz;
+                        closestHit.materialIndex =
+                            localHit.materialIndex;
 
-            directionScale =
-                length(localDirectionRaw);
+                        closestHit.uv =
+                            localHit.uv;
 
-            if (directionScale >= 0.000001)
-            {
-                vec3 localDirection =
-                    localDirectionRaw /
-                    directionScale;
-
-                float localMaxDistance =
-                    maxDistance *
-                    directionScale;
-
-                if (traceBLAS(
-                        instance,
-                        localOrigin,
-                        localDirection,
-                        localMaxDistance
-                    ))
-                {
-                    return true;
+                        foundHit = true;
+                    }
                 }
             }
 
@@ -575,31 +671,82 @@ bool traceTLAS(
         }
 
         if (stackSize + 2 > 64)
-            return false;
+            continue;
 
         stack[stackSize++] = node.right;
-
         stack[stackSize++] = node.left;
     }
 
-    return false;
+    return foundHit;
 }
 
 // =========================================================
 // Shadow ray
 // =========================================================
 
-bool traceShadowRay(
+vec4 traceShadowRay(
     vec3 origin,
     vec3 direction,
-    float maxDistance
+    float maxDistance,
+    vec4 light
 )
 {
-    return traceTLAS(
-        origin,
-        direction,
-        maxDistance
-    );
+    const float rayEpsilon = 0.001;
+    const uint maxHits = 16u;
+
+    vec4 transmittedLight = light;
+
+    for (uint hitIndex = 0u; hitIndex < maxHits; ++hitIndex)
+    {
+        RayHit hit;
+
+        if (!traceTLAS(
+                origin,
+                direction,
+                maxDistance,
+                hit
+            ))
+        {
+            return transmittedLight;
+        }
+
+        MaterialGPU material = materials[hit.materialIndex];
+
+        float alpha =
+            texture(
+                textures[material.baseColorTexture],
+                hit.uv
+            ).a *
+            material.baseColorFactor.a;
+
+        if (material.alphaMode == 1u)
+        {
+            return vec4(0.0);
+        }
+
+        if (material.alphaMode == 2u)
+        {
+            if (alpha >= material.alphaCutoff)
+                return vec4(0.0);
+        }
+
+        if (material.alphaMode == 4u)
+        {
+            transmittedLight *= (1.0 - alpha) ;
+        }
+
+        origin += direction * (hit.distance + rayEpsilon);
+
+        maxDistance -= hit.distance + rayEpsilon;
+
+        if (maxDistance <= 0.0)
+            return transmittedLight;
+
+        if (transmittedLight.a <= 0.00001)
+            return vec4(0.0);
+    }
+
+    return transmittedLight;
 }
 
 vec3 calculateLighting(
@@ -655,15 +802,16 @@ vec3 calculateLighting(
             normal *
             shadowBias;
 
-        bool occluded =
+        vec4 transmittedLight =
             traceShadowRay(
                 shadowOrigin,
                 lightDirection,
                 distanceToLight -
-                shadowBias
+                shadowBias,
+                vec4(1.0)
             );
 
-        if (occluded)
+        if (transmittedLight.a <= 0.00001)
             continue;
 
         float attenuation =
@@ -687,7 +835,8 @@ vec3 calculateLighting(
             light.intensity *
             NdotL *
             attenuation *
-            rangeFade;
+            rangeFade *
+            transmittedLight.rgb;
     }
 
     return lighting;
