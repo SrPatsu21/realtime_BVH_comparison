@@ -7,7 +7,7 @@ layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 
 // =========================================================
-// BVH
+// BVH Nodes
 // =========================================================
 
 struct BVHNode
@@ -20,6 +20,20 @@ struct BVHNode
 
     uint leaf;
     uint pad0;
+};
+
+struct BVH8Node
+{
+    vec4 min;
+    vec4 max;
+
+    uint children[8];
+
+    uint childCount;
+    uint leaf;
+
+    uint pad0;
+    uint pad1;
 };
 
 
@@ -112,9 +126,20 @@ vec2 loadVertexTexCoord(
     );
 }
 
+
 // =========================================================
 // Acceleration structure buffers
 // =========================================================
+
+#if defined(USE_BLAS_BVH8)
+
+layout(set = 0, binding = 1, std430)
+readonly buffer BLASNodeBuffer
+{
+    BVH8Node blasNodes[];
+};
+
+#else
 
 layout(set = 0, binding = 1, std430)
 readonly buffer BLASNodeBuffer
@@ -122,11 +147,25 @@ readonly buffer BLASNodeBuffer
     BVHNode blasNodes[];
 };
 
+#endif
+
+
 layout(set = 0, binding = 2, std430)
 readonly buffer BLASInstanceBuffer
 {
     BLASInstance blasInstances[];
 };
+
+
+#if defined(USE_TLAS_BVH8)
+
+layout(set = 0, binding = 3, std430)
+readonly buffer TLASNodeBuffer
+{
+    BVH8Node tlasNodes[];
+};
+
+#else
 
 layout(set = 0, binding = 3, std430)
 readonly buffer TLASNodeBuffer
@@ -134,11 +173,15 @@ readonly buffer TLASNodeBuffer
     BVHNode tlasNodes[];
 };
 
+#endif
+
+
 layout(set = 0, binding = 4, std430)
 readonly buffer TLASInstanceBuffer
 {
     TLASInstance tlasInstances[];
 };
+
 
 // =========================================================
 // Ray
@@ -150,6 +193,7 @@ struct RayHit
     uint materialIndex;
     vec2 uv;
 };
+
 
 // =========================================================
 // GBuffer
@@ -196,6 +240,7 @@ readonly buffer LightBuffer
     LightData lights[];
 };
 
+
 // =========================================================
 // Transparent GBuffer
 // =========================================================
@@ -211,6 +256,7 @@ uniform sampler2DMS tgAlbedo;
 
 layout(set = 3, binding = 3)
 uniform sampler2DMS tgMaterial;
+
 
 // =========================================================
 // Material
@@ -239,6 +285,7 @@ layout(set = 4, binding = 0) readonly buffer MaterialBuffer
 };
 
 layout(set = 4, binding = 1) uniform sampler2D textures[1024];
+
 
 // =========================================================
 // AABB
@@ -362,6 +409,7 @@ bool intersectTriangle(
     return true;
 }
 
+
 // =========================================================
 // BLAS
 // =========================================================
@@ -383,12 +431,12 @@ bool traceBLAS(
 
     bool foundHit = false;
 
-    uint stack[64];
-    uint stackSize = 0;
+    uint stack[128];
+    uint stackSize = 0u;
 
-    stack[stackSize++] = 0;
+    stack[stackSize++] = 0u;
 
-    while (stackSize > 0)
+    while (stackSize > 0u)
     {
         uint localNodeIndex =
             stack[--stackSize];
@@ -399,6 +447,180 @@ bool traceBLAS(
         uint nodeIndex =
             tlasInstance.nodeOffset +
             localNodeIndex;
+
+
+        // =====================================================
+        // BVH8
+        // =====================================================
+
+#if defined(USE_BLAS_BVH8)
+
+        BVH8Node node = blasNodes[nodeIndex];
+
+        if (!intersectAABB(
+                origin,
+                direction,
+                node.min.xyz,
+                node.max.xyz,
+                closestHit.distance
+            ))
+        {
+            continue;
+        }
+
+        // -----------------------------------------------------
+        // Leaf
+        // -----------------------------------------------------
+
+        if (node.leaf != 0u)
+        {
+            VertexBuffer vertices =
+                VertexBuffer(tlasInstance.vertexAddress);
+
+            IndexBuffer indices =
+                IndexBuffer(tlasInstance.indexAddress);
+
+            for (uint child = 0u; child < node.childCount; ++child)
+            {
+                uint instanceIndex =
+                    tlasInstance.instanceOffset +
+                    node.children[child];
+
+                BLASInstance instance =
+                    blasInstances[
+                        instanceIndex
+                    ];
+
+                if (!intersectAABB(
+                        origin,
+                        direction,
+                        instance.boundsMin.xyz,
+                        instance.boundsMax.xyz,
+                        closestHit.distance
+                    ))
+                {
+                    continue;
+                }
+
+                for (
+                    uint triangle = 0u;
+                    triangle < instance.triangleCount;
+                    ++triangle
+                )
+                {
+                    uint triangleIndex =
+                        instance.firstTriangle +
+                        triangle;
+
+                    uint indexOffset =
+                        triangleIndex * 3u;
+
+                    uint index0 =
+                        indices.indices[
+                            indexOffset + 0u
+                        ];
+
+                    uint index1 =
+                        indices.indices[
+                            indexOffset + 1u
+                        ];
+
+                    uint index2 =
+                        indices.indices[
+                            indexOffset + 2u
+                        ];
+
+                    vec3 v0 =
+                        loadVertexPosition(
+                            vertices,
+                            index0
+                        );
+
+                    vec3 v1 =
+                        loadVertexPosition(
+                            vertices,
+                            index1
+                        );
+
+                    vec3 v2 =
+                        loadVertexPosition(
+                            vertices,
+                            index2
+                        );
+
+                    float hitDistance;
+                    float hitU;
+                    float hitV;
+
+                    if (intersectTriangle(
+                            origin,
+                            direction,
+                            v0,
+                            v1,
+                            v2,
+                            closestHit.distance,
+                            hitDistance,
+                            hitU,
+                            hitV
+                        ))
+                    {
+                        vec2 uv0 =
+                            loadVertexTexCoord(
+                                vertices,
+                                index0
+                            );
+
+                        vec2 uv1 =
+                            loadVertexTexCoord(
+                                vertices,
+                                index1
+                            );
+
+                        vec2 uv2 =
+                            loadVertexTexCoord(
+                                vertices,
+                                index2
+                            );
+
+                        float hitW =
+                            1.0 -
+                            hitU -
+                            hitV;
+
+                        closestHit.distance =
+                            hitDistance;
+
+                        closestHit.materialIndex =
+                            instance.materialOffset;
+
+                        closestHit.uv =
+                            uv0 * hitW +
+                            uv1 * hitU +
+                            uv2 * hitV;
+
+                        foundHit = true;
+                    }
+                }
+            }
+
+            continue;
+        }
+
+        for (uint child = 0u; child < node.childCount; ++child)
+        {
+            if (stackSize >= 128u)
+                break;
+
+            stack[stackSize++] = node.children[child];
+        }
+
+        continue;
+
+
+// =====================================================
+// Binary BVH
+// =====================================================
+#else
 
         BVHNode node = blasNodes[nodeIndex];
 
@@ -413,7 +635,11 @@ bool traceBLAS(
             continue;
         }
 
-        if (node.leaf != 0)
+        // -----------------------------------------------------
+        // Leaf
+        // -----------------------------------------------------
+
+        if (node.leaf != 0u)
         {
             VertexBuffer vertices =
                 VertexBuffer(
@@ -443,7 +669,7 @@ bool traceBLAS(
                     ))
                 {
                     for (
-                        uint triangle = 0;
+                        uint triangle = 0u;
                         triangle < instance.triangleCount;
                         ++triangle
                     )
@@ -548,15 +774,21 @@ bool traceBLAS(
             continue;
         }
 
-        if (stackSize + 2 > 64)
+        // -----------------------------------------------------
+        // Internal binary node
+        // -----------------------------------------------------
+
+        if (stackSize + 2u > 128u)
             continue;
 
         stack[stackSize++] = node.right;
         stack[stackSize++] = node.left;
+#endif
     }
 
     return foundHit;
 }
+
 
 // =========================================================
 // TLAS
@@ -569,21 +801,176 @@ bool traceTLAS(
     out RayHit closestHit
 )
 {
-    closestHit.distance = maxDistance;
-    closestHit.materialIndex = 0u;
-    closestHit.uv = vec2(0.0);
+    closestHit.distance =
+        maxDistance;
 
-    bool foundHit = false;
+    closestHit.materialIndex =
+        0u;
 
-    uint stack[64];
-    uint stackSize = 0;
+    closestHit.uv =
+        vec2(0.0);
 
-    stack[stackSize++] = 0;
+    bool foundHit =
+        false;
 
-    while (stackSize > 0)
+    uint stack[128];
+    uint stackSize =
+        0u;
+
+    stack[
+        stackSize++
+    ] = 0u;
+
+    while (stackSize > 0u)
     {
         uint nodeIndex =
-            stack[--stackSize];
+            stack[
+                --stackSize
+            ];
+
+
+        // =====================================================
+        // BVH8
+        // =====================================================
+
+#if defined(USE_TLAS_BVH8)
+
+        BVH8Node node =
+            tlasNodes[nodeIndex];
+
+        if (!intersectAABB(
+                origin,
+                direction,
+                node.min.xyz,
+                node.max.xyz,
+                closestHit.distance
+            ))
+        {
+            continue;
+        }
+
+        // -----------------------------------------------------
+        // Leaf
+        // -----------------------------------------------------
+
+        if (node.leaf != 0u)
+        {
+            for (
+                uint child = 0u;
+                child < node.childCount;
+                ++child
+            )
+            {
+                uint instanceIndex =
+                    node.children[child];
+
+                TLASInstance instance =
+                    tlasInstances[
+                        instanceIndex
+                    ];
+
+                vec3 localOrigin =
+                    (
+                        instance.inverseTransform *
+                        vec4(
+                            origin,
+                            1.0
+                        )
+                    ).xyz;
+
+                vec3 localDirectionRaw =
+                    (
+                        instance.inverseTransform *
+                        vec4(
+                            direction,
+                            0.0
+                        )
+                    ).xyz;
+
+                float directionScale =
+                    length(
+                        localDirectionRaw
+                    );
+
+                if (
+                    directionScale <
+                    0.000001
+                )
+                {
+                    continue;
+                }
+
+                vec3 localDirection =
+                    localDirectionRaw /
+                    directionScale;
+
+                float localMaxDistance =
+                    closestHit.distance *
+                    directionScale;
+
+                RayHit localHit;
+
+                if (traceBLAS(
+                        instance,
+                        localOrigin,
+                        localDirection,
+                        localMaxDistance,
+                        localHit
+                    ))
+                {
+                    float worldDistance =
+                        localHit.distance /
+                        directionScale;
+
+                    if (
+                        worldDistance <
+                        closestHit.distance
+                    )
+                    {
+                        closestHit.distance =
+                            worldDistance;
+
+                        closestHit.materialIndex =
+                            localHit.materialIndex;
+
+                        closestHit.uv =
+                            localHit.uv;
+
+                        foundHit =
+                            true;
+                    }
+                }
+            }
+
+            continue;
+        }
+
+        // -----------------------------------------------------
+        // Internal BVH8 node
+        // -----------------------------------------------------
+
+        for (
+            uint child = 0u;
+            child < node.childCount;
+            ++child
+        )
+        {
+            if (stackSize >= 128u)
+                break;
+
+            stack[
+                stackSize++
+            ] =
+                node.children[child];
+        }
+
+        continue;
+
+        // =====================================================
+        // Binary BVH
+        // =====================================================
+
+#else
 
         BVHNode node =
             tlasNodes[nodeIndex];
@@ -599,9 +986,17 @@ bool traceTLAS(
             continue;
         }
 
-        if (node.leaf != 0)
+        // -----------------------------------------------------
+        // Leaf
+        // -----------------------------------------------------
+
+        if (node.leaf != 0u)
         {
-            for (uint side = 0u; side < 2u; ++side)
+            for (
+                uint side = 0u;
+                side < 2u;
+                ++side
+            )
             {
                 uint instanceIndex =
                     side == 0u ?
@@ -647,9 +1042,7 @@ bool traceTLAS(
                         localHit
                     ))
                 {
-                    float worldDistance =
-                        localHit.distance /
-                        directionScale;
+                    float worldDistance = localHit.distance / directionScale;
 
                     if (worldDistance < closestHit.distance)
                     {
@@ -670,15 +1063,21 @@ bool traceTLAS(
             continue;
         }
 
-        if (stackSize + 2 > 64)
+        // -----------------------------------------------------
+        // Internal binary node
+        // -----------------------------------------------------
+
+        if (stackSize + 2u > 128u)
             continue;
 
         stack[stackSize++] = node.right;
         stack[stackSize++] = node.left;
+#endif
     }
 
     return foundHit;
 }
+
 
 // =========================================================
 // Shadow ray
@@ -692,6 +1091,7 @@ vec4 traceShadowRay(
 )
 {
     const float rayEpsilon = 0.001;
+
     const uint maxHits = 16u;
 
     vec4 transmittedLight = light;
@@ -732,7 +1132,7 @@ vec4 traceShadowRay(
 
         if (material.alphaMode == 4u)
         {
-            transmittedLight *= (1.0 - alpha) ;
+            transmittedLight *= 1.0 - alpha;
         }
 
         origin += direction * (hit.distance + rayEpsilon);
@@ -749,6 +1149,11 @@ vec4 traceShadowRay(
     return transmittedLight;
 }
 
+
+// =========================================================
+// Lighting
+// =========================================================
+
 vec3 calculateLighting(
     vec3 position,
     vec3 normal,
@@ -757,7 +1162,7 @@ vec3 calculateLighting(
 {
     vec3 lighting = vec3(0.0);
 
-    for (uint i = 0; i < lights.length(); ++i)
+    for (uint i = 0u; i < lights.length(); ++i)
     {
         LightData light = lights[i];
 
@@ -807,7 +1212,7 @@ vec3 calculateLighting(
                 shadowOrigin,
                 lightDirection,
                 distanceToLight -
-                shadowBias,
+                    shadowBias,
                 vec4(1.0)
             );
 

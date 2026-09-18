@@ -34,6 +34,17 @@ option(USE_TLAS_SAH_NODE "Use SAH node layout for TLAS" OFF)
 option(USE_TLAS_SAH_BUILDER "Use SAH builder for TLAS" OFF)
 
 # ============================================================
+# Shader definitions
+# ============================================================
+set(SHADER_DEFINITIONS "" CACHE STRING "Preprocessor definitions for GLSL shaders")
+message(STATUS "SHADER_DEFINITIONS = [${SHADER_DEFINITIONS}]")
+separate_arguments(
+    SHADER_DEFINITIONS_LIST
+    UNIX_COMMAND
+    "${SHADER_DEFINITIONS}"
+)
+
+# ============================================================
 # Output directories
 # ============================================================
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -187,7 +198,7 @@ foreach(SHADER_NAME IN LISTS SHADERS)
 
     add_custom_command(
         OUTPUT ${SPV}
-        COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.3 -S ${STAGE} ${SHADER} -o ${SPV}
+        COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.3 ${SHADER_DEFINITIONS_LIST} -S ${STAGE} ${SHADER} -o ${SPV}
         DEPENDS ${SHADER}
     )
 

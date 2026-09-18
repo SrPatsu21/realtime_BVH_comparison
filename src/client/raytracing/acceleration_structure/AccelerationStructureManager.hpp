@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "cpu/AS.hpp"
-#include "cpu/node/BVHNode.hpp"
 #include "cpu/node/BLASInstance.hpp"
 #include "cpu/node/TLASInstance.hpp"
 #include "cpu/primitives/PrimitiveRef.hpp"
@@ -644,15 +643,64 @@ AccelerationStructureManager<
         << node.leaf
         << '\n';
 
-    std::cout
-        << "  left = "
-        << node.left
-        << '\n';
 
-    std::cout
-        << "  right = "
-        << node.right
-        << '\n';
+
+    if constexpr (
+        std::is_same_v<
+            NodeType,
+            BVH8Node
+        >
+    )
+    {
+        std::cout
+            << "  childCount = "
+            << node.childCount
+            << '\n';
+
+        for (
+            uint32_t i = 0;
+            i < node.childCount &&
+            i < 8;
+            ++i
+        )
+        {
+            std::cout
+                << "  children["
+                << i
+                << "] = "
+                << node.children[i]
+                << '\n';
+        }
+
+        std::cout
+            << "  unused children:\n";
+
+        for (
+            uint32_t i = node.childCount;
+            i < 8;
+            ++i
+        )
+        {
+            std::cout
+                << "    children["
+                << i
+                << "] = "
+                << node.children[i]
+                << '\n';
+        }
+    }
+    else
+    {
+        std::cout
+            << "  left = "
+            << node.left
+            << '\n';
+
+        std::cout
+            << "  right = "
+            << node.right
+            << '\n';
+    }
 
     std::cout
         << "  RAW BYTES:\n";
@@ -810,15 +858,47 @@ AccelerationStructureManager<
             << node.leaf
             << '\n';
 
-        std::cout
-            << "  left = "
-            << node.left
-            << '\n';
 
-        std::cout
-            << "  right = "
-            << node.right
-            << '\n';
+
+        if constexpr (
+            std::is_same_v<
+                BLNodeType,
+                BVH8Node
+            >
+        )
+        {
+            std::cout
+                << "  childCount = "
+                << node.childCount
+                << '\n';
+
+            for (
+                uint32_t child = 0;
+                child < node.childCount &&
+                child < 8;
+                ++child
+            )
+            {
+                std::cout
+                    << "  children["
+                    << child
+                    << "] = "
+                    << node.children[child]
+                    << '\n';
+            }
+        }
+        else
+        {
+            std::cout
+                << "  left = "
+                << node.left
+                << '\n';
+
+            std::cout
+                << "  right = "
+                << node.right
+                << '\n';
+        }
 
         std::cout
             << "  RAW:\n";
@@ -1158,51 +1238,114 @@ AccelerationStructureManager<
             << node.leaf
             << '\n';
 
-        std::cout
-            << "  left = "
-            << node.left
-            << '\n';
 
-        std::cout
-            << "  right = "
-            << node.right
-            << '\n';
 
-        if (node.leaf)
+        if constexpr (
+            std::is_same_v<
+                TLNodeType,
+                BVH8Node
+            >
+        )
         {
             std::cout
-                << "  left valid = "
-                << (
-                    node.left <
-                    tlas.instances.size()
-                )
+                << "  childCount = "
+                << node.childCount
                 << '\n';
 
+            for (
+                uint32_t child = 0;
+                child < node.childCount &&
+                child < 8;
+                ++child
+            )
+            {
+                std::cout
+                    << "  children["
+                    << child
+                    << "] = "
+                    << node.children[child]
+                    << '\n';
+
+                std::cout
+                    << "  children["
+                    << child
+                    << "] valid = "
+                    << (
+                        node.children[child] <
+                        (
+                            node.leaf ?
+                            tlas.instances.size() :
+                            tlas.nodes.size()
+                        )
+                    )
+                    << '\n';
+            }
+
             std::cout
-                << "  right valid = "
-                << (
-                    node.right <
-                    tlas.instances.size()
-                )
-                << '\n';
+                << "  unused children:\n";
+
+            for (
+                uint32_t child = node.childCount;
+                child < 8;
+                ++child
+            )
+            {
+                std::cout
+                    << "    children["
+                    << child
+                    << "] = "
+                    << node.children[child]
+                    << '\n';
+            }
         }
         else
         {
             std::cout
-                << "  left valid = "
-                << (
-                    node.left <
-                    tlas.nodes.size()
-                )
+                << "  left = "
+                << node.left
                 << '\n';
 
             std::cout
-                << "  right valid = "
-                << (
-                    node.right <
-                    tlas.nodes.size()
-                )
+                << "  right = "
+                << node.right
                 << '\n';
+
+            if (node.leaf)
+            {
+                std::cout
+                    << "  left valid = "
+                    << (
+                        node.left <
+                        tlas.instances.size()
+                    )
+                    << '\n';
+
+                std::cout
+                    << "  right valid = "
+                    << (
+                        node.right <
+                        tlas.instances.size()
+                    )
+                    << '\n';
+            }
+            else
+            {
+                std::cout
+                    << "  left valid = "
+                    << (
+                        node.left <
+                        tlas.nodes.size()
+                    )
+                    << '\n';
+
+                std::cout
+                    << "  right valid = "
+                    << (
+                        node.right <
+                        tlas.nodes.size()
+                    )
+                    << '\n';
+            }
         }
 
         std::cout
