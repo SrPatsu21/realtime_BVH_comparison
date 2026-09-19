@@ -141,24 +141,16 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
 
     while (!stack.empty())
     {
-        const Range range =
-            stack.back();
+        const Range range = stack.back();
 
         stack.pop_back();
 
-        const uint32_t begin =
-            range.begin;
+        const uint32_t begin = range.begin;
+        const uint32_t end = range.end;
 
-        const uint32_t end =
-            range.end;
+        const uint32_t count = end - begin;
 
-        const uint32_t count =
-            end - begin;
-
-        const uint32_t nodeIndex =
-            static_cast<uint32_t>(
-                nodes.size()
-            );
+        const uint32_t nodeIndex = static_cast<uint32_t>(nodes.size());
 
         nodes.emplace_back();
 
@@ -166,18 +158,15 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
         {
             if (range.rightChild)
             {
-                nodes[range.parent].right =
-                    nodeIndex;
+                nodes[range.parent].right = nodeIndex;
             }
             else
             {
-                nodes[range.parent].left =
-                    nodeIndex;
+                nodes[range.parent].left = nodeIndex;
             }
         }
 
-        NodeType& node =
-            nodes[nodeIndex];
+        NodeType& node = nodes[nodeIndex];
 
         node.bounds =
             BVHUtils::computeBounds(
@@ -192,9 +181,9 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
             node.left = begin;
 
             node.right =
-                count == 1
-                ? begin
-                : begin + 1;
+                count == 1 ?
+                begin :
+                begin + 1;
 
             node.pad0 = 0;
 
@@ -213,43 +202,30 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                 centroidBounds
             );
 
-        float bestCost =
-            std::numeric_limits<float>::max();
+        float bestCost = std::numeric_limits<float>::max();
 
         int bestAxis = -1;
         uint32_t bestSplit = 0;
 
-        for (int axisOffset = 0;
-             axisOffset < 3;
-             ++axisOffset)
+        for (int axisOffset = 0; axisOffset < 3; ++axisOffset)
         {
-            const int axis =
-                (preferredAxis + axisOffset) % 3;
+            const int axis = (preferredAxis + axisOffset) % 3;
+            const float minCoord = centroidBounds.min[axis];
+            const float maxCoord = centroidBounds.max[axis];
 
-            const float minCoord =
-                centroidBounds.min[axis];
-
-            const float maxCoord =
-                centroidBounds.max[axis];
-
-            const float extent =
-                maxCoord - minCoord;
+            const float extent = maxCoord - minCoord;
 
             if (extent <= 0.000001f)
                 continue;
 
             std::array<Bin, BIN_COUNT> bins;
 
-            for (uint32_t i = 0;
-                 i < BIN_COUNT;
-                 ++i)
+            for (uint32_t i = 0; i < BIN_COUNT; ++i)
             {
                 bins[i] = Bin{};
             }
 
-            for (uint32_t i = begin;
-                 i < end;
-                 ++i)
+            for (uint32_t i = begin; i < end; ++i)
             {
                 const float centroid =
                     primitives[i]
@@ -313,18 +289,12 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
             std::array<uint32_t, BIN_COUNT> suffixCount{};
             std::array<bool, BIN_COUNT> suffixValid{};
 
-            for (uint32_t i = 0;
-                 i < BIN_COUNT;
-                 ++i)
+            for (uint32_t i = 0; i < BIN_COUNT; ++i)
             {
                 if (bins[i].valid)
                 {
-                    prefixBounds[i] =
-                        bins[i].bounds;
-
-                    prefixCount[i] =
-                        bins[i].count;
-
+                    prefixBounds[i] = bins[i].bounds;
+                    prefixCount[i] = bins[i].count;
                     prefixValid[i] = true;
                 }
 
@@ -334,49 +304,32 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                     {
                         if (prefixValid[i])
                         {
-                            prefixBounds[i] =
-                                mergeBounds(
-                                    prefixBounds[i - 1],
-                                    prefixBounds[i]
-                                );
+                            prefixBounds[i] = mergeBounds(prefixBounds[i - 1], prefixBounds[i]);
                         }
                         else
                         {
-                            prefixBounds[i] =
-                                prefixBounds[i - 1];
-
-                            prefixCount[i] =
-                                prefixCount[i - 1];
-
+                            prefixBounds[i] = prefixBounds[i - 1];
+                            prefixCount[i] = prefixCount[i - 1];
                             prefixValid[i] = true;
 
                             continue;
                         }
 
-                        prefixCount[i] +=
-                            prefixCount[i - 1];
+                        prefixCount[i] += prefixCount[i - 1];
                     }
                 }
             }
 
-            for (int i =
-                     static_cast<int>(BIN_COUNT) - 1;
-                 i >= 0;
-                 --i)
+            for (int i = static_cast<int>(BIN_COUNT) - 1; i >= 0; --i)
             {
                 if (bins[i].valid)
                 {
-                    suffixBounds[i] =
-                        bins[i].bounds;
-
-                    suffixCount[i] =
-                        bins[i].count;
-
+                    suffixBounds[i] = bins[i].bounds;
+                    suffixCount[i] = bins[i].count;
                     suffixValid[i] = true;
                 }
 
-                if (i + 1 <
-                    static_cast<int>(BIN_COUNT))
+                if (i + 1 <static_cast<int>(BIN_COUNT))
                 {
                     if (suffixValid[i + 1])
                     {
@@ -390,26 +343,19 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                         }
                         else
                         {
-                            suffixBounds[i] =
-                                suffixBounds[i + 1];
-
-                            suffixCount[i] =
-                                suffixCount[i + 1];
-
+                            suffixBounds[i] = suffixBounds[i + 1];
+                            suffixCount[i] = suffixCount[i + 1];
                             suffixValid[i] = true;
 
                             continue;
                         }
 
-                        suffixCount[i] +=
-                            suffixCount[i + 1];
+                        suffixCount[i] += suffixCount[i + 1];
                     }
                 }
             }
 
-            for (uint32_t split = 0;
-                 split + 1 < BIN_COUNT;
-                 ++split)
+            for (uint32_t split = 0; split + 1 < BIN_COUNT; ++split)
             {
                 if (!prefixValid[split])
                     continue;
@@ -417,17 +363,11 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                 if (!suffixValid[split + 1])
                     continue;
 
-                const uint32_t leftCount =
-                    prefixCount[split];
+                const uint32_t leftCount = prefixCount[split];
+                const uint32_t rightCount = suffixCount[split + 1];
 
-                const uint32_t rightCount =
-                    suffixCount[split + 1];
-
-                if (leftCount == 0 ||
-                    rightCount == 0)
-                {
+                if (leftCount == 0 || rightCount == 0)
                     continue;
-                }
 
                 const float cost =
                     surfaceArea(
@@ -457,47 +397,26 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
 
         if (bestAxis >= 0)
         {
-            const float minCoord =
-                centroidBounds.min[bestAxis];
-
-            const float maxCoord =
-                centroidBounds.max[bestAxis];
-
-            const float extent =
-                maxCoord - minCoord;
+            const float minCoord = centroidBounds.min[bestAxis];
+            const float maxCoord = centroidBounds.max[bestAxis];
+            const float extent = maxCoord - minCoord;
 
             auto getBin =
                 [&](const PrimitiveType& primitive)
                 {
                     float normalized =
                         (
-                            primitive
-                                .getBounds()
-                                .getCenterAxis(bestAxis)
-                            -
+                            primitive.getBounds().getCenterAxis(bestAxis) -
                             minCoord
                         ) /
                         extent;
 
-                    normalized =
-                        std::clamp(
-                            normalized,
-                            0.0f,
-                            0.999999f
-                        );
+                    normalized = std::clamp(normalized, 0.0f, 0.999999f);
 
                     uint32_t binIndex =
-                        static_cast<uint32_t>(
-                            normalized *
-                            static_cast<float>(
-                                BIN_COUNT
-                            )
-                        );
+                        static_cast<uint32_t>(normalized * static_cast<float>(BIN_COUNT));
 
-                    return std::min(
-                        binIndex,
-                        BIN_COUNT - 1
-                    );
+                    return std::min(binIndex, BIN_COUNT - 1);
                 };
 
             auto middle =
@@ -508,9 +427,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                         const PrimitiveType& primitive
                     )
                     {
-                        return
-                            getBin(primitive)
-                            <= bestSplit;
+                        return getBin(primitive) <= bestSplit;
                     }
                 );
 
@@ -520,12 +437,9 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                     primitives.begin()
                 );
 
-            if (mid == begin ||
-                mid == end)
+            if (mid == begin || mid == end)
             {
-                mid =
-                    begin +
-                    count / 2;
+                mid = begin + count / 2;
 
                 std::nth_element(
                     primitives.begin() + begin,
@@ -537,20 +451,16 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                     )
                     {
                         return
-                            a.getBounds()
-                                .getCenterAxis(bestAxis)
+                            a.getBounds().getCenterAxis(bestAxis)
                             <
-                            b.getBounds()
-                                .getCenterAxis(bestAxis);
+                            b.getBounds().getCenterAxis(bestAxis);
                     }
                 );
             }
         }
         else
         {
-            mid =
-                begin +
-                count / 2;
+            mid = begin + count / 2;
 
             std::nth_element(
                 primitives.begin() + begin,
@@ -562,11 +472,9 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                 )
                 {
                     return
-                        a.getBounds()
-                            .getCenterAxis(preferredAxis)
+                        a.getBounds().getCenterAxis(preferredAxis)
                         <
-                        b.getBounds()
-                            .getCenterAxis(preferredAxis);
+                        b.getBounds().getCenterAxis(preferredAxis);
                 }
             );
         }
