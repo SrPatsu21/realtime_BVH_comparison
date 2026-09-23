@@ -25,7 +25,7 @@ int Render::run(){
     // The 3D objects
     initInstances();
 
-    const double targetFPS = 120.0;
+    const double targetFPS = 120000.0;
     const double targetFrameTime = 1.0 / targetFPS;
 
     double lastFrameTime = glfwGetTime();
@@ -486,6 +486,25 @@ void Render::initInstances(){
     renderInstance2->scale = glm::vec3(0.2f);
     renderInstance2->position += glm::vec3(2, 5, 0);
     renderInstance2->updateModelMatrix();
+
+    //* glass
+    RenderInstanceRegistration* glass = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/GLASSGLOBE/GLASSGLOBE.gltf")
+    );
+
+    RenderInstance * renderInstance5 = renderInstanceManager->getRenderInstance(glass->indexInVector);
+    renderInstance5->scale = glm::vec3(2.0f, 2.0f, 2.0f);
+    renderInstance5->position += glm::vec3(0, 3, 2);
+    renderInstance5->updateModelMatrix();
+
+    RenderInstanceRegistration* glasspane = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/GlassPane/glasspane.gltf")
+    );
+
+    RenderInstance * renderInstance6 = renderInstanceManager->getRenderInstance(glasspane->indexInVector);
+    renderInstance6->scale = glm::vec3(1.0f, 8.0f, 1.0f);
+    renderInstance6->position += glm::vec3(0, 3, -4);
+    renderInstance6->updateModelMatrix();
 
     //* light
     lightInstanceManager->createLight({

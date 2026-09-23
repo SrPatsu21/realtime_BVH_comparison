@@ -1172,8 +1172,6 @@ vec3 calculateLighting(
 {
     vec3 lighting = vec3(0.0);
 
-    return albedo;
-
     for (uint i = 0u; i < lights.length(); ++i)
     {
         LightData light = lights[i];
