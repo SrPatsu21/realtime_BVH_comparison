@@ -116,3 +116,10 @@ Only acept __.ktx2__; download [here on GitHub](https://github.com/KhronosGroup/
 ### Models
 
 In Blender or any other graphics software tool you prefer, export as __.glb__. The code does not accept other formats.
+
+
+## Nvidia
+
+<https://developer.nvidia.com/tools-overview/nsight-compute/get-started>
+
+<https://developer.nvidia.com/nsight-graphics>

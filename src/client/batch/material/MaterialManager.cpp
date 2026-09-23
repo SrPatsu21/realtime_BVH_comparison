@@ -111,6 +111,7 @@ uint32_t MaterialManager::createMaterial(
     gpuMaterial.roughnessFactor = material.roughnessFactor;
     gpuMaterial.alphaMode = static_cast<uint32_t>(material.alphaMode);
     gpuMaterial.alphaCutoff = material.alphaCutoff;
+    gpuMaterial.doubleSided = material.doubleSided ? 1u : 0u;
 
     gpuMaterial.baseColorTexture =
         material.baseColor

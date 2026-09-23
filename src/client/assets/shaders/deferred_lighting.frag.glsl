@@ -276,7 +276,7 @@ struct MaterialGPU
     uint normalTexture;
     uint metallicRoughnessTexture;
 
-    uint _padding0;
+    uint doubleSided;
 };
 
 layout(set = 4, binding = 0) readonly buffer MaterialBuffer
@@ -1091,7 +1091,6 @@ vec4 traceShadowRay(
 )
 {
     const float rayEpsilon = 0.001;
-
     const uint maxHits = 16u;
 
     vec4 transmittedLight = light;
@@ -1112,17 +1111,20 @@ vec4 traceShadowRay(
 
         MaterialGPU material = materials[hit.materialIndex];
 
-        float alpha =
-            texture(
-                textures[material.baseColorTexture],
-                hit.uv
-            ).a *
-            material.baseColorFactor.a;
 
         if (material.alphaMode == 1u)
         {
             return vec4(0.0);
         }
+
+        vec4 baseColor =
+            texture(
+                textures[material.baseColorTexture],
+                hit.uv
+            ) *
+            material.baseColorFactor;
+
+        float alpha = baseColor.a;
 
         if (material.alphaMode == 2u)
         {
@@ -1132,12 +1134,21 @@ vec4 traceShadowRay(
 
         if (material.alphaMode == 4u)
         {
-            transmittedLight *= 1.0 - alpha;
+            transmittedLight.rgb *=
+                mix(
+                    vec3(1.0),
+                    baseColor.rgb,
+                    alpha
+                );
+
+            transmittedLight.a *= 1.0 - alpha;
         }
 
-        origin += direction * (hit.distance + rayEpsilon);
+        float advance = hit.distance + rayEpsilon;
 
-        maxDistance -= hit.distance + rayEpsilon;
+        origin += direction * advance;
+
+        maxDistance -= advance;
 
         if (maxDistance <= 0.0)
             return transmittedLight;
@@ -1148,7 +1159,6 @@ vec4 traceShadowRay(
 
     return transmittedLight;
 }
-
 
 // =========================================================
 // Lighting
@@ -1161,6 +1171,8 @@ vec3 calculateLighting(
 )
 {
     vec3 lighting = vec3(0.0);
+
+    return albedo;
 
     for (uint i = 0u; i < lights.length(); ++i)
     {
@@ -1257,39 +1269,47 @@ void main()
 
     int this_sample = gl_SampleID;
 
+    vec3 lighting = vec3(0.0);
+
     // =========================================================
     // GBuffer
     // =========================================================
 
-    vec3 position =
+    vec4 positionSample =
         texelFetch(
             gPosition,
             pixel,
             this_sample
-        ).xyz;
+        );
 
-    vec3 normal =
-        normalize(
+    if (positionSample.a > 0.0)
+    {
+        vec3 position =
+            positionSample.xyz;
+
+        vec3 normal =
+            normalize(
+                texelFetch(
+                    gNormal,
+                    pixel,
+                    this_sample
+                ).xyz
+            );
+
+        vec3 albedo =
             texelFetch(
-                gNormal,
+                gAlbedo,
                 pixel,
                 this_sample
-            ).xyz
-        );
+            ).rgb;
 
-    vec3 albedo =
-        texelFetch(
-            gAlbedo,
-            pixel,
-            this_sample
-        ).rgb;
-
-    vec3 lighting =
-        calculateLighting(
-            position,
-            normal,
-            albedo
-        );
+        lighting =
+            calculateLighting(
+                position,
+                normal,
+                albedo
+            );
+    }
 
     // =========================================================
     // Transparent GBuffer
@@ -1302,10 +1322,7 @@ void main()
             this_sample
         );
 
-    bool hasTransparent =
-        transparentAlbedo.a > 0.0;
-
-    if (hasTransparent)
+    if (transparentAlbedo.a > 0.0)
     {
         vec3 transparentPosition =
             texelFetch(
@@ -1330,13 +1347,11 @@ void main()
                 transparentAlbedo.rgb
             );
 
-        float transparentAlpha = transparentAlbedo.a;
-
         lighting =
             mix(
                 lighting,
                 transparentLighting,
-                transparentAlpha
+                transparentAlbedo.a
             );
     }
 

@@ -21,6 +21,8 @@ struct MaterialImportData
 
     uint32_t alphaMode = 1;
     float alphaCutoff = 0.5f;
+
+    bool doubleSided = false;
 };
 
 struct MeshImportData

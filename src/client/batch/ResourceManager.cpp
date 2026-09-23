@@ -75,6 +75,7 @@ std::shared_ptr<Mesh> ResourceManager::getMesh(
 
         material.alphaMode = static_cast<MaterialData::AlphaMode>(materialData.alphaMode);
         material.alphaCutoff = materialData.alphaCutoff;
+        material.doubleSided = materialData.doubleSided ? 1u : 0u;
 
         if (!materialData.baseColorPath.empty())
             material.baseColor = textureManager.createTexture(materialData.baseColorPath);

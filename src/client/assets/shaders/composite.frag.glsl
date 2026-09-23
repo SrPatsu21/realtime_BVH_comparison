@@ -24,5 +24,19 @@ void main()
 
     color /= float(SAMPLE_COUNT);
 
-    outColor = color;
+    const float exposure = 1.0;
+
+    vec3 hdrColor =
+        color.rgb *
+        exposure;
+
+    vec3 mapped =
+        hdrColor /
+        (hdrColor + vec3(1.0));
+
+    outColor =
+        vec4(
+            mapped,
+            color.a
+        );
 }

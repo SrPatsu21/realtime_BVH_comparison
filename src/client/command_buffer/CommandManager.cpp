@@ -203,10 +203,11 @@ void CommandManager::buildClearValues(
 void CommandManager::buildGBufferClearValues(
     std::vector<VkClearValue>& clearValues
 ) {
+
     clearValues.resize(5);
 
     VkClearValue color{};
-    color.color = {{1.0f, 1.0f, 1.0f, 1.0f}};
+    color.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
 
     clearValues[0] = color; // position
     clearValues[1] = color; // normal

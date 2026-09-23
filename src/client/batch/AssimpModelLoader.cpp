@@ -152,6 +152,16 @@ MeshImportData AssimpModelLoader::load(
             material.alphaCutoff = alphaCutoff;
         }
 
+        // ---------------------------------------------------------
+        // DOUBLE SIDED
+        // ---------------------------------------------------------
+        int doubleSided = 0;
+
+        if (mat->Get(AI_MATKEY_TWOSIDED, doubleSided) == AI_SUCCESS)
+        {
+            material.doubleSided = doubleSided != 0;
+        }
+
         data.materials[i] = material;
     }
 

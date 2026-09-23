@@ -24,6 +24,8 @@ struct MaterialData
     AlphaMode alphaMode = AlphaMode::OPAQUE;
     float alphaCutoff = 0.5f;
 
+    bool doubleSided = false;
+
     uint32_t baseColor;
     uint32_t normal;
     uint32_t metallicRoughness;
@@ -54,5 +56,5 @@ struct MaterialGPU
     uint32_t normalTexture; // 4
     uint32_t metallicRoughnessTexture; // 4
 
-    uint32_t _padding0; // 4
+    uint32_t doubleSided; // 4
 }; // 48

@@ -14,7 +14,7 @@ struct MaterialGPU
     uint normalTexture;
     uint metallicRoughnessTexture;
 
-    uint _padding0;
+    uint doubleSided;
 };
 
 layout(set = 1, binding = 0) readonly buffer MaterialBuffer
@@ -83,6 +83,11 @@ void main()
     mat3 TBN = mat3(T, B, N);
 
     N = normalize(TBN * tangentNormal);
+
+    // if (!gl_FrontFacing)
+    // {
+    //     N = -N;
+    // }
 
     // --------------------------------------------------
     // Metallic / Roughness
