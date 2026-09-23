@@ -84,11 +84,6 @@ void main()
 
     N = normalize(TBN * tangentNormal);
 
-    // if (!gl_FrontFacing)
-    // {
-    //     N = -N;
-    // }
-
     // --------------------------------------------------
     // Metallic / Roughness
     // --------------------------------------------------

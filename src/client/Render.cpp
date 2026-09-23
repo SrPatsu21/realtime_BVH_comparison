@@ -502,9 +502,18 @@ void Render::initInstances(){
     );
 
     RenderInstance * renderInstance6 = renderInstanceManager->getRenderInstance(glasspane->indexInVector);
-    renderInstance6->scale = glm::vec3(1.0f, 8.0f, 1.0f);
+    renderInstance6->scale = glm::vec3(0.5);
     renderInstance6->position += glm::vec3(0, 3, -4);
     renderInstance6->updateModelMatrix();
+
+    RenderInstanceRegistration* glasspane2 = renderInstanceManager->createRenderInstance(
+        resourceManager->getMesh("models/GlassPane/glasspane.gltf")
+    );
+
+    RenderInstance * renderInstance7 = renderInstanceManager->getRenderInstance(glasspane2->indexInVector);
+    renderInstance7->scale = glm::vec3(0.5);
+    renderInstance7->position += glm::vec3(0, 6, -4);
+    renderInstance7->updateModelMatrix();
 
     //* light
     lightInstanceManager->createLight({

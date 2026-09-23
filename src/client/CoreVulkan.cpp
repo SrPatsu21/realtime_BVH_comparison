@@ -25,6 +25,7 @@ CoreVulkan::CoreVulkan(
 
     // Vulkan 1.0 required features
     config.requiredFeatures.samplerAnisotropy = VK_TRUE;
+    config.requiredFeatures.independentBlend = VK_TRUE;
     // config.requiredFeatures.geometryShader = VK_TRUE;
 
     // Vulkan 1.0 optional features
@@ -389,6 +390,13 @@ bool CoreVulkan::isDeviceSuitable(
         return false;
     }
 
+    if (config.requiredFeatures.independentBlend && !supported2.features.independentBlend)
+    {
+        throw std::runtime_error(
+            "Device does not support required independent blend."
+        );
+    }
+
     // if (config.requiredFeatures.geometryShader && !supported2.features.geometryShader) {
     //     #ifndef NDEBUG
     //         std::cout << "  REJECTED: geometryShader" << std::endl;
@@ -671,6 +679,11 @@ void CoreVulkan::createLogicalDevice(
         config.requiredFeatures.samplerAnisotropy ||
         (config.optionalFeatures.samplerAnisotropy &&
         supported2.features.samplerAnisotropy);
+
+    enabledFeatures.independentBlend =
+        config.requiredFeatures.independentBlend ||
+        (config.optionalFeatures.independentBlend &&
+        supported2.features.independentBlend);
 
     // enabledFeatures.geometryShader =
     //     config.requiredFeatures.geometryShader ||

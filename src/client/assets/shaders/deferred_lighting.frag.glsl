@@ -1167,7 +1167,8 @@ vec4 traceShadowRay(
 vec3 calculateLighting(
     vec3 position,
     vec3 normal,
-    vec3 albedo
+    vec3 albedo,
+    bool twoSided
 )
 {
     vec3 lighting = vec3(0.0);
@@ -1201,20 +1202,38 @@ vec3 calculateLighting(
             toLight /
             distanceToLight;
 
+        // =====================================================
+        // Two-sided lighting
+        // =====================================================
+
+        vec3 shadingNormal = normal;
+
         float NdotL =
             dot(
-                normal,
+                shadingNormal,
                 lightDirection
             );
 
-        if (NdotL <= 0.0)
-            continue;
+        if (twoSided)
+        {
+            if (NdotL < 0.0)
+            {
+                shadingNormal = -shadingNormal;
+
+                NdotL = -NdotL;
+            }
+        }
+        else
+        {
+            if (NdotL <= 0.0)
+                continue;
+        }
 
         const float shadowBias = 0.01;
 
         vec3 shadowOrigin =
             position +
-            normal *
+            shadingNormal *
             shadowBias;
 
         vec4 transmittedLight =
@@ -1305,7 +1324,8 @@ void main()
             calculateLighting(
                 position,
                 normal,
-                albedo
+                albedo,
+                false
             );
     }
 
@@ -1342,7 +1362,8 @@ void main()
             calculateLighting(
                 transparentPosition,
                 transparentNormal,
-                transparentAlbedo.rgb
+                transparentAlbedo.rgb,
+                true
             );
 
         lighting =

@@ -253,19 +253,43 @@ void GeometryMeshPipelineProvider::createPipelines(
     for (size_t i = 0; i < 4; i++)
     {
         blendAttachments[i] = {};
-        blendAttachments[i].blendEnable = VK_TRUE;
-        blendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        blendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
-        blendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        blendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
+
         blendAttachments[i].colorWriteMask =
             VK_COLOR_COMPONENT_R_BIT |
             VK_COLOR_COMPONENT_G_BIT |
             VK_COLOR_COMPONENT_B_BIT |
             VK_COLOR_COMPONENT_A_BIT;
     }
+
+    // ==================================================
+    // Position
+    // ==================================================
+
+    blendAttachments[0].blendEnable = VK_FALSE;
+
+    // ==================================================
+    // Normal
+    // ==================================================
+
+    blendAttachments[1].blendEnable = VK_FALSE;
+
+    // ==================================================
+    // Albedo
+    // ==================================================
+
+    blendAttachments[2].blendEnable = VK_TRUE;
+    blendAttachments[2].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blendAttachments[2].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blendAttachments[2].colorBlendOp = VK_BLEND_OP_ADD;
+    blendAttachments[2].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    blendAttachments[2].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blendAttachments[2].alphaBlendOp = VK_BLEND_OP_ADD;
+
+    // ==================================================
+    // Material
+    // ==================================================
+
+    blendAttachments[3].blendEnable = VK_FALSE;
 
     GraphicsPipelineHelper::createColorBlendState(
         blendAttachments,
@@ -275,7 +299,8 @@ void GeometryMeshPipelineProvider::createPipelines(
     VkPipeline pipelineBlend;
 
     // fix depth write off for this pipeline
-    depthStencil.depthWriteEnable = VK_FALSE;
+    // depthStencil.depthTestEnable = VK_FALSE;
+    // depthStencil.depthWriteEnable = VK_FALSE;
 
     GraphicsPipelineHelper::createPipeline(
         ctx.device,

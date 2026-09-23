@@ -362,9 +362,9 @@ AccelerationStructureManager<
 
     uploadBLAS();
 
-    // printBLAS(
-    //     *blas.get()
-    // );
+    printBLAS(
+        *blas.get()
+    );
 
     return blas;
 }
