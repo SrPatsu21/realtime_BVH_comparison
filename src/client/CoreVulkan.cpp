@@ -38,6 +38,9 @@ CoreVulkan::CoreVulkan(
     config.requiredFeatures12.runtimeDescriptorArray = VK_TRUE;
     config.requiredFeatures12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     // Vulkan 1.2 optional features
+    #ifndef NDEBUG
+        config.optionalFeatures12.hostQueryReset = VK_TRUE;
+    #endif
 
     // Add optional Vulkan 1.2 features here when necessary.
     for (auto* provider : deviceProviders) {

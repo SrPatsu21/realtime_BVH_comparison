@@ -161,9 +161,11 @@ public:
      */
     struct DeviceConfig {
         std::vector<const char*> extensions;
+
         // Vulkan 1.0 features
         VkPhysicalDeviceFeatures requiredFeatures{};
         VkPhysicalDeviceFeatures optionalFeatures{};
+
         // Vulkan 1.2 features
         VkPhysicalDeviceVulkan12Features requiredFeatures12{};
         VkPhysicalDeviceVulkan12Features optionalFeatures12{};

@@ -7,6 +7,7 @@
 #include "raytracing/frame_buffer/GBufferFramebufferProvider.hpp"
 #include "raytracing/frame_buffer/DeferredLightingFramebufferProvider.hpp"
 #include "raytracing/frame_buffer/CompositeFramebufferProvider.hpp"
+#include "VulkanDebugMarker.hpp"
 
 #include <chrono>
 
@@ -23,12 +24,19 @@ int Render::run(){
     // Basic all vulkan setup
     initVulkan();
     // The 3D objects
+    #ifndef NDEBUG
+        g_actualCommandBuffer = commandManager->getCommandBuffers()[currentFrame];
+        initVulkanDebugMarkers(coreVulkan->getDevice());
+    #endif
+
     initInstances();
 
-    const double targetFPS = 120000.0;
+    const double targetFPS = 120.0;
     const double targetFrameTime = 1.0 / targetFPS;
 
     double lastFrameTime = glfwGetTime();
+    double nextFrameTime = lastFrameTime + targetFrameTime;
+
     double fpsTimer = lastFrameTime;
 
     int frameCount = 0;
@@ -37,18 +45,38 @@ int Render::run(){
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        double frameStart = glfwGetTime();
-        double elapsed = frameStart - lastFrameTime;
+        #ifndef NDEBUG
+            g_actualCommandBuffer = commandManager->getCommandBuffers()[currentFrame];
+        #endif
 
-        if (elapsed < targetFrameTime) {
-            std::this_thread::sleep_for(
-                std::chrono::duration<double>(targetFrameTime - elapsed)
-            );
+        while (true) {
+            double now = glfwGetTime();
+            double remaining = nextFrameTime - now;
+
+            if (remaining <= 0.0)
+                break;
+
+            if (remaining > 0.001) {
+                std::this_thread::sleep_for(
+                    std::chrono::microseconds(
+                        static_cast<long long>((remaining - 0.0005) * 1'000'000.0)
+                    )
+                );
+            } else {
+                std::this_thread::yield();
+            }
         }
 
         double currentTime = glfwGetTime();
-        elapsed = currentTime - lastFrameTime;
+        double elapsed = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
+
+
+        nextFrameTime += targetFrameTime;
+
+        if (currentTime > nextFrameTime + targetFrameTime) {
+            nextFrameTime = currentTime + targetFrameTime;
+        }
 
         updateInstances(
             currentTime,
@@ -455,7 +483,7 @@ void Render::initInstances(){
     );
 
     RenderInstance * renderInstance0 = renderInstanceManager->getRenderInstance(floor->indexInVector);
-    renderInstance0->scale = glm::vec3(10.0f);
+    renderInstance0->scale = glm::vec3(100.0f);
     renderInstance0->position += glm::vec3(0, 0, 0);
     renderInstance0->updateModelMatrix();
 

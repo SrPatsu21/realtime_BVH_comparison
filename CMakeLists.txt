@@ -157,6 +157,15 @@ option(KTX_FEATURE_VK_UPLOAD ON)
 add_subdirectory(lib/KTX-Software)
 
 # ============================================================
+# NVTX
+# ============================================================
+
+add_subdirectory(
+    /opt/NVTX
+    ${CMAKE_BINARY_DIR}/NVTX
+)
+
+# ============================================================
 # Shader compilation
 # ============================================================
 find_program(GLSLANG_VALIDATOR glslangValidator)
@@ -330,6 +339,7 @@ elseif(UNIX)
         glm::glm
         assimp
         ktx
+        nvtx3-cpp
         pthread
         dl
         X11

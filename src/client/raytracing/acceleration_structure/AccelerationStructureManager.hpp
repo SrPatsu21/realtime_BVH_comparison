@@ -23,6 +23,8 @@
 #include "../../batch/mesh/Mesh.hpp"
 #include "../../BufferManager.hpp"
 
+#include "../../VulkanDebugMarker.hpp"
+
 template<
     typename TLBuilderType,
     typename BLBuilderType
@@ -330,41 +332,45 @@ AccelerationStructureManager<
     const std::vector<SubMesh>& subMeshes
 )
 {
-    auto it = blasMap.find(mesh);
+    std::shared_ptr<BLAS> blas = std::make_shared<BLAS>();
+    {
+        NGFXCPUMarker cpuMarker("BLAS Build - CPU");
 
-    if (it != blasMap.end())
-        return it->second;
+        auto it = blasMap.find(mesh);
 
-    std::shared_ptr<BLAS> blas =
-        std::make_shared<BLAS>();
+        if (it != blasMap.end())
+            return it->second;
 
-    BLASInstanceBuilder::build(
-        vertices,
-        indices,
-        subMeshes,
-        blas->nodes,
-        blas->instances
-    );
+        BLASInstanceBuilder::build(
+            vertices,
+            indices,
+            subMeshes,
+            blas->nodes,
+            blas->instances
+        );
 
-    if (blas->nodes.empty())
-        throw std::runtime_error("AccelerationStructureManager: BLAS contains no nodes");
+        if (blas->nodes.empty())
+            throw std::runtime_error("AccelerationStructureManager: BLAS contains no nodes");
 
-    blas->index = static_cast<uint32_t>(blasVector.size());
+        blas->index = static_cast<uint32_t>(blasVector.size());
 
-    blasVector.emplace_back(
-        blas
-    );
+        blasVector.emplace_back(
+            blas
+        );
 
-    blasMap.emplace(
-        mesh,
-        blas
-    );
+        blasMap.emplace(
+            mesh,
+            blas
+        );
+    }
+    {
+        NGFXCPUMarker cpuMarker("BLAS Upload - CPU");
+        uploadBLAS();
+    }
 
-    uploadBLAS();
-
-    printBLAS(
-        *blas.get()
-    );
+    // printBLAS(
+    //     *blas.get()
+    // );
 
     return blas;
 }
@@ -385,57 +391,63 @@ AccelerationStructureManager<
     const std::vector<TLASBuildInput>& inputs
 )
 {
-    tlas.nodes.clear();
-    tlas.instances.clear();
-
-    if (inputs.empty())
     {
-        std::cout
-            << "No instances to build TLAS"
-            << std::endl;
+        NGFXCPUMarker cpuMarker("TLAS Build - CPU");
 
-        return;
-    }
+        tlas.nodes.clear();
+        tlas.instances.clear();
 
-    std::vector<uint32_t> blasIndices;
+        if (inputs.empty())
+        {
+            std::cout
+                << "No instances to build TLAS"
+                << std::endl;
 
-    blasIndices.reserve(
-        inputs.size()
-    );
+            return;
+        }
 
-    for (const TLASBuildInput& input : inputs)
-    {
-        if (!input.blas)
-            throw std::runtime_error("TLAS input contains null BLAS");
+        std::vector<uint32_t> blasIndices;
 
-        blasIndices.emplace_back(
-            input.blas->index
+        blasIndices.reserve(
+            inputs.size()
         );
+
+        for (const TLASBuildInput& input : inputs)
+        {
+            if (!input.blas)
+                throw std::runtime_error("TLAS input contains null BLAS");
+
+            blasIndices.emplace_back(
+                input.blas->index
+            );
+        }
+
+        std::vector<PrimitiveRef> primitives;
+
+        TLASInstanceBuilder::build(
+            inputs,
+            blasIndices,
+            primitives,
+            tlas.nodes,
+            tlas.instances
+        );
+
+        for (TLASInstance& instance : tlas.instances)
+        {
+            if (instance.blasIndex >= blasVector.size())
+                throw std::runtime_error("TLAS instance contains invalid BLAS index");
+
+            const BLAS& blas = *blasVector[instance.blasIndex];
+            instance.nodeOffset = blas.nodeOffset;
+            instance.nodeCount = blas.nodeCount;
+            instance.instanceOffset = blas.instanceOffset;
+        }
     }
-
-    std::vector<PrimitiveRef> primitives;
-
-    TLASInstanceBuilder::build(
-        inputs,
-        blasIndices,
-        primitives,
-        tlas.nodes,
-        tlas.instances
-    );
-
-    for (TLASInstance& instance : tlas.instances)
     {
-        if (instance.blasIndex >= blasVector.size())
-            throw std::runtime_error("TLAS instance contains invalid BLAS index");
-
-        const BLAS& blas = *blasVector[instance.blasIndex];
-        instance.nodeOffset = blas.nodeOffset;
-        instance.nodeCount = blas.nodeCount;
-        instance.instanceOffset = blas.instanceOffset;
+        NGFXCPUMarker cpuMarker2("TLAS Upload");
+        uploadTLAS();
     }
-
-    uploadTLAS();
-
+    
     // printTLAS(
     //     tlas
     // );
