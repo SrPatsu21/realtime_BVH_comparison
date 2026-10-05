@@ -12,11 +12,10 @@ layout(location = 0) out vec4 outColor;
 
 struct BVHNode
 {
-    vec4 min;
-    vec4 max;
+    vec4 childBoundsMin[2];
+    vec4 childBoundsMax[2];
 
-    uint left;
-    uint right;
+    uint children[2];
 
     uint leaf;
     uint pad0;
@@ -24,8 +23,8 @@ struct BVHNode
 
 struct BVH8Node
 {
-    vec4 min;
-    vec4 max;
+    vec4 childBoundsMin[8];
+    vec4 childBoundsMax[8];
 
     uint children[8];
 
@@ -43,9 +42,6 @@ struct BVH8Node
 
 struct TLASInstance
 {
-    vec4 boundsMin;
-    vec4 boundsMax;
-
     mat4 inverseTransform;
 
     uvec2 vertexAddress;
@@ -64,9 +60,6 @@ struct TLASInstance
 
 struct BLASInstance
 {
-    vec4 boundsMin;
-    vec4 boundsMax;
-
     uint firstTriangle;
     uint triangleCount;
 
@@ -449,6 +442,7 @@ bool traceBLAS(
             localNodeIndex;
 
 
+
         // =====================================================
         // BVH8
         // =====================================================
@@ -456,17 +450,6 @@ bool traceBLAS(
 #if defined(USE_BLAS_BVH8)
 
         BVH8Node node = blasNodes[nodeIndex];
-
-        if (!intersectAABB(
-                origin,
-                direction,
-                node.min.xyz,
-                node.max.xyz,
-                closestHit.distance
-            ))
-        {
-            continue;
-        }
 
         // -----------------------------------------------------
         // Leaf
@@ -482,6 +465,21 @@ bool traceBLAS(
 
             for (uint child = 0u; child < node.childCount; ++child)
             {
+                // -------------------------------------------------
+                // Testa o AABB da primitiva armazenada neste slot
+                // -------------------------------------------------
+
+                if (!intersectAABB(
+                        origin,
+                        direction,
+                        node.childBoundsMin[child].xyz,
+                        node.childBoundsMax[child].xyz,
+                        closestHit.distance
+                    ))
+                {
+                    continue;
+                }
+
                 uint instanceIndex =
                     tlasInstance.instanceOffset +
                     node.children[child];
@@ -490,17 +488,6 @@ bool traceBLAS(
                     blasInstances[
                         instanceIndex
                     ];
-
-                if (!intersectAABB(
-                        origin,
-                        direction,
-                        instance.boundsMin.xyz,
-                        instance.boundsMax.xyz,
-                        closestHit.distance
-                    ))
-                {
-                    continue;
-                }
 
                 for (
                     uint triangle = 0u;
@@ -606,15 +593,32 @@ bool traceBLAS(
             continue;
         }
 
+        // -----------------------------------------------------
+        // Internal BVH8 node
+        // -----------------------------------------------------
+
         for (uint child = 0u; child < node.childCount; ++child)
         {
+            if (!intersectAABB(
+                    origin,
+                    direction,
+                    node.childBoundsMin[child].xyz,
+                    node.childBoundsMax[child].xyz,
+                    closestHit.distance
+                ))
+            {
+                continue;
+            }
+
             if (stackSize >= 128u)
                 break;
 
-            stack[stackSize++] = node.children[child];
+            stack[stackSize++] =
+                node.children[child];
         }
 
         continue;
+
 
 
 // =====================================================
@@ -623,17 +627,6 @@ bool traceBLAS(
 #else
 
         BVHNode node = blasNodes[nodeIndex];
-
-        if (!intersectAABB(
-                origin,
-                direction,
-                node.min.xyz,
-                node.max.xyz,
-                closestHit.distance
-            ))
-        {
-            continue;
-        }
 
         // -----------------------------------------------------
         // Leaf
@@ -651,123 +644,130 @@ bool traceBLAS(
                     tlasInstance.indexAddress
                 );
 
-            uint instanceIndex =
-                tlasInstance.instanceOffset +
-                node.left;
-
-            for (uint side = 0u; side < 2u; ++side)
+            for (uint child = 0u; child < 2u; ++child)
             {
-                BLASInstance instance =
-                    blasInstances[instanceIndex];
+                // -------------------------------------------------
+                // Testa o AABB da primitiva armazenada neste slot
+                // -------------------------------------------------
 
-                if (intersectAABB(
+                if (!intersectAABB(
                         origin,
                         direction,
-                        instance.boundsMin.xyz,
-                        instance.boundsMax.xyz,
+                        node.childBoundsMin[child].xyz,
+                        node.childBoundsMax[child].xyz,
                         closestHit.distance
                     ))
                 {
-                    for (
-                        uint triangle = 0u;
-                        triangle < instance.triangleCount;
-                        ++triangle
-                    )
+                    continue;
+                }
+
+                uint instanceIndex =
+                    tlasInstance.instanceOffset +
+                    node.children[child];
+
+                BLASInstance instance =
+                    blasInstances[
+                        instanceIndex
+                    ];
+
+                for (
+                    uint triangle = 0u;
+                    triangle < instance.triangleCount;
+                    ++triangle
+                )
+                {
+                    uint triangleIndex =
+                        instance.firstTriangle +
+                        triangle;
+
+                    uint indexOffset =
+                        triangleIndex * 3u;
+
+                    uint index0 =
+                        indices.indices[
+                            indexOffset + 0u
+                        ];
+
+                    uint index1 =
+                        indices.indices[
+                            indexOffset + 1u
+                        ];
+
+                    uint index2 =
+                        indices.indices[
+                            indexOffset + 2u
+                        ];
+
+                    vec3 v0 =
+                        loadVertexPosition(
+                            vertices,
+                            index0
+                        );
+
+                    vec3 v1 =
+                        loadVertexPosition(
+                            vertices,
+                            index1
+                        );
+
+                    vec3 v2 =
+                        loadVertexPosition(
+                            vertices,
+                            index2
+                        );
+
+                    float hitDistance;
+                    float hitU;
+                    float hitV;
+
+                    if (intersectTriangle(
+                            origin,
+                            direction,
+                            v0,
+                            v1,
+                            v2,
+                            closestHit.distance,
+                            hitDistance,
+                            hitU,
+                            hitV
+                        ))
                     {
-                        uint triangleIndex =
-                            instance.firstTriangle +
-                            triangle;
-
-                        uint indexOffset =
-                            triangleIndex * 3u;
-
-                        uint index0 =
-                            indices.indices[indexOffset + 0u];
-
-                        uint index1 =
-                            indices.indices[indexOffset + 1u];
-
-                        uint index2 =
-                            indices.indices[indexOffset + 2u];
-
-                        vec3 v0 =
-                            loadVertexPosition(
+                        vec2 uv0 =
+                            loadVertexTexCoord(
                                 vertices,
                                 index0
                             );
 
-                        vec3 v1 =
-                            loadVertexPosition(
+                        vec2 uv1 =
+                            loadVertexTexCoord(
                                 vertices,
                                 index1
                             );
 
-                        vec3 v2 =
-                            loadVertexPosition(
+                        vec2 uv2 =
+                            loadVertexTexCoord(
                                 vertices,
                                 index2
                             );
 
-                        float hitDistance;
-                        float hitU;
-                        float hitV;
+                        float hitW =
+                            1.0 -
+                            hitU -
+                            hitV;
 
-                        if (intersectTriangle(
-                                origin,
-                                direction,
-                                v0,
-                                v1,
-                                v2,
-                                closestHit.distance,
-                                hitDistance,
-                                hitU,
-                                hitV
-                            ))
-                        {
-                            vec2 uv0 =
-                                loadVertexTexCoord(
-                                    vertices,
-                                    index0
-                                );
+                        closestHit.distance =
+                            hitDistance;
 
-                            vec2 uv1 =
-                                loadVertexTexCoord(
-                                    vertices,
-                                    index1
-                                );
+                        closestHit.materialIndex =
+                            instance.materialOffset;
 
-                            vec2 uv2 =
-                                loadVertexTexCoord(
-                                    vertices,
-                                    index2
-                                );
+                        closestHit.uv =
+                            uv0 * hitW +
+                            uv1 * hitU +
+                            uv2 * hitV;
 
-                            float hitW =
-                                1.0 -
-                                hitU -
-                                hitV;
-
-                            closestHit.distance =
-                                hitDistance;
-
-                            closestHit.materialIndex =
-                                instance.materialOffset;
-
-                            closestHit.uv =
-                                uv0 * hitW +
-                                uv1 * hitU +
-                                uv2 * hitV;
-
-                            foundHit = true;
-                        }
+                        foundHit = true;
                     }
-                }
-
-                if (side == 0u)
-                {
-                    instanceIndex =
-                        tlasInstance.instanceOffset +
-                        node.right;
                 }
             }
 
@@ -778,11 +778,26 @@ bool traceBLAS(
         // Internal binary node
         // -----------------------------------------------------
 
-        if (stackSize + 2u > 128u)
-            continue;
+        for (uint child = 0u; child < 2u; ++child)
+        {
+            if (!intersectAABB(
+                    origin,
+                    direction,
+                    node.childBoundsMin[child].xyz,
+                    node.childBoundsMax[child].xyz,
+                    closestHit.distance
+                ))
+            {
+                continue;
+            }
 
-        stack[stackSize++] = node.right;
-        stack[stackSize++] = node.left;
+            if (stackSize >= 128u)
+                break;
+
+            stack[stackSize++] =
+                node.children[child];
+        }
+
 #endif
     }
 
@@ -838,17 +853,6 @@ bool traceTLAS(
         BVH8Node node =
             tlasNodes[nodeIndex];
 
-        if (!intersectAABB(
-                origin,
-                direction,
-                node.min.xyz,
-                node.max.xyz,
-                closestHit.distance
-            ))
-        {
-            continue;
-        }
-
         // -----------------------------------------------------
         // Leaf
         // -----------------------------------------------------
@@ -861,6 +865,21 @@ bool traceTLAS(
                 ++child
             )
             {
+                // -------------------------------------------------
+                // O AABB deste slot pertence à TLASInstance
+                // -------------------------------------------------
+
+                if (!intersectAABB(
+                        origin,
+                        direction,
+                        node.childBoundsMin[child].xyz,
+                        node.childBoundsMax[child].xyz,
+                        closestHit.distance
+                    ))
+                {
+                    continue;
+                }
+
                 uint instanceIndex =
                     node.children[child];
 
@@ -955,6 +974,17 @@ bool traceTLAS(
             ++child
         )
         {
+            if (!intersectAABB(
+                    origin,
+                    direction,
+                    node.childBoundsMin[child].xyz,
+                    node.childBoundsMax[child].xyz,
+                    closestHit.distance
+                ))
+            {
+                continue;
+            }
+
             if (stackSize >= 128u)
                 break;
 
@@ -975,17 +1005,6 @@ bool traceTLAS(
         BVHNode node =
             tlasNodes[nodeIndex];
 
-        if (!intersectAABB(
-                origin,
-                direction,
-                node.min.xyz,
-                node.max.xyz,
-                closestHit.distance
-            ))
-        {
-            continue;
-        }
-
         // -----------------------------------------------------
         // Leaf
         // -----------------------------------------------------
@@ -993,18 +1012,33 @@ bool traceTLAS(
         if (node.leaf != 0u)
         {
             for (
-                uint side = 0u;
-                side < 2u;
-                ++side
+                uint child = 0u;
+                child < 2u;
+                ++child
             )
             {
+                // -------------------------------------------------
+                // O AABB deste slot pertence à TLASInstance
+                // -------------------------------------------------
+
+                if (!intersectAABB(
+                        origin,
+                        direction,
+                        node.childBoundsMin[child].xyz,
+                        node.childBoundsMax[child].xyz,
+                        closestHit.distance
+                    ))
+                {
+                    continue;
+                }
+
                 uint instanceIndex =
-                    side == 0u ?
-                    node.left :
-                    node.right;
+                    node.children[child];
 
                 TLASInstance instance =
-                    tlasInstances[instanceIndex];
+                    tlasInstances[
+                        instanceIndex
+                    ];
 
                 vec3 localOrigin =
                     (
@@ -1042,9 +1076,14 @@ bool traceTLAS(
                         localHit
                     ))
                 {
-                    float worldDistance = localHit.distance / directionScale;
+                    float worldDistance =
+                        localHit.distance /
+                        directionScale;
 
-                    if (worldDistance < closestHit.distance)
+                    if (
+                        worldDistance <
+                        closestHit.distance
+                    )
                     {
                         closestHit.distance =
                             worldDistance;
@@ -1055,7 +1094,8 @@ bool traceTLAS(
                         closestHit.uv =
                             localHit.uv;
 
-                        foundHit = true;
+                        foundHit =
+                            true;
                     }
                 }
             }
@@ -1067,11 +1107,32 @@ bool traceTLAS(
         // Internal binary node
         // -----------------------------------------------------
 
-        if (stackSize + 2u > 128u)
-            continue;
+        for (
+            uint child = 0u;
+            child < 2u;
+            ++child
+        )
+        {
+            if (!intersectAABB(
+                    origin,
+                    direction,
+                    node.childBoundsMin[child].xyz,
+                    node.childBoundsMax[child].xyz,
+                    closestHit.distance
+                ))
+            {
+                continue;
+            }
 
-        stack[stackSize++] = node.right;
-        stack[stackSize++] = node.left;
+            if (stackSize >= 128u)
+                break;
+
+            stack[
+                stackSize++
+            ] =
+                node.children[child];
+        }
+
 #endif
     }
 

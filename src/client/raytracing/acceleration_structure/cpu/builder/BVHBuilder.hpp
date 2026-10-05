@@ -40,16 +40,14 @@ void BVHBuilder<NodeType>::build(
         uint32_t end;
 
         uint32_t parent;
-        bool rightChild;
+        uint32_t childSlot;
     };
 
     constexpr uint32_t INVALID_NODE = 0xFFFFFFFFu;
 
     std::vector<Range> stack;
 
-    stack.reserve(
-        primitives.size()
-    );
+    stack.reserve(primitives.size());
 
     stack.push_back(
         {
@@ -58,13 +56,14 @@ void BVHBuilder<NodeType>::build(
                 primitives.size()
             ),
             INVALID_NODE,
-            false
+            0
         }
     );
 
     while (!stack.empty())
     {
         const Range range = stack.back();
+
         stack.pop_back();
 
         const uint32_t begin = range.begin;
@@ -74,42 +73,37 @@ void BVHBuilder<NodeType>::build(
 
         nodes.emplace_back();
 
-        if (range.parent != INVALID_NODE)
-        {
-            if (range.rightChild)
-            {
-                nodes[range.parent].right = nodeIndex;
-            }
-            else
-            {
-                nodes[range.parent].left = nodeIndex;
-            }
-        }
-
         NodeType& node = nodes[nodeIndex];
 
-        node.bounds = BVHUtils::computeBounds(
-                primitives,
-                begin,
-                end
-            );
+        node.children[0] = 0;
+        node.children[1] = 0;
 
-        if (count == 2)
+        node.leaf = 0;
+        node.pad0 = 0;
+
+        if (range.parent != INVALID_NODE)
         {
-            node.leaf = 1;
-            node.left = begin;
-            node.right = begin + 1;
-            node.pad0 = 0;
+            nodes[range.parent].children[range.childSlot] =
+                nodeIndex;
 
-            continue;
+            nodes[range.parent].childBounds[range.childSlot] =
+                BVHUtils::computeBounds(
+                    primitives,
+                    begin,
+                    end
+                );
         }
 
-        if (count == 1)
+        if (count <= 2)
         {
             node.leaf = 1;
-            node.left = begin;
-            node.right = begin;
-            node.pad0 = 0;
+
+            node.children[0] = begin;
+
+            node.children[1] =
+                count == 1
+                ? begin
+                : begin + 1;
 
             continue;
         }
@@ -139,20 +133,21 @@ void BVHBuilder<NodeType>::build(
                 const PrimitiveType& b
             )
             {
-                return a.getBounds().getCenterAxis(axis)
-                    < b.getBounds().getCenterAxis(axis);
+                return
+                    a.getBounds().getCenterAxis(axis)
+                    <
+                    b.getBounds().getCenterAxis(axis);
             }
         );
 
         node.leaf = 0;
-        node.pad0 = 0;
 
         stack.push_back(
             {
                 mid,
                 end,
                 nodeIndex,
-                true
+                1
             }
         );
 
@@ -161,7 +156,7 @@ void BVHBuilder<NodeType>::build(
                 begin,
                 mid,
                 nodeIndex,
-                false
+                0
             }
         );
     }

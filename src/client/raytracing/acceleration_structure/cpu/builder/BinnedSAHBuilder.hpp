@@ -117,7 +117,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
         uint32_t end;
 
         uint32_t parent;
-        bool rightChild;
+        uint32_t childSlot;
     };
 
     constexpr uint32_t INVALID_NODE = 0xFFFFFFFFu;
@@ -135,7 +135,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                 primitives.size()
             ),
             INVALID_NODE,
-            false
+            0
         }
     );
 
@@ -154,38 +154,30 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
 
         nodes.emplace_back();
 
-        if (range.parent != INVALID_NODE)
-        {
-            if (range.rightChild)
-            {
-                nodes[range.parent].right = nodeIndex;
-            }
-            else
-            {
-                nodes[range.parent].left = nodeIndex;
-            }
-        }
-
         NodeType& node = nodes[nodeIndex];
 
-        node.bounds =
-            BVHUtils::computeBounds(
-                primitives,
-                begin,
-                end
-            );
+        node.children[0] = 0;
+        node.children[1] = 0;
+
+        node.leaf = 0;
+        node.pad0 = 0;
+
+
+        if (range.parent != INVALID_NODE)
+        {
+            nodes[range.parent].children[range.childSlot] = nodeIndex;
+        }
 
         if (count <= 2)
         {
             node.leaf = 1;
-            node.left = begin;
 
-            node.right =
-                count == 1 ?
-                begin :
-                begin + 1;
+            node.children[0] = begin;
 
-            node.pad0 = 0;
+            node.children[1] =
+                count == 1
+                ? begin
+                : begin + 1;
 
             continue;
         }
@@ -218,12 +210,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
             if (extent <= 0.000001f)
                 continue;
 
-            std::array<Bin, BIN_COUNT> bins;
-
-            for (uint32_t i = 0; i < BIN_COUNT; ++i)
-            {
-                bins[i] = Bin{};
-            }
+            std::array<Bin, BIN_COUNT> bins{};
 
             for (uint32_t i = begin; i < end; ++i)
             {
@@ -305,17 +292,14 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                         if (prefixValid[i])
                         {
                             prefixBounds[i] = mergeBounds(prefixBounds[i - 1], prefixBounds[i]);
+                            prefixCount[i] += prefixCount[i - 1];
                         }
                         else
                         {
                             prefixBounds[i] = prefixBounds[i - 1];
                             prefixCount[i] = prefixCount[i - 1];
                             prefixValid[i] = true;
-
-                            continue;
                         }
-
-                        prefixCount[i] += prefixCount[i - 1];
                     }
                 }
             }
@@ -329,7 +313,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                     suffixValid[i] = true;
                 }
 
-                if (i + 1 <static_cast<int>(BIN_COUNT))
+                if (i + 1 < static_cast<int>(BIN_COUNT))
                 {
                     if (suffixValid[i + 1])
                     {
@@ -340,17 +324,15 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                                     suffixBounds[i],
                                     suffixBounds[i + 1]
                                 );
+
+                            suffixCount[i] += suffixCount[i + 1];
                         }
                         else
                         {
                             suffixBounds[i] = suffixBounds[i + 1];
                             suffixCount[i] = suffixCount[i + 1];
                             suffixValid[i] = true;
-
-                            continue;
                         }
-
-                        suffixCount[i] += suffixCount[i + 1];
                     }
                 }
             }
@@ -413,8 +395,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
 
                     normalized = std::clamp(normalized, 0.0f, 0.999999f);
 
-                    uint32_t binIndex =
-                        static_cast<uint32_t>(normalized * static_cast<float>(BIN_COUNT));
+                    uint32_t binIndex = static_cast<uint32_t>(normalized * static_cast<float>(BIN_COUNT));
 
                     return std::min(binIndex, BIN_COUNT - 1);
                 };
@@ -482,12 +463,26 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
         node.leaf = 0;
         node.pad0 = 0;
 
+        node.childBounds[0] =
+            BVHUtils::computeBounds(
+                primitives,
+                begin,
+                mid
+            );
+
+        node.childBounds[1] =
+            BVHUtils::computeBounds(
+                primitives,
+                mid,
+                end
+            );
+
         stack.push_back(
             {
                 mid,
                 end,
                 nodeIndex,
-                true
+                1
             }
         );
 
@@ -496,7 +491,7 @@ void BinnedSAHBuilder<NodeType, BIN_COUNT>::build(
                 begin,
                 mid,
                 nodeIndex,
-                false
+                0
             }
         );
     }

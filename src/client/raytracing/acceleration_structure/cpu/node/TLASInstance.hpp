@@ -5,8 +5,6 @@
 
 struct TLASInstance
 {
-    AABB bounds; // 64
-
     glm::mat4 inverseTransform; // 4*4*32 512
 
     uint64_t vertexAddress; //8

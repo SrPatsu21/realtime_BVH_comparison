@@ -36,7 +36,6 @@ void TLASInstanceBuilder::build(
         inputs,
         blasIndices,
         primitives,
-        nodes,
         instances
     );
 
@@ -58,6 +57,7 @@ void TLASInstanceBuilder::createPrimitives(
         primitive.bounds = inputs[i].bounds;
         primitive.index = i;
         primitive.count = 1;
+
         primitives.emplace_back(
             primitive
         );
@@ -68,7 +68,6 @@ void TLASInstanceBuilder::createInstances(
     const std::vector<TLASBuildInput>& inputs,
     const std::vector<uint32_t>& blasIndices,
     const std::vector<PrimitiveRef>& primitives,
-    const std::vector<NodeType>& nodes,
     std::vector<TLASInstance>& instances
 )
 {
@@ -79,7 +78,7 @@ void TLASInstanceBuilder::createInstances(
 
     instances.reserve(primitives.size());
 
-    for ( const PrimitiveRef& primitive : primitives)
+    for (const PrimitiveRef& primitive : primitives)
     {
         const uint32_t inputIndex = primitive.index;
 
@@ -89,7 +88,6 @@ void TLASInstanceBuilder::createInstances(
         const TLASBuildInput& input = inputs[inputIndex];
 
         TLASInstance instance{};
-        instance.bounds = input.bounds;
         instance.inverseTransform = input.inverseTransform;
         instance.vertexAddress = input.vertexAddress;
         instance.indexAddress = input.indexAddress;

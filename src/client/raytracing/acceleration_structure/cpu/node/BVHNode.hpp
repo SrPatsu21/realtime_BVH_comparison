@@ -5,14 +5,10 @@
 
 struct BVHNode
 {
-    AABB bounds; // 64
+    AABB childBounds[2]; //128
 
-    uint32_t left; // 4
-    uint32_t right; // 4
+    uint32_t children[2]; //8
 
     uint32_t leaf; //4
     uint32_t pad0;//4
-
-    AABB& getBounds() { return bounds; }
-    const AABB& getBounds() const { return bounds; }
-}; // 80
+}; // 128 + 16 = 144

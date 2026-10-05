@@ -50,20 +50,17 @@ void BVH8Builder<NodeType>::build(
 
             NodeType& node = nodes[nodeIndex];
 
-            for (uint32_t i = 0; i < MAX_CHILDREN; ++i)
-            {
-                node.children[i] = 0;
-            }
+            node.childCount = 0;
+            node.leaf = 0;
 
             node.pad0 = 0;
             node.pad1 = 0;
 
-            node.bounds =
-                BVHUtils::computeBounds(
-                    primitives,
-                    begin,
-                    end
-                );
+            for (uint32_t i = 0; i < MAX_CHILDREN; ++i)
+            {
+                node.children[i] = 0;
+                node.childBounds[i] = AABB{};
+            }
 
             const uint32_t count = end - begin;
 
@@ -76,6 +73,11 @@ void BVH8Builder<NodeType>::build(
                 for (uint32_t i = 0; i < count; ++i)
                 {
                     node.children[i] = begin + i;
+
+                    node.childBounds[i] =
+                        primitives[
+                            begin + i
+                        ].getBounds();
                 }
 
                 return nodeIndex;
@@ -107,8 +109,10 @@ void BVH8Builder<NodeType>::build(
                     const PrimitiveType& b
                 )
                 {
-                    return a.getBounds().getCenterAxis(axis)
-                        < b.getBounds().getCenterAxis(axis);
+                    return
+                        a.getBounds().getCenterAxis(axis)
+                        <
+                        b.getBounds().getCenterAxis(axis);
                 }
             );
 
@@ -139,6 +143,13 @@ void BVH8Builder<NodeType>::build(
                 node.children[i] =
                     self(
                         self,
+                        childBegin,
+                        childEnd
+                    );
+
+                node.childBounds[i] =
+                    BVHUtils::computeBounds(
+                        primitives,
                         childBegin,
                         childEnd
                     );

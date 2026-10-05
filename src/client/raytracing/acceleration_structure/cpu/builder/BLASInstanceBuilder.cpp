@@ -135,13 +135,9 @@ void BLASInstanceBuilder::buildInstances(
         primitives.size()
     );
 
-    for (
-        const PrimitiveRef& primitive :
-        primitives
-    )
+    for (const PrimitiveRef& primitive : primitives)
     {
         BLASInstance instance{};
-        instance.bounds = primitive.bounds;
         instance.firstTriangle = primitive.index;
         instance.triangleCount = primitive.count;
         instance.materialOffset = primitive.materialIndex;

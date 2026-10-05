@@ -36,7 +36,6 @@ private:
         const std::vector<TLASBuildInput>& inputs,
         const std::vector<uint32_t>& blasIndices,
         const std::vector<PrimitiveRef>& primitives,
-        const std::vector<NodeType>& nodes,
         std::vector<TLASInstance>& instances
     );
 };
