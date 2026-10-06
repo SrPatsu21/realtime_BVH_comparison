@@ -1,220 +1,30 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_buffer_reference_uvec2 : require
 #extension GL_EXT_buffer_reference : require
 
 layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 
-// =========================================================
-// AABB
-// =========================================================
-
-struct AABB
-{
-    vec4 boundsMin;
-    vec4 boundsMax;
-};
-
-// =========================================================
-// BVH Nodes
-// =========================================================
-
-struct BVHNode
-{
-    AABB childBounds[2];
-
-    uint children[2];
-
-    uint leaf;
-    uint pad0;
-};
-
-struct BVH8Node
-{
-    AABB childBounds[8];
-
-    uint children[8];
-
-    uint childCount;
-    uint leaf;
-
-    uint pad0;
-    uint pad1;
-};
-
-
-// =========================================================
-// TLAS
-// =========================================================
-
-struct TLASInstance
-{
-    mat4 inverseTransform;
-
-    uvec2 vertexAddress;
-    uvec2 indexAddress;
-
-    uint blasIndex;
-    uint nodeOffset;
-    uint nodeCount;
-    uint instanceOffset;
-};
-
-
-// =========================================================
-// BLAS leaf
-// =========================================================
-
-struct BLASInstance
-{
-    uint firstTriangle;
-    uint triangleCount;
-
-    uint materialOffset;
-    uint pad0;
-};
-
-
-// =========================================================
-// Buffer references
-// =========================================================
-
-struct Vertex
-{
-    vec3 pos;
-    vec3 normal;
-    vec4 tangent;
-    vec2 texCoord;
-};
-
-layout(buffer_reference, std430)
-readonly buffer VertexBuffer
-{
-    float data[];
-};
-
-layout(buffer_reference, std430)
-readonly buffer IndexBuffer
-{
-    uint indices[];
-};
-
-vec3 loadVertexPosition(
-    VertexBuffer vertices,
-    uint vertexIndex
-)
-{
-    const uint base = vertexIndex * 12u;
-
-    return vec3(
-        vertices.data[base + 0u],
-        vertices.data[base + 1u],
-        vertices.data[base + 2u]
-    );
-}
-
-vec2 loadVertexTexCoord(
-    VertexBuffer vertices,
-    uint vertexIndex
-)
-{
-    const uint base = vertexIndex * 12u;
-
-    return vec2(
-        vertices.data[base + 10u],
-        vertices.data[base + 11u]
-    );
-}
-
-
-// =========================================================
-// Acceleration structure buffers
-// =========================================================
-
-#if defined(USE_BLAS_BVH8)
-
-layout(set = 0, binding = 1, std430)
-readonly buffer BLASNodeBuffer
-{
-    BVH8Node blasNodes[];
-};
-
-#else
-
-layout(set = 0, binding = 1, std430)
-readonly buffer BLASNodeBuffer
-{
-    BVHNode blasNodes[];
-};
-
-#endif
-
-
-layout(set = 0, binding = 2, std430)
-readonly buffer BLASInstanceBuffer
-{
-    BLASInstance blasInstances[];
-};
-
-
-#if defined(USE_TLAS_BVH8)
-
-layout(set = 0, binding = 3, std430)
-readonly buffer TLASNodeBuffer
-{
-    BVH8Node tlasNodes[];
-};
-
-#else
-
-layout(set = 0, binding = 3, std430)
-readonly buffer TLASNodeBuffer
-{
-    BVHNode tlasNodes[];
-};
-
-#endif
-
-
-layout(set = 0, binding = 4, std430)
-readonly buffer TLASInstanceBuffer
-{
-    TLASInstance tlasInstances[];
-};
-
-
-// =========================================================
-// Ray
-// =========================================================
-
-struct RayHit
-{
-    float distance;
-    uint materialIndex;
-    vec2 uv;
-};
-
+// BVH / TLAS / BLAS traversal
+#include "bvh.glsl"
 
 // =========================================================
 // GBuffer
 // =========================================================
 
-layout(set = 1, binding = 0)
-uniform sampler2DMS gPosition;
+layout(set = 1, binding = 0) uniform sampler2DMS gPosition;
+layout(set = 1, binding = 1) uniform sampler2DMS gNormal;
+layout(set = 1, binding = 2) uniform sampler2DMS gAlbedo;
+layout(set = 1, binding = 3) uniform sampler2DMS gMaterial;
+layout(set = 1, binding = 4) uniform sampler2DMS gDepth;
 
-layout(set = 1, binding = 1)
-uniform sampler2DMS gNormal;
-
-layout(set = 1, binding = 2)
-uniform sampler2DMS gAlbedo;
-
-layout(set = 1, binding = 3)
-uniform sampler2DMS gMaterial;
-
-layout(set = 1, binding = 4)
-uniform sampler2DMS gDepth;
-
+// Transparent GBuffer
+layout(set = 3, binding = 0) uniform sampler2DMS tgPosition;
+layout(set = 3, binding = 1) uniform sampler2DMS tgNormal;
+layout(set = 3, binding = 2) uniform sampler2DMS tgAlbedo;
+layout(set = 3, binding = 3) uniform sampler2DMS tgMaterial;
 
 // =========================================================
 // Lights
@@ -240,24 +50,6 @@ readonly buffer LightBuffer
 {
     LightData lights[];
 };
-
-
-// =========================================================
-// Transparent GBuffer
-// =========================================================
-
-layout(set = 3, binding = 0)
-uniform sampler2DMS tgPosition;
-
-layout(set = 3, binding = 1)
-uniform sampler2DMS tgNormal;
-
-layout(set = 3, binding = 2)
-uniform sampler2DMS tgAlbedo;
-
-layout(set = 3, binding = 3)
-uniform sampler2DMS tgMaterial;
-
 
 // =========================================================
 // Material
@@ -287,837 +79,6 @@ layout(set = 4, binding = 0) readonly buffer MaterialBuffer
 
 layout(set = 4, binding = 1) uniform sampler2D textures[1024];
 
-
-// =========================================================
-// AABB
-// =========================================================
-
-bool intersectAABB(
-    vec3 origin,
-    vec3 direction,
-    vec3 boundsMin,
-    vec3 boundsMax,
-    float maxDistance
-)
-{
-    vec3 invDirection = 1.0 / direction;
-
-    vec3 t0 = (boundsMin - origin) * invDirection;
-    vec3 t1 = (boundsMax - origin) * invDirection;
-
-    vec3 tMin = min(t0, t1);
-    vec3 tMax = max(t0, t1);
-
-    float nearDistance =
-        max(
-            max(tMin.x, tMin.y),
-            tMin.z
-        );
-
-    float farDistance =
-        min(
-            min(tMax.x, tMax.y),
-            tMax.z
-        );
-
-    return
-        farDistance >= 0.0 &&
-        nearDistance <= farDistance &&
-        nearDistance <= maxDistance;
-}
-
-
-// =========================================================
-// Triangle
-// =========================================================
-
-bool intersectTriangle(
-    vec3 origin,
-    vec3 direction,
-    vec3 v0,
-    vec3 v1,
-    vec3 v2,
-    float maxDistance,
-    out float hitDistance,
-    out float hitU,
-    out float hitV
-)
-{
-    const float epsilon = 0.00001;
-
-    vec3 edge1 = v1 - v0;
-    vec3 edge2 = v2 - v0;
-
-    vec3 p =
-        cross(
-            direction,
-            edge2
-        );
-
-    float determinant =
-        dot(
-            edge1,
-            p
-        );
-
-    if (abs(determinant) < epsilon)
-        return false;
-
-    float inverseDeterminant = 1.0 / determinant;
-
-    vec3 s = origin - v0;
-
-    float u =
-        dot(
-            s,
-            p
-        ) *
-        inverseDeterminant;
-
-    if (u < 0.0 || u > 1.0)
-        return false;
-
-    vec3 q =
-        cross(
-            s,
-            edge1
-        );
-
-    float v =
-        dot(
-            direction,
-            q
-        ) *
-        inverseDeterminant;
-
-    if (v < 0.0 || u + v > 1.0)
-        return false;
-
-    float distance =
-        dot(
-            edge2,
-            q
-        ) *
-        inverseDeterminant;
-
-    if (distance <= epsilon || distance >= maxDistance)
-        return false;
-
-    hitDistance = distance;
-    hitU = u;
-    hitV = v;
-
-    return true;
-}
-
-
-// =========================================================
-// BLAS
-// =========================================================
-
-bool traceBLAS(
-    TLASInstance tlasInstance,
-    vec3 origin,
-    vec3 direction,
-    float maxDistance,
-    out RayHit closestHit
-)
-{
-    closestHit.distance = maxDistance;
-    closestHit.materialIndex = 0u;
-    closestHit.uv = vec2(0.0);
-
-    if (tlasInstance.nodeCount == 0u)
-        return false;
-
-    bool foundHit = false;
-
-    uint stack[128];
-    uint stackSize = 0u;
-
-    stack[stackSize++] = 0u;
-
-    while (stackSize > 0u)
-    {
-        uint localNodeIndex =
-            stack[--stackSize];
-
-        if (localNodeIndex >= tlasInstance.nodeCount)
-            continue;
-
-        uint nodeIndex =
-            tlasInstance.nodeOffset +
-            localNodeIndex;
-
-
-
-        // =====================================================
-        // BVH8
-        // =====================================================
-
-#if defined(USE_BLAS_BVH8)
-
-        BVH8Node node =
-            blasNodes[nodeIndex];
-
-        // -----------------------------------------------------
-        // Leaf
-        // -----------------------------------------------------
-
-        if (node.leaf != 0u)
-        {
-            VertexBuffer vertices =
-                VertexBuffer(tlasInstance.vertexAddress);
-
-            IndexBuffer indices =
-                IndexBuffer(tlasInstance.indexAddress);
-
-            for (uint child = 0u; child < node.childCount; ++child)
-            {
-                if (!intersectAABB(
-                        origin,
-                        direction,
-                        node.childBounds[child].boundsMin.xyz,
-                        node.childBounds[child].boundsMax.xyz,
-                        closestHit.distance
-                    ))
-                {
-                    continue;
-                }
-
-                uint instanceIndex =
-                    tlasInstance.instanceOffset +
-                    node.children[child];
-
-                BLASInstance instance =
-                    blasInstances[
-                        instanceIndex
-                    ];
-
-                for (
-                    uint triangle = 0u;
-                    triangle < instance.triangleCount;
-                    ++triangle
-                )
-                {
-                    uint triangleIndex =
-                        instance.firstTriangle +
-                        triangle;
-
-                    uint indexOffset =
-                        triangleIndex * 3u;
-
-                    uint index0 =
-                        indices.indices[
-                            indexOffset + 0u
-                        ];
-
-                    uint index1 =
-                        indices.indices[
-                            indexOffset + 1u
-                        ];
-
-                    uint index2 =
-                        indices.indices[
-                            indexOffset + 2u
-                        ];
-
-                    vec3 v0 =
-                        loadVertexPosition(
-                            vertices,
-                            index0
-                        );
-
-                    vec3 v1 =
-                        loadVertexPosition(
-                            vertices,
-                            index1
-                        );
-
-                    vec3 v2 =
-                        loadVertexPosition(
-                            vertices,
-                            index2
-                        );
-
-                    float hitDistance;
-                    float hitU;
-                    float hitV;
-
-                    if (intersectTriangle(
-                            origin,
-                            direction,
-                            v0,
-                            v1,
-                            v2,
-                            closestHit.distance,
-                            hitDistance,
-                            hitU,
-                            hitV
-                        ))
-                    {
-                        vec2 uv0 =
-                            loadVertexTexCoord(
-                                vertices,
-                                index0
-                            );
-
-                        vec2 uv1 =
-                            loadVertexTexCoord(
-                                vertices,
-                                index1
-                            );
-
-                        vec2 uv2 =
-                            loadVertexTexCoord(
-                                vertices,
-                                index2
-                            );
-
-                        float hitW =
-                            1.0 -
-                            hitU -
-                            hitV;
-
-                        closestHit.distance =
-                            hitDistance;
-
-                        closestHit.materialIndex =
-                            instance.materialOffset;
-
-                        closestHit.uv =
-                            uv0 * hitW +
-                            uv1 * hitU +
-                            uv2 * hitV;
-
-                        foundHit = true;
-                    }
-                }
-            }
-
-            continue;
-        }
-
-        // -----------------------------------------------------
-        // Internal BVH8 node
-        // -----------------------------------------------------
-
-        for (uint child = 0u; child < node.childCount; ++child)
-        {
-            if (!intersectAABB(
-                    origin,
-                    direction,
-                    node.childBounds[child].boundsMin.xyz,
-                    node.childBounds[child].boundsMax.xyz,
-                    closestHit.distance
-                ))
-            {
-                continue;
-            }
-
-            if (stackSize >= 128u)
-                break;
-
-            stack[stackSize++] =
-                node.children[child];
-        }
-
-#else
-
-        BVHNode node =
-            blasNodes[nodeIndex];
-
-        // =====================================================
-        // Leaf
-        // =====================================================
-
-        if (node.leaf != 0u)
-        {
-            VertexBuffer vertices =
-                VertexBuffer(
-                    tlasInstance.vertexAddress
-                );
-
-            IndexBuffer indices =
-                IndexBuffer(
-                    tlasInstance.indexAddress
-                );
-
-            for (uint child = 0u; child < 2u; ++child)
-            {
-                if (!intersectAABB(
-                        origin,
-                        direction,
-                        node.childBounds[child].boundsMin.xyz,
-                        node.childBounds[child].boundsMax.xyz,
-                        closestHit.distance
-                    ))
-                {
-                    continue;
-                }
-
-                uint instanceIndex =
-                    tlasInstance.instanceOffset +
-                    node.children[child];
-
-                BLASInstance instance =
-                    blasInstances[
-                        instanceIndex
-                    ];
-
-                for (
-                    uint triangle = 0u;
-                    triangle < instance.triangleCount;
-                    ++triangle
-                )
-                {
-                    uint triangleIndex =
-                        instance.firstTriangle +
-                        triangle;
-
-                    uint indexOffset =
-                        triangleIndex * 3u;
-
-                    uint index0 =
-                        indices.indices[
-                            indexOffset + 0u
-                        ];
-
-                    uint index1 =
-                        indices.indices[
-                            indexOffset + 1u
-                        ];
-
-                    uint index2 =
-                        indices.indices[
-                            indexOffset + 2u
-                        ];
-
-                    vec3 v0 =
-                        loadVertexPosition(
-                            vertices,
-                            index0
-                        );
-
-                    vec3 v1 =
-                        loadVertexPosition(
-                            vertices,
-                            index1
-                        );
-
-                    vec3 v2 =
-                        loadVertexPosition(
-                            vertices,
-                            index2
-                        );
-
-                    float hitDistance;
-                    float hitU;
-                    float hitV;
-
-                    if (intersectTriangle(
-                            origin,
-                            direction,
-                            v0,
-                            v1,
-                            v2,
-                            closestHit.distance,
-                            hitDistance,
-                            hitU,
-                            hitV
-                        ))
-                    {
-                        vec2 uv0 =
-                            loadVertexTexCoord(
-                                vertices,
-                                index0
-                            );
-
-                        vec2 uv1 =
-                            loadVertexTexCoord(
-                                vertices,
-                                index1
-                            );
-
-                        vec2 uv2 =
-                            loadVertexTexCoord(
-                                vertices,
-                                index2
-                            );
-
-                        float hitW =
-                            1.0 -
-                            hitU -
-                            hitV;
-
-                        closestHit.distance =
-                            hitDistance;
-
-                        closestHit.materialIndex =
-                            instance.materialOffset;
-
-                        closestHit.uv =
-                            uv0 * hitW +
-                            uv1 * hitU +
-                            uv2 * hitV;
-
-                        foundHit = true;
-                    }
-                }
-            }
-
-            continue;
-        }
-
-        // -----------------------------------------------------
-        // Internal binary node
-        // -----------------------------------------------------
-
-        for (uint child = 0u; child < 2u; ++child)
-        {
-            if (!intersectAABB(
-                    origin,
-                    direction,
-                    node.childBounds[child].boundsMin.xyz,
-                    node.childBounds[child].boundsMax.xyz,
-                    closestHit.distance
-                ))
-            {
-                continue;
-            }
-
-            if (stackSize >= 128u)
-                break;
-
-            stack[stackSize++] =
-                node.children[child];
-        }
-
-#endif
-    }
-
-    return foundHit;
-}
-
-
-// =========================================================
-// TLAS
-// =========================================================
-
-bool traceTLAS(
-    vec3 origin,
-    vec3 direction,
-    float maxDistance,
-    out RayHit closestHit
-)
-{
-    closestHit.distance =
-        maxDistance;
-
-    closestHit.materialIndex =
-        0u;
-
-    closestHit.uv =
-        vec2(0.0);
-
-    bool foundHit =
-        false;
-
-    uint stack[128];
-    uint stackSize =
-        0u;
-
-    stack[
-        stackSize++
-    ] = 0u;
-
-    while (stackSize > 0u)
-    {
-        uint localNodeIndex =
-            stack[
-                --stackSize
-            ];
-
-#if defined(USE_TLAS_BVH8)
-
-        BVH8Node node =
-            tlasNodes[localNodeIndex];
-
-        // -----------------------------------------------------
-        // Leaf
-        // -----------------------------------------------------
-
-        if (node.leaf != 0u)
-        {
-            for (
-                uint child = 0u;
-                child < node.childCount;
-                ++child
-            )
-            {
-                if (!intersectAABB(
-                        origin,
-                        direction,
-                        node.childBounds[child].boundsMin.xyz,
-                        node.childBounds[child].boundsMax.xyz,
-                        closestHit.distance
-                    ))
-                {
-                    continue;
-                }
-
-                uint instanceIndex =
-                    node.children[child];
-
-                TLASInstance instance =
-                    tlasInstances[
-                        instanceIndex
-                    ];
-
-                vec3 localOrigin =
-                    (
-                        instance.inverseTransform *
-                        vec4(
-                            origin,
-                            1.0
-                        )
-                    ).xyz;
-
-                vec3 localDirectionRaw =
-                    (
-                        instance.inverseTransform *
-                        vec4(
-                            direction,
-                            0.0
-                        )
-                    ).xyz;
-
-                float directionScale =
-                    length(
-                        localDirectionRaw
-                    );
-
-                if (
-                    directionScale <
-                    0.000001
-                )
-                {
-                    continue;
-                }
-
-                vec3 localDirection =
-                    localDirectionRaw /
-                    directionScale;
-
-                float localMaxDistance =
-                    closestHit.distance *
-                    directionScale;
-
-                RayHit localHit;
-
-                if (traceBLAS(
-                        instance,
-                        localOrigin,
-                        localDirection,
-                        localMaxDistance,
-                        localHit
-                    ))
-                {
-                    float worldDistance =
-                        localHit.distance /
-                        directionScale;
-
-                    if (
-                        worldDistance <
-                        closestHit.distance
-                    )
-                    {
-                        closestHit.distance =
-                            worldDistance;
-
-                        closestHit.materialIndex =
-                            localHit.materialIndex;
-
-                        closestHit.uv =
-                            localHit.uv;
-
-                        foundHit =
-                            true;
-                    }
-                }
-            }
-
-            continue;
-        }
-
-        // -----------------------------------------------------
-        // Internal BVH8 node
-        // -----------------------------------------------------
-
-        for (
-            uint child = 0u;
-            child < node.childCount;
-            ++child
-        )
-        {
-            if (!intersectAABB(
-                    origin,
-                    direction,
-                    node.childBounds[child].boundsMin.xyz,
-                    node.childBounds[child].boundsMax.xyz,
-                    closestHit.distance
-                ))
-            {
-                continue;
-            }
-
-            if (stackSize >= 128u)
-                break;
-
-            stack[
-                stackSize++
-            ] =
-                node.children[child];
-        }
-
-#else
-
-        BVHNode node =
-            tlasNodes[localNodeIndex];
-
-        // -----------------------------------------------------
-        // Leaf
-        // -----------------------------------------------------
-
-        if (node.leaf != 0u)
-        {
-            for (
-                uint child = 0u;
-                child < 2u;
-                ++child
-            )
-            {
-                if (!intersectAABB(
-                        origin,
-                        direction,
-                        node.childBounds[child].boundsMin.xyz,
-                        node.childBounds[child].boundsMax.xyz,
-                        closestHit.distance
-                    ))
-                {
-                    continue;
-                }
-
-                uint instanceIndex =
-                    node.children[child];
-
-                TLASInstance instance =
-                    tlasInstances[
-                        instanceIndex
-                    ];
-
-                vec3 localOrigin =
-                    (
-                        instance.inverseTransform *
-                        vec4(
-                            origin,
-                            1.0
-                        )
-                    ).xyz;
-
-                vec3 localDirectionRaw =
-                    (
-                        instance.inverseTransform *
-                        vec4(direction, 0.0)
-                    ).xyz;
-
-                float directionScale =
-                    length(localDirectionRaw);
-
-                if (directionScale < 0.000001)
-                    continue;
-
-                vec3 localDirection =
-                    localDirectionRaw /
-                    directionScale;
-
-                float localMaxDistance =
-                    closestHit.distance *
-                    directionScale;
-
-                RayHit localHit;
-
-                if (traceBLAS(
-                        instance,
-                        localOrigin,
-                        localDirection,
-                        localMaxDistance,
-                        localHit
-                    ))
-                {
-                    float worldDistance =
-                        localHit.distance /
-                        directionScale;
-
-                    if (
-                        worldDistance <
-                        closestHit.distance
-                    )
-                    {
-                        closestHit.distance =
-                            worldDistance;
-
-                        closestHit.materialIndex =
-                            localHit.materialIndex;
-
-                        closestHit.uv =
-                            localHit.uv;
-
-                        foundHit =
-                            true;
-                    }
-                }
-            }
-
-            continue;
-        }
-
-        // -----------------------------------------------------
-        // Internal binary node
-        // -----------------------------------------------------
-
-        for (
-            uint child = 0u;
-            child < 2u;
-            ++child
-        )
-        {
-            if (!intersectAABB(
-                    origin,
-                    direction,
-                    node.childBounds[child].boundsMin.xyz,
-                    node.childBounds[child].boundsMax.xyz,
-                    closestHit.distance
-                ))
-            {
-                continue;
-            }
-
-            if (stackSize >= 128u)
-                break;
-
-            stack[
-                stackSize++
-            ] =
-                node.children[child];
-        }
-
-#endif
-    }
-
-    return foundHit;
-}
-
 // =========================================================
 // Shadow ray
 // =========================================================
@@ -1138,29 +99,16 @@ vec4 traceShadowRay(
     {
         RayHit hit;
 
-        if (!traceTLAS(
-                origin,
-                direction,
-                maxDistance,
-                hit
-            ))
-        {
+        if (!traceTLAS(origin, direction, maxDistance, hit))
             return transmittedLight;
-        }
 
         MaterialGPU material = materials[hit.materialIndex];
 
-
         if (material.alphaMode == 1u)
-        {
             return vec4(0.0);
-        }
 
         vec4 baseColor =
-            texture(
-                textures[material.baseColorTexture],
-                hit.uv
-            ) *
+            texture(textures[material.baseColorTexture], hit.uv) *
             material.baseColorFactor;
 
         float alpha = baseColor.a;
@@ -1173,20 +121,13 @@ vec4 traceShadowRay(
 
         if (material.alphaMode == 4u)
         {
-            transmittedLight.rgb *=
-                mix(
-                    vec3(1.0),
-                    baseColor.rgb,
-                    alpha
-                );
-
+            transmittedLight.rgb *= mix(vec3(1.0), baseColor.rgb, alpha);
             transmittedLight.a *= 1.0 - alpha;
         }
 
         float advance = hit.distance + rayEpsilon;
 
         origin += direction * advance;
-
         maxDistance -= advance;
 
         if (maxDistance <= 0.0)
@@ -1217,16 +158,8 @@ vec3 calculateLighting(
         LightData light = lights[i];
 
         vec3 toLight = light.position - position;
-
-        float distanceSq =
-            dot(
-                toLight,
-                toLight
-            );
-
-        float rangeSq =
-            light.range *
-            light.range;
+        float distanceSq = dot(toLight, toLight);
+        float rangeSq = light.range * light.range;
 
         if (distanceSq > rangeSq)
             continue;
@@ -1234,31 +167,18 @@ vec3 calculateLighting(
         if (distanceSq < 0.000001)
             continue;
 
-        float distanceToLight =
-            sqrt(distanceSq);
+        float distanceToLight = sqrt(distanceSq);
+        vec3 lightDirection = toLight / distanceToLight;
 
-        vec3 lightDirection =
-            toLight /
-            distanceToLight;
-
-        // =====================================================
-        // Two-sided lighting
-        // =====================================================
-
+        // Two-sided lighting: flip the normal when facing away from the light
         vec3 shadingNormal = normal;
-
-        float NdotL =
-            dot(
-                shadingNormal,
-                lightDirection
-            );
+        float NdotL = dot(shadingNormal, lightDirection);
 
         if (twoSided)
         {
             if (NdotL < 0.0)
             {
                 shadingNormal = -shadingNormal;
-
                 NdotL = -NdotL;
             }
         }
@@ -1270,37 +190,20 @@ vec3 calculateLighting(
 
         const float shadowBias = 0.01;
 
-        vec3 shadowOrigin =
-            position +
-            shadingNormal *
-            shadowBias;
+        vec3 shadowOrigin = position + shadingNormal * shadowBias;
 
-        vec4 transmittedLight =
-            traceShadowRay(
-                shadowOrigin,
-                lightDirection,
-                distanceToLight -
-                    shadowBias,
-                vec4(1.0)
-            );
+        vec4 transmittedLight = traceShadowRay(
+            shadowOrigin,
+            lightDirection,
+            distanceToLight - shadowBias,
+            vec4(1.0)
+        );
 
         if (transmittedLight.a <= 0.00001)
             continue;
 
-        float attenuation =
-            1.0 /
-            max(
-                distanceSq,
-                0.01
-            );
-
-        float rangeFade =
-            1.0 -
-            smoothstep(
-                0.0,
-                light.range,
-                distanceToLight
-            );
+        float attenuation = 1.0 / max(distanceSq, 0.01);
+        float rangeFade = 1.0 - smoothstep(0.0, light.range, distanceToLight);
 
         lighting +=
             albedo *
@@ -1322,103 +225,38 @@ vec3 calculateLighting(
 void main()
 {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
-
     int this_sample = gl_SampleID;
 
     vec3 lighting = vec3(0.0);
 
-    // =========================================================
-    // GBuffer
-    // =========================================================
-
-    vec4 positionSample =
-        texelFetch(
-            gPosition,
-            pixel,
-            this_sample
-        );
+    // Opaque GBuffer
+    vec4 positionSample = texelFetch(gPosition, pixel, this_sample);
 
     if (positionSample.a > 0.0)
     {
-        vec3 position =
-            positionSample.xyz;
+        vec3 normal = normalize(texelFetch(gNormal, pixel, this_sample).xyz);
+        vec3 albedo = texelFetch(gAlbedo, pixel, this_sample).rgb;
 
-        vec3 normal =
-            normalize(
-                texelFetch(
-                    gNormal,
-                    pixel,
-                    this_sample
-                ).xyz
-            );
-
-        vec3 albedo =
-            texelFetch(
-                gAlbedo,
-                pixel,
-                this_sample
-            ).rgb;
-
-        lighting =
-            calculateLighting(
-                position,
-                normal,
-                albedo,
-                false
-            );
+        lighting = calculateLighting(positionSample.xyz, normal, albedo, false);
     }
 
-    // =========================================================
     // Transparent GBuffer
-    // =========================================================
-
-    vec4 transparentAlbedo =
-        texelFetch(
-            tgAlbedo,
-            pixel,
-            this_sample
-        );
+    vec4 transparentAlbedo = texelFetch(tgAlbedo, pixel, this_sample);
 
     if (transparentAlbedo.a > 0.0)
     {
-        vec3 transparentPosition =
-            texelFetch(
-                tgPosition,
-                pixel,
-                this_sample
-            ).xyz;
+        vec3 transparentPosition = texelFetch(tgPosition, pixel, this_sample).xyz;
+        vec3 transparentNormal   = normalize(texelFetch(tgNormal, pixel, this_sample).xyz);
 
-        vec3 transparentNormal =
-            normalize(
-                texelFetch(
-                    tgNormal,
-                    pixel,
-                    this_sample
-                ).xyz
-            );
+        vec3 transparentLighting = calculateLighting(
+            transparentPosition,
+            transparentNormal,
+            transparentAlbedo.rgb,
+            true
+        );
 
-        vec3 transparentLighting =
-            calculateLighting(
-                transparentPosition,
-                transparentNormal,
-                transparentAlbedo.rgb,
-                true
-            );
-
-        lighting =
-            mix(
-                lighting,
-                transparentLighting,
-                transparentAlbedo.a
-            );
+        lighting = mix(lighting, transparentLighting, transparentAlbedo.a);
     }
 
-    // =========================================================
-    // Output
-    // =========================================================
-    outColor =
-        vec4(
-            lighting,
-            1.0
-        );
+    outColor = vec4(lighting, 1.0);
 }
