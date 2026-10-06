@@ -7,13 +7,22 @@ layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 
 // =========================================================
+// AABB
+// =========================================================
+
+struct AABB
+{
+    vec4 boundsMin;
+    vec4 boundsMax;
+};
+
+// =========================================================
 // BVH Nodes
 // =========================================================
 
 struct BVHNode
 {
-    vec4 childBoundsMin[2];
-    vec4 childBoundsMax[2];
+    AABB childBounds[2];
 
     uint children[2];
 
@@ -23,8 +32,7 @@ struct BVHNode
 
 struct BVH8Node
 {
-    vec4 childBoundsMin[8];
-    vec4 childBoundsMax[8];
+    AABB childBounds[8];
 
     uint children[8];
 
@@ -419,7 +427,7 @@ bool traceBLAS(
     closestHit.materialIndex = 0u;
     closestHit.uv = vec2(0.0);
 
-    if (tlasInstance.nodeCount == 0)
+    if (tlasInstance.nodeCount == 0u)
         return false;
 
     bool foundHit = false;
@@ -449,7 +457,8 @@ bool traceBLAS(
 
 #if defined(USE_BLAS_BVH8)
 
-        BVH8Node node = blasNodes[nodeIndex];
+        BVH8Node node =
+            blasNodes[nodeIndex];
 
         // -----------------------------------------------------
         // Leaf
@@ -465,15 +474,11 @@ bool traceBLAS(
 
             for (uint child = 0u; child < node.childCount; ++child)
             {
-                // -------------------------------------------------
-                // Testa o AABB da primitiva armazenada neste slot
-                // -------------------------------------------------
-
                 if (!intersectAABB(
                         origin,
                         direction,
-                        node.childBoundsMin[child].xyz,
-                        node.childBoundsMax[child].xyz,
+                        node.childBounds[child].boundsMin.xyz,
+                        node.childBounds[child].boundsMax.xyz,
                         closestHit.distance
                     ))
                 {
@@ -602,8 +607,8 @@ bool traceBLAS(
             if (!intersectAABB(
                     origin,
                     direction,
-                    node.childBoundsMin[child].xyz,
-                    node.childBoundsMax[child].xyz,
+                    node.childBounds[child].boundsMin.xyz,
+                    node.childBounds[child].boundsMax.xyz,
                     closestHit.distance
                 ))
             {
@@ -617,20 +622,14 @@ bool traceBLAS(
                 node.children[child];
         }
 
-        continue;
-
-
-
-// =====================================================
-// Binary BVH
-// =====================================================
 #else
 
-        BVHNode node = blasNodes[nodeIndex];
+        BVHNode node =
+            blasNodes[nodeIndex];
 
-        // -----------------------------------------------------
+        // =====================================================
         // Leaf
-        // -----------------------------------------------------
+        // =====================================================
 
         if (node.leaf != 0u)
         {
@@ -646,15 +645,11 @@ bool traceBLAS(
 
             for (uint child = 0u; child < 2u; ++child)
             {
-                // -------------------------------------------------
-                // Testa o AABB da primitiva armazenada neste slot
-                // -------------------------------------------------
-
                 if (!intersectAABB(
                         origin,
                         direction,
-                        node.childBoundsMin[child].xyz,
-                        node.childBoundsMax[child].xyz,
+                        node.childBounds[child].boundsMin.xyz,
+                        node.childBounds[child].boundsMax.xyz,
                         closestHit.distance
                     ))
                 {
@@ -783,8 +778,8 @@ bool traceBLAS(
             if (!intersectAABB(
                     origin,
                     direction,
-                    node.childBoundsMin[child].xyz,
-                    node.childBoundsMax[child].xyz,
+                    node.childBounds[child].boundsMin.xyz,
+                    node.childBounds[child].boundsMax.xyz,
                     closestHit.distance
                 ))
             {
@@ -838,20 +833,15 @@ bool traceTLAS(
 
     while (stackSize > 0u)
     {
-        uint nodeIndex =
+        uint localNodeIndex =
             stack[
                 --stackSize
             ];
 
-
-        // =====================================================
-        // BVH8
-        // =====================================================
-
 #if defined(USE_TLAS_BVH8)
 
         BVH8Node node =
-            tlasNodes[nodeIndex];
+            tlasNodes[localNodeIndex];
 
         // -----------------------------------------------------
         // Leaf
@@ -865,15 +855,11 @@ bool traceTLAS(
                 ++child
             )
             {
-                // -------------------------------------------------
-                // O AABB deste slot pertence à TLASInstance
-                // -------------------------------------------------
-
                 if (!intersectAABB(
                         origin,
                         direction,
-                        node.childBoundsMin[child].xyz,
-                        node.childBoundsMax[child].xyz,
+                        node.childBounds[child].boundsMin.xyz,
+                        node.childBounds[child].boundsMax.xyz,
                         closestHit.distance
                     ))
                 {
@@ -977,8 +963,8 @@ bool traceTLAS(
             if (!intersectAABB(
                     origin,
                     direction,
-                    node.childBoundsMin[child].xyz,
-                    node.childBoundsMax[child].xyz,
+                    node.childBounds[child].boundsMin.xyz,
+                    node.childBounds[child].boundsMax.xyz,
                     closestHit.distance
                 ))
             {
@@ -994,16 +980,10 @@ bool traceTLAS(
                 node.children[child];
         }
 
-        continue;
-
-        // =====================================================
-        // Binary BVH
-        // =====================================================
-
 #else
 
         BVHNode node =
-            tlasNodes[nodeIndex];
+            tlasNodes[localNodeIndex];
 
         // -----------------------------------------------------
         // Leaf
@@ -1017,15 +997,11 @@ bool traceTLAS(
                 ++child
             )
             {
-                // -------------------------------------------------
-                // O AABB deste slot pertence à TLASInstance
-                // -------------------------------------------------
-
                 if (!intersectAABB(
                         origin,
                         direction,
-                        node.childBoundsMin[child].xyz,
-                        node.childBoundsMax[child].xyz,
+                        node.childBounds[child].boundsMin.xyz,
+                        node.childBounds[child].boundsMax.xyz,
                         closestHit.distance
                     ))
                 {
@@ -1043,7 +1019,10 @@ bool traceTLAS(
                 vec3 localOrigin =
                     (
                         instance.inverseTransform *
-                        vec4(origin, 1.0)
+                        vec4(
+                            origin,
+                            1.0
+                        )
                     ).xyz;
 
                 vec3 localDirectionRaw =
@@ -1116,8 +1095,8 @@ bool traceTLAS(
             if (!intersectAABB(
                     origin,
                     direction,
-                    node.childBoundsMin[child].xyz,
-                    node.childBoundsMax[child].xyz,
+                    node.childBounds[child].boundsMin.xyz,
+                    node.childBounds[child].boundsMax.xyz,
                     closestHit.distance
                 ))
             {
@@ -1138,7 +1117,6 @@ bool traceTLAS(
 
     return foundHit;
 }
-
 
 // =========================================================
 // Shadow ray

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../cpu/builder/BVHBuilder.hpp"
+#include "../cpu/builder/LBVHBuilder.hpp"
 #include "../cpu/builder/BVH8Builder.hpp"
 #include "../cpu/builder/BinnedSAHBuilder.hpp"
 
@@ -20,6 +21,11 @@
 
     using DefaultBLASNode = BVHNode;
     using DefaultBLASBuilder = BinnedSAHBuilder<DefaultBLASNode>;
+
+#elif defined(USE_BLAS_LBVH)
+
+    using DefaultBLASNode = BVHNode;
+    using DefaultBLASBuilder = LBVHBuilder<DefaultBLASNode>;
 
 #else
 
@@ -41,6 +47,11 @@
 
     using DefaultTLASNode = BVHNode;
     using DefaultTLASBuilder = BinnedSAHBuilder<DefaultTLASNode>;
+
+#elif defined(USE_TLAS_LBVH)
+
+    using DefaultTLASNode = BVHNode;
+    using DefaultTLASBuilder = LBVHBuilder<DefaultTLASNode>;
 
 #else
 
