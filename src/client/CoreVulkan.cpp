@@ -50,7 +50,7 @@ CoreVulkan::CoreVulkan(
     // Select a GPU that satisfies the exact same configuration
     // that will later be used to create the logical device.
     pickPhysicalDevice(config, physicalDeviceSelectors);
-    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_4_BIT, physicalDevice);
+    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_1_BIT, physicalDevice);
     atomSize = takeAtomSize(physicalDevice);
     #ifndef NDEBUG
         std::cout << "Sample Count: " << msaaSamples << std::endl;

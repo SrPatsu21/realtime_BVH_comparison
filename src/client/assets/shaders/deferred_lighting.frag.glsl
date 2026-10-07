@@ -7,6 +7,13 @@
 layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 
+layout(std140, set = 0, binding = 0) uniform UniformBufferGlobal
+{
+    mat4 view;
+    mat4 proj;
+    vec4 cameraPosition;
+} ubo;
+
 // BVH / TLAS / BLAS traversal
 #include "bvh.glsl"
 
@@ -14,17 +21,17 @@ layout(location = 0) out vec4 outColor;
 // GBuffer
 // =========================================================
 
-layout(set = 1, binding = 0) uniform sampler2DMS gPosition;
-layout(set = 1, binding = 1) uniform sampler2DMS gNormal;
-layout(set = 1, binding = 2) uniform sampler2DMS gAlbedo;
-layout(set = 1, binding = 3) uniform sampler2DMS gMaterial;
-layout(set = 1, binding = 4) uniform sampler2DMS gDepth;
+layout(set = 1, binding = 0) uniform sampler2D gPosition;
+layout(set = 1, binding = 1) uniform sampler2D gNormal;
+layout(set = 1, binding = 2) uniform sampler2D gAlbedo;
+layout(set = 1, binding = 3) uniform sampler2D gMaterial;
+layout(set = 1, binding = 4) uniform sampler2D gDepth;
 
 // Transparent GBuffer
-layout(set = 3, binding = 0) uniform sampler2DMS tgPosition;
-layout(set = 3, binding = 1) uniform sampler2DMS tgNormal;
-layout(set = 3, binding = 2) uniform sampler2DMS tgAlbedo;
-layout(set = 3, binding = 3) uniform sampler2DMS tgMaterial;
+layout(set = 3, binding = 0) uniform sampler2D tgPosition;
+layout(set = 3, binding = 1) uniform sampler2D tgNormal;
+layout(set = 3, binding = 2) uniform sampler2D tgAlbedo;
+layout(set = 3, binding = 3) uniform sampler2D tgMaterial;
 
 // =========================================================
 // Lights
@@ -237,7 +244,11 @@ void main()
         vec3 normal = normalize(texelFetch(gNormal, pixel, this_sample).xyz);
         vec3 albedo = texelFetch(gAlbedo, pixel, this_sample).rgb;
 
-        lighting = calculateLighting(positionSample.xyz, normal, albedo, false);
+        vec3 position =
+            positionSample.xyz +
+            ubo.cameraPosition.xyz;
+
+        lighting = calculateLighting(position, normal, albedo, false);
     }
 
     // Transparent GBuffer
@@ -245,7 +256,7 @@ void main()
 
     if (transparentAlbedo.a > 0.0)
     {
-        vec3 transparentPosition = texelFetch(tgPosition, pixel, this_sample).xyz;
+        vec3 transparentPosition = texelFetch(tgPosition, pixel, this_sample).xyz + ubo.cameraPosition.xyz;
         vec3 transparentNormal   = normalize(texelFetch(tgNormal, pixel, this_sample).xyz);
 
         vec3 transparentLighting = calculateLighting(

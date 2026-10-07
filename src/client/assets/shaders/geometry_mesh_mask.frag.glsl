@@ -1,5 +1,12 @@
 #version 450
 
+layout(std140, set = 0, binding = 0) uniform UniformBufferGlobal
+{
+    mat4 view;
+    mat4 proj;
+    vec4 cameraPosition;
+} ubo;
+
 struct MaterialGPU
 {
     vec4 baseColorFactor;
@@ -111,7 +118,11 @@ void main()
     // GBuffer
     // --------------------------------------------------
 
-    outPosition = vec4(fragWorldPos, 1.0);
+    outPosition =
+        vec4(
+            fragWorldPos - ubo.cameraPosition.xyz,
+            1.0
+        );
 
     outNormal = vec4(N, 1.0);
 

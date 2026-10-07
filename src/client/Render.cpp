@@ -31,16 +31,16 @@ int Render::run(){
 
     initInstances();
 
-    const double targetFPS = 120.0;
-    const double targetFrameTime = 1.0 / targetFPS;
+    // const double targetFPS = 1200.0;
+    // const double targetFrameTime = 1.0 / targetFPS;
 
     double lastFrameTime = glfwGetTime();
-    double nextFrameTime = lastFrameTime + targetFrameTime;
+    // double nextFrameTime = lastFrameTime + targetFrameTime;
 
-    double fpsTimer = lastFrameTime;
+    // double fpsTimer = lastFrameTime;
 
-    int frameCount = 0;
-    double fps = 0.0;
+    // int frameCount = 0;
+    // double fps = 0.0;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -49,34 +49,34 @@ int Render::run(){
             g_actualCommandBuffer = commandManager->getCommandBuffers()[currentFrame];
         #endif
 
-        while (true) {
-            double now = glfwGetTime();
-            double remaining = nextFrameTime - now;
+        // while (true) {
+        //     double now = glfwGetTime();
+        //     double remaining = nextFrameTime - now;
 
-            if (remaining <= 0.0)
-                break;
+        //     if (remaining <= 0.0)
+        //         break;
 
-            if (remaining > 0.001) {
-                std::this_thread::sleep_for(
-                    std::chrono::microseconds(
-                        static_cast<long long>((remaining - 0.0005) * 1'000'000.0)
-                    )
-                );
-            } else {
-                std::this_thread::yield();
-            }
-        }
+        //     if (remaining > 0.001) {
+        //         std::this_thread::sleep_for(
+        //             std::chrono::microseconds(
+        //                 static_cast<long long>((remaining - 0.0005) * 1'000'000.0)
+        //             )
+        //         );
+        //     } else {
+        //         std::this_thread::yield();
+        //     }
+        // }
 
         double currentTime = glfwGetTime();
         double elapsed = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
 
 
-        nextFrameTime += targetFrameTime;
+        // nextFrameTime += targetFrameTime;
 
-        if (currentTime > nextFrameTime + targetFrameTime) {
-            nextFrameTime = currentTime + targetFrameTime;
-        }
+        // if (currentTime > nextFrameTime + targetFrameTime) {
+        //     nextFrameTime = currentTime + targetFrameTime;
+        // }
 
         updateInstances(
             currentTime,
@@ -85,20 +85,20 @@ int Render::run(){
 
         drawFrame();
 
-        frameCount++;
+        // frameCount++;
 
-        if (currentTime - fpsTimer >= 1.0) {
-            fps = frameCount / (currentTime - fpsTimer);
+        // if (currentTime - fpsTimer >= 1.0) {
+        //     fps = frameCount / (currentTime - fpsTimer);
 
-            std::cout
-                << "time: " << currentTime
-                << " | Delta: " << elapsed << " s"
-                << " | FPS: " << fps
-                << std::endl;
+        //     std::cout
+        //         << "time: " << currentTime
+        //         << " | Delta: " << elapsed << " s"
+        //         << " | FPS: " << fps
+        //         << std::endl;
 
-            frameCount = 0;
-            fpsTimer = currentTime;
-        }
+        //     frameCount = 0;
+        //     fpsTimer = currentTime;
+        // }
     }
 
     cleanup();
@@ -470,89 +470,168 @@ void Render::createGraphicsPipelineObjects(){
     );
 }
 
-void Render::initInstances(){
+void Render::initInstances() {
 
-    renderInstanceManager = new RenderInstanceManager(
-        resourceManager
-    );
+    renderInstanceManager = new RenderInstanceManager(resourceManager);
 
+    // ------------------------------------------------------------------
+    // Constants
+    // ------------------------------------------------------------------
+    constexpr float TWO_PI = 6.28318530718f;
 
-    //* floor
-    RenderInstanceRegistration* floor = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/floor/Untitled.gltf")
-    );
+    // Tweak these to match the real size of each model.
+    constexpr float MAXWELL_SCALE  = 0.2f;
+    constexpr float CROWN_SCALE    = 1.0f;
+    constexpr float THRESHER_SCALE = 1.0f;
 
-    RenderInstance * renderInstance0 = renderInstanceManager->getRenderInstance(floor->indexInVector);
-    renderInstance0->scale = glm::vec3(100.0f);
-    renderInstance0->position += glm::vec3(0, 0, 0);
-    renderInstance0->updateModelMatrix();
+    // ------------------------------------------------------------------
+    // Meshes (fetched once, reused by every instance)
+    // ------------------------------------------------------------------
+    auto floorMesh    = resourceManager->getMesh("models/floor/Untitled.gltf");
+    auto maxwellMesh  = resourceManager->getMesh("models/Maxwell/Untitled.gltf");
+    auto globeMesh    = resourceManager->getMesh("models/GLASSGLOBE/GLASSGLOBE.gltf");
+    auto paneMesh     = resourceManager->getMesh("models/GlassPane/glasspane.gltf");
+    auto crownMesh    = resourceManager->getMesh("models/duchess_crown/scene.gltf");
+    auto thresherMesh = resourceManager->getMesh("models/thresher_-_base/scene.gltf");
 
-    renderInstanceRegistration = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/floor/Untitled.gltf")
-    );
+    // ------------------------------------------------------------------
+    // Helper: creates an instance, places it and updates its model matrix.
+    // The registration is not stored; instances can be retrieved later by
+    // iterating the manager's vector.
+    // ------------------------------------------------------------------
+    auto spawn = [this](auto mesh, const glm::vec3& position, const glm::vec3& scale) {
+        RenderInstanceRegistration* registration =
+            renderInstanceManager->createRenderInstance(mesh);
 
-    RenderInstance * renderInstance4 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
-    renderInstance4->scale = glm::vec3(0.2f);
-    renderInstance4->position += glm::vec3(0, 4, 0);
-    renderInstance4->updateModelMatrix();
+        RenderInstance* instance =
+            renderInstanceManager->getRenderInstance(registration->indexInVector);
 
-    //* cat
-    renderInstanceRegistration = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
-    );
+        instance->scale = scale;
+        instance->position += position;
+        instance->updateModelMatrix();
+    };
 
-    RenderInstance * renderInstance1 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
-    renderInstance1->scale = glm::vec3(0.2f);
-    renderInstance1->position += glm::vec3(0, 1, 0);
-    renderInstance1->updateModelMatrix();
+    // ------------------------------------------------------------------
+    // Base scene (original instances)
+    // ------------------------------------------------------------------
+    spawn(floorMesh,   {0.0f, -5.0f,  0.0f}, glm::vec3(100.0f));  // main floor
+    spawn(floorMesh,   {0.0f, 4.0f,  0.0f}, glm::vec3(0.2f));    // small floating floor
+    spawn(maxwellMesh, {0.0f, 1.0f,  0.0f}, glm::vec3(0.2f));
+    spawn(maxwellMesh, {2.0f, 5.0f,  0.0f}, glm::vec3(0.2f));
+    spawn(globeMesh,   {0.0f, 3.0f,  2.0f}, glm::vec3(2.0f));
+    spawn(paneMesh,    {0.0f, 3.0f, -4.0f}, glm::vec3(0.5f));
+    spawn(paneMesh,    {0.0f, 6.0f, -4.0f}, glm::vec3(0.5f));
 
-    renderInstanceRegistration = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf")
-    );
+    // ------------------------------------------------------------------
+    // BVH stress test (fully deterministic, no randomness)
+    // Each pattern produces a different spatial distribution for the TLAS.
+    // ------------------------------------------------------------------
 
-    RenderInstance * renderInstance2 = renderInstanceManager->getRenderInstance(renderInstanceRegistration->indexInVector);
-    renderInstance2->scale = glm::vec3(0.2f);
-    renderInstance2->position += glm::vec3(2, 5, 0);
-    renderInstance2->updateModelMatrix();
+    // 1) Maxwell grid: 6x6, spacing 6. Scale cycles over 4 values so
+    //    neighbouring AABBs have different sizes.
+    {
+        constexpr int   COUNT   = 6;
+        constexpr float SPACING = 6.0f;
+        const glm::vec3 origin(-15.0f, 0.0f, 5.0f);
 
-    //* glass
-    RenderInstanceRegistration* glass = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/GLASSGLOBE/GLASSGLOBE.gltf")
-    );
+        for (int x = 0; x < COUNT; ++x) {
+            for (int z = 0; z < COUNT; ++z) {
+                const int   i = x * COUNT + z;
+                const float s = MAXWELL_SCALE * (1.0f + 0.5f * float(i % 4));
+                spawn(
+                    maxwellMesh,
+                    origin + glm::vec3(x * SPACING, 0.0f, z * SPACING),
+                    glm::vec3(s)
+                );
+            }
+        }
+    }
 
-    RenderInstance * renderInstance5 = renderInstanceManager->getRenderInstance(glass->indexInVector);
-    renderInstance5->scale = glm::vec3(2.0f, 2.0f, 2.0f);
-    renderInstance5->position += glm::vec3(0, 3, 2);
-    renderInstance5->updateModelMatrix();
+    // 2) Crown ring: 8 crowns on a circle, alternating height and scale.
+    {
+        constexpr int   COUNT  = 8;
+        constexpr float RADIUS = 25.0f;
 
-    RenderInstanceRegistration* glasspane = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/GlassPane/glasspane.gltf")
-    );
+        for (int i = 0; i < COUNT; ++i) {
+            const float angle  = TWO_PI * float(i) / float(COUNT);
+            const float height = (i % 2 == 0) ? 1.0f : 4.0f;
+            const float s      = CROWN_SCALE * (1.0f + 0.25f * float(i % 3));
+            spawn(
+                crownMesh,
+                {std::cos(angle) * RADIUS, height, std::sin(angle) * RADIUS},
+                glm::vec3(s)
+            );
+        }
+    }
 
-    RenderInstance * renderInstance6 = renderInstanceManager->getRenderInstance(glasspane->indexInVector);
-    renderInstance6->scale = glm::vec3(0.5);
-    renderInstance6->position += glm::vec3(0, 3, -4);
-    renderInstance6->updateModelMatrix();
+    // 3) Thresher spiral: radius and height grow with the index, giving an
+    //    uneven distribution.
+    {
+        constexpr int COUNT = 8;
+        const glm::vec3 center(0.0f, 0.0f, -30.0f);
 
-    RenderInstanceRegistration* glasspane2 = renderInstanceManager->createRenderInstance(
-        resourceManager->getMesh("models/GlassPane/glasspane.gltf")
-    );
+        for (int i = 0; i < COUNT; ++i) {
+            const float angle  = float(i) * 0.6f;
+            const float radius = 4.0f + float(i) * 1.2f;
+            const float s      = THRESHER_SCALE * (0.8f + 0.1f * float(i % 5));
+            spawn(
+                thresherMesh,
+                center + glm::vec3(std::cos(angle) * radius, float(i) * 0.5f, std::sin(angle) * radius),
+                glm::vec3(s)
+            );
+        }
+    }
 
-    RenderInstance * renderInstance7 = renderInstanceManager->getRenderInstance(glasspane2->indexInVector);
-    renderInstance7->scale = glm::vec3(0.5);
-    renderInstance7->position += glm::vec3(0, 6, -4);
-    renderInstance7->updateModelMatrix();
+    // 3x3x3 dense cluster: heavy AABB overlap, a harsh case for BVH splits.
+    {
+        constexpr int   COUNT   = 3;
+        constexpr float SPACING = 0.8f;
+        const glm::vec3 origin(30.0f, 1.0f, 10.0f);
 
-    //* light
+        for (int x = 0; x < COUNT; ++x)
+            for (int y = 0; y < COUNT; ++y)
+                for (int z = 0; z < COUNT; ++z)
+                    spawn(
+                        maxwellMesh,
+                        origin + glm::vec3(x, y, z) * SPACING,
+                        glm::vec3(0.1f)
+                    );
+    }
+
+    // 5) Glass pane column: long thin AABBs stacked vertically.
+    for (int i = 0; i < 8; ++i) {
+        spawn(paneMesh, {-30.0f, 2.0f + float(i) * 3.0f, 0.0f}, glm::vec3(0.5f));
+    }
+
+    // 6) Glass globe line along X, growing in size.
+    for (int i = 0; i < 5; ++i) {
+        spawn(globeMesh, {-20.0f + float(i) * 8.0f, 3.0f, 40.0f}, glm::vec3(1.0f + 0.5f * float(i)));
+    }
+
+    // 7) Far outliers at the corners: stretch the TLAS root AABB.
+    {
+        const glm::vec3 corners[4] = {
+            { 45.0f, 1.0f,  45.0f}, {-45.0f, 1.0f,  45.0f},
+            { 45.0f, 1.0f, -45.0f}, {-45.0f, 1.0f, -45.0f}
+        };
+
+        for (int i = 0; i < 4; ++i) {
+            spawn((i % 2 == 0) ? crownMesh : thresherMesh, corners[i], glm::vec3(1.5f));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Lights
+    // ------------------------------------------------------------------
     lightInstanceManager->createLight({
-        .position = glm::vec3(0.0f, 100.0f, 0.0f),
+        .position  = glm::vec3(0.0f, 100.0f, 0.0f),
         .intensity = 20000.0f,
-        .color = glm::vec3(1.0f, 1.0f, 1.0f),
-        .radius = 10.0f,
-        .type = Config::LightType::Point,
-        .range = 1000.0f,
-        ._pad0 = 0.0f,
-        ._pad1 = 0.0f
+        .color     = glm::vec3(1.0f),
+        .radius    = 10.0f,
+        .type      = Config::LightType::Point,
+        .range     = 1000.0f,
+        ._pad0     = 0.0f,
+        ._pad1     = 0.0f
     });
 }
 
@@ -569,17 +648,50 @@ void Render::updateInstances(
         );
     }
 
-    // update render instances
+    // Update render instances
     {
         std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
-        std::size_t renderInstancesSize = renderInstances.size();
-        for (size_t i = 1; i < renderInstancesSize; i++)
+        const std::size_t renderInstancesSize = renderInstances.size();
+
+        // Lazily capture the base positions (instances are created in initInstances).
+        if (instanceBasePositions.size() != renderInstancesSize) {
+            instanceBasePositions.resize(renderInstancesSize);
+            for (std::size_t i = 0; i < renderInstancesSize; i++) {
+                instanceBasePositions[i] = renderInstances[i].position;
+            }
+        }
+
+        const float t = static_cast<float>(time);
+
+        // Index 0 is the floor and never moves.
+        for (std::size_t i = 1; i < renderInstancesSize; i++)
         {
-            renderInstances[i].rotation = glm::vec3(
-                0.5* time,
-                0.3,
-                0.6
-            );
+            // Deterministic per-instance parameters derived only from the index.
+            const float phase     = float(i) * 0.5f;
+            const float amplitude = 2.0f + float(i % 5);          // 2..6 units
+            const float speed     = 0.4f + 0.1f * float(i % 4);   // 0.4..0.7 rad/s
+
+            glm::vec3 offset(0.0f);
+
+            switch (i % 5) {
+                case 0: // slide along X
+                    offset.x = std::sin(t * speed + phase) * amplitude;
+                    break;
+                case 1: // slide along Z
+                    offset.z = std::sin(t * speed + phase) * amplitude;
+                    break;
+                case 2: // bob up and down (never goes below the base height)
+                    offset.y = (0.5f + 0.5f * std::sin(t * speed + phase)) * amplitude;
+                    break;
+                case 3: // orbit around the base position on the XZ plane
+                    offset.x = std::cos(t * speed + phase) * amplitude;
+                    offset.z = std::sin(t * speed + phase) * amplitude;
+                    break;
+                default: // static: keeps part of the TLAS unchanged between frames
+                    break;
+            }
+
+            renderInstances[i].position = instanceBasePositions[i] + offset;
             renderInstances[i].updateModelMatrix();
         }
 
@@ -597,57 +709,10 @@ void Render::updateInstances(
         );
     }
 
-    // particlesData
-    {
-        float timeTester = (time * 5);
-        float phaseA = sin(timeTester);
-        float phaseB = sin(timeTester + 2.094395f);  // 120°
-        float phaseC = sin(timeTester + 4.18879f);   // 240°
-
-        ParticleData particle{};
-        ParticleData particle1{};
-
-        particle.positionSize = glm::vec4(
-            0.6f * phaseA,
-            0.6f  * phaseB,
-            0.6f  * phaseC,
-            60 // (timeTester*60) + 10.0f
-        );
-        particle1.positionSize = glm::vec4(
-            -0.6f * phaseA,
-            -0.6f  * phaseB,
-            -0.6f  * phaseC,
-            60 // (timeTester*60) + 10.0f
-        );
-
-        particle.color = glm::vec4(
-            (phaseA + 1.0f) * 0.5f,
-            (phaseB + 1.0f) * 0.5f,
-            (phaseC + 1.0f) * 0.5f,
-            1.0f
-        );
-        particle1.color = glm::vec4(
-            (phaseA + 1.0f) * 0.5f,
-            (phaseB + 1.0f) * 0.5f,
-            (phaseC + 1.0f) * 0.5f,
-            1.0f
-        );
-
-        particlesData.resize(2);
-        particlesData[0] = particle;
-        particlesData[1] = particle1;
-        uint32_t currentOffset = 0;
-
-        particleInstanceDescriptorManager->update(
-            currentFrame,
-            currentOffset,
-            particlesData
-        );
-    }
-    // light
+    // Lights
     this->lightInstanceManager->update(currentFrame);
 
-    //TLAS
+    // TLAS
     renderInstanceManager->rebuildTLAS();
 }
 

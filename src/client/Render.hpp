@@ -36,10 +36,10 @@ public:
 private:
 
     //screen width in px
-    uint32_t width = 800;
+    uint32_t width = 1920;
 
     // screen height in px
-    uint32_t height = 600;
+    uint32_t height = 1080;
 
     uint32_t currentFrame = 0;
 
@@ -112,4 +112,8 @@ private:
 
     void destroySwapchainDependentResources();
     void recreateSwapChain();
+
+    //tmp
+    // Original (spawn) position of every render instance, captured on the first update.
+    std::vector<glm::vec3> instanceBasePositions;
 };

@@ -11,3 +11,5 @@ src/client/assets/**/*.ktx2
 src/client/assets/**/*.glb
 src/client/assets/**/*.gltf
 src/client/assets/**/*.bin
+src/client/assets/**/*.png
+src/client/assets/**/*.txt

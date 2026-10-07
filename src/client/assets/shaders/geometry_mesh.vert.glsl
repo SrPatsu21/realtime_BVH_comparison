@@ -14,6 +14,7 @@ layout(std140, set = 0, binding = 0) uniform UniformBufferGlobal
 {
     mat4 view;
     mat4 proj;
+    vec4 cameraPosition;
 } ubo;
 
 struct InstanceData

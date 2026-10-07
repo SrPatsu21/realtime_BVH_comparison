@@ -2,8 +2,7 @@
 
 layout(constant_id = 0) const int SAMPLE_COUNT = 1;
 
-layout(set = 0, binding = 0)
-uniform sampler2DMS deferredLighting;
+layout(set = 0, binding = 0) uniform sampler2D deferredLighting;
 
 layout(location = 0) out vec4 outColor;
 

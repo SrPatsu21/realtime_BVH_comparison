@@ -199,15 +199,39 @@ void CameraBufferManager::updateCamera(
     const VkExtent2D& extent
 )
 {
-    processInput(deltaTime);
+    // -------------------------------------------------------------------------
+    // Automatic 360° camera rotation
+    // -------------------------------------------------------------------------
 
-    UniformBufferGlobal ubg{};
+    static float rotationAngle = 0.0f;
+
+    constexpr float rotationDuration = 20.0f;
+    constexpr float fullRotation = glm::two_pi<float>();
+
+    rotationAngle +=
+        (fullRotation / rotationDuration) * deltaTime;
+
+    if (rotationAngle >= fullRotation)
+        rotationAngle -= fullRotation;
+
+    // -------------------------------------------------------------------------
+    // Camera position
+    // -------------------------------------------------------------------------
+
+    glm::vec3 center = glm::vec3(0.0f);
+
+    float radius = glm::length(position - center);
+
+    position.x = center.x + std::sin(rotationAngle) * radius;
+    position.z = center.z + std::cos(rotationAngle) * radius;
 
     // -------------------------------------------------------------------------
     // View matrix
     // -------------------------------------------------------------------------
 
-    glm::vec3 forward = getForward();
+    glm::vec3 forward = glm::normalize(center - position);
+
+    UniformBufferGlobal ubg{};
 
     ubg.view = glm::lookAt(
         position,
@@ -232,6 +256,12 @@ void CameraBufferManager::updateCamera(
 
     // Vulkan Y coordinate correction.
     ubg.proj[1][1] *= -1.0f;
+
+    // -------------------------------------------------------------------------
+    // Camera position
+    // -------------------------------------------------------------------------
+
+    ubg.cameraPosition = glm::vec4(position, 1.0f);
 
     // -------------------------------------------------------------------------
     // Upload to GPU
