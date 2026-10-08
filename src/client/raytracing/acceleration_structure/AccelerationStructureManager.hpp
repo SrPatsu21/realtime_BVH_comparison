@@ -482,7 +482,7 @@ AccelerationStructureManager<
             instance.instanceOffset = blas.instanceOffset;
         }
 
-                std::cout
+        std::cout
             << "TLAS:"
             << std::endl;
 

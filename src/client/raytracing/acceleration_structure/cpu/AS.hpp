@@ -33,7 +33,14 @@ struct AS
         const auto& root =
             nodes[0];
 
-        for (uint32_t i = 0u; i < root.childCount; ++i)
+        uint32_t childCount;
+        #ifdef USE_BLAS_BVH8
+        childCount = root.childCount;
+        #else
+        childCount = 2;
+        #endif
+
+        for (uint32_t i = 0u; i < childCount; ++i)
         {
             bounds.expand(
                 root.childBounds[i]
