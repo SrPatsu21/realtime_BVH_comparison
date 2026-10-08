@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "../../utils/BVHUtils.hpp"
-#include "../node/BVH8Node.hpp"
 
 template<typename TNodeType>
 class BVH8Builder
@@ -33,46 +32,53 @@ void BVH8Builder<NodeType>::build(
     if (primitives.empty())
         return;
 
+    constexpr uint32_t MAX_CHILDREN   = 8u;
+    constexpr uint32_t MAX_LEAF_PRIMS = 8u;
+
     nodes.reserve(primitives.size());
 
-    constexpr uint32_t MAX_CHILDREN = 8;
-
     auto emit =
-        [&](
-            auto&& self,
-            uint32_t begin,
-            uint32_t end
-        ) -> uint32_t
+        [&](auto&& self, uint32_t begin, uint32_t end) -> uint32_t
         {
-            const uint32_t nodeIndex = static_cast<uint32_t>(nodes.size());
+            const uint32_t nodeIndex =
+                static_cast<uint32_t>(nodes.size());
 
             nodes.emplace_back();
 
-            NodeType& node = nodes[nodeIndex];
+            NodeType node{};
 
-            node.childCount = 0;
-            node.leaf = 0;
+            node.childCount = 0u;
+            node.leaf = 0u;
+            node.pad0 = 0u;
+            node.pad1 = 0u;
 
-            node.pad0 = 0;
-            node.pad1 = 0;
-
-            for (uint32_t i = 0; i < MAX_CHILDREN; ++i)
+            for (uint32_t i = 0u; i < MAX_CHILDREN; ++i)
             {
-                node.children[i] = 0;
-                node.childBounds[i] = AABB{};
+                node.children[i] = 0u;
+
+                node.childBounds[i] =
+                    AABB{};
             }
 
-            const uint32_t count = end - begin;
+            const uint32_t count =
+                end - begin;
 
-            if (count <= MAX_CHILDREN)
+            // =====================================================
+            // Leaf
+            // =====================================================
+
+            if (count <= MAX_LEAF_PRIMS)
             {
-                node.leaf = 1;
+                node.leaf =
+                    1u;
 
-                node.childCount = count;
+                node.childCount =
+                    count;
 
-                for (uint32_t i = 0; i < count; ++i)
+                for (uint32_t i = 0u; i < count; ++i)
                 {
-                    node.children[i] = begin + i;
+                    node.children[i] =
+                        begin + i;
 
                     node.childBounds[i] =
                         primitives[
@@ -80,14 +86,14 @@ void BVH8Builder<NodeType>::build(
                         ].getBounds();
                 }
 
+                nodes[nodeIndex] = node;
+
                 return nodeIndex;
             }
 
-            // =================================================
+            // =====================================================
             // Internal node
-            // =================================================
-
-            node.leaf = 0;
+            // =====================================================
 
             const AABB centroidBounds =
                 BVHUtils::computeCentroidBounds(
@@ -130,39 +136,45 @@ void BVH8Builder<NodeType>::build(
 
             uint32_t childBegin = begin;
 
-            for (uint32_t i = 0; i < childCount; ++i)
+            for (uint32_t child = 0u; child < childCount; ++child)
             {
                 const uint32_t childSize =
                     baseSize +
-                    (i < remainder ? 1u : 0u);
+                    (child < remainder ? 1u : 0u);
 
                 const uint32_t childEnd =
                     childBegin +
                     childSize;
 
-                node.children[i] =
-                    self(
-                        self,
-                        childBegin,
-                        childEnd
-                    );
-
-                node.childBounds[i] =
+                node.childBounds[child] =
                     BVHUtils::computeBounds(
                         primitives,
                         childBegin,
                         childEnd
                     );
 
-                childBegin = childEnd;
+                const uint32_t childNode =
+                    self(
+                        self,
+                        childBegin,
+                        childEnd
+                    );
+
+                node.children[child] =
+                    childNode;
+
+                childBegin =
+                    childEnd;
             }
+
+            nodes[nodeIndex] = node;
 
             return nodeIndex;
         };
 
     emit(
         emit,
-        0,
+        0u,
         static_cast<uint32_t>(
             primitives.size()
         )

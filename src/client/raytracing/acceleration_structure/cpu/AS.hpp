@@ -25,46 +25,20 @@ struct AS
     {
         static AABB bounds;
 
+        bounds.reset();
+
         if (nodes.empty())
             return bounds;
 
-        bounds = nodes[0].childBounds[0];
+        const auto& root =
+            nodes[0];
 
-        bounds.min.x =
-            std::min(
-                bounds.min.x,
-                nodes[0].childBounds[1].min.x
+        for (uint32_t i = 0u; i < root.childCount; ++i)
+        {
+            bounds.expand(
+                root.childBounds[i]
             );
-
-        bounds.min.y =
-            std::min(
-                bounds.min.y,
-                nodes[0].childBounds[1].min.y
-            );
-
-        bounds.min.z =
-            std::min(
-                bounds.min.z,
-                nodes[0].childBounds[1].min.z
-            );
-
-        bounds.max.x =
-            std::max(
-                bounds.max.x,
-                nodes[0].childBounds[1].max.x
-            );
-
-        bounds.max.y =
-            std::max(
-                bounds.max.y,
-                nodes[0].childBounds[1].max.y
-            );
-
-        bounds.max.z =
-            std::max(
-                bounds.max.z,
-                nodes[0].childBounds[1].max.z
-            );
+        }
 
         return bounds;
     }
