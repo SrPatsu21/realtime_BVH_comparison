@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <vector>
+
+#include <oneapi/tbb/parallel_for.h>
+#include <oneapi/tbb/parallel_sort.h>
 
 #include "../node/BVHNode.hpp"
 #include "../primitives/PrimitiveRef.hpp"
@@ -22,6 +24,20 @@ private:
     {
         uint32_t code;
         PrimitiveRef primitive;
+    };
+
+    struct BuildTask
+    {
+        uint32_t node;
+        uint32_t begin;
+        uint32_t end;
+    };
+
+    struct SplitResult
+    {
+        uint32_t mid;
+        uint32_t leftChild;
+        uint32_t rightChild;
     };
 
     static uint32_t expandBits(
@@ -51,7 +67,7 @@ private:
         const glm::vec3& position
     )
     {
-        uint32_t x =
+        const uint32_t x =
             static_cast<uint32_t>(
                 std::clamp(
                     position.x * 1024.0f,
@@ -60,7 +76,7 @@ private:
                 )
             );
 
-        uint32_t y =
+        const uint32_t y =
             static_cast<uint32_t>(
                 std::clamp(
                     position.y * 1024.0f,
@@ -69,7 +85,7 @@ private:
                 )
             );
 
-        uint32_t z =
+        const uint32_t z =
             static_cast<uint32_t>(
                 std::clamp(
                     position.z * 1024.0f,
@@ -85,59 +101,67 @@ private:
     }
 
     static int commonPrefix(
-        uint32_t a,
-        uint32_t b
+        const std::vector<MortonPrimitive>& primitives,
+        int a,
+        int b
     )
     {
-        if (a == b)
-            return 32;
+        const uint32_t codeA =
+            primitives[a].code;
 
-        return __builtin_clz(
-            a ^ b
-        );
+        const uint32_t codeB =
+            primitives[b].code;
+
+        if (codeA != codeB)
+        {
+            return __builtin_clz(
+                codeA ^ codeB
+            );
+        }
+
+        return
+            32 +
+            __builtin_clz(
+                static_cast<uint32_t>(a ^ b)
+            );
     }
 
-    static int determineSplit(
+    static uint32_t determineSplit(
         const std::vector<MortonPrimitive>& primitives,
-        int first,
-        int last
+        uint32_t begin,
+        uint32_t end
     )
     {
-        uint32_t firstCode =
-            primitives[first].code;
+        const int first =
+            static_cast<int>(begin);
 
-        uint32_t lastCode =
-            primitives[last].code;
+        const int last =
+            static_cast<int>(end - 1);
 
-        if (firstCode == lastCode)
-            return (first + last) >> 1;
-
-        int common =
+        const int common =
             commonPrefix(
-                firstCode,
-                lastCode
+                primitives,
+                first,
+                last
             );
 
-        int split =
-            first;
-
-        int step =
-            last - first;
+        int split = first;
+        int step = last - first;
 
         do
         {
-            step =
-                (step + 1) >> 1;
+            step = (step + 1) >> 1;
 
-            int candidate =
+            const int candidate =
                 split + step;
 
             if (candidate < last)
             {
-                int candidateCommon =
+                const int candidateCommon =
                     commonPrefix(
-                        firstCode,
-                        primitives[candidate].code
+                        primitives,
+                        first,
+                        candidate
                     );
 
                 if (candidateCommon > common)
@@ -146,7 +170,9 @@ private:
         }
         while (step > 1);
 
-        return split;
+        return static_cast<uint32_t>(
+            split + 1
+        );
     }
 
     static AABB computeRangeBounds(
@@ -157,11 +183,7 @@ private:
     {
         AABB bounds;
 
-        for (
-            uint32_t i = begin;
-            i < end;
-            ++i
-        )
+        for (uint32_t i = begin; i < end; ++i)
         {
             bounds.expand(
                 primitives[i]
@@ -173,111 +195,60 @@ private:
         return bounds;
     }
 
-    static uint32_t buildRecursive(
-        std::vector<NodeType>& nodes,
+    static void initializeLeaf(
+        NodeType& node,
         const std::vector<MortonPrimitive>& primitives,
         uint32_t begin,
         uint32_t end
     )
     {
-        const uint32_t nodeIndex =
-            static_cast<uint32_t>(
-                nodes.size()
-            );
+        node.leaf = 1;
+        node.pad0 = 0;
 
-        nodes.emplace_back();
+        node.children[0] = begin;
 
-        NodeType& node =
-            nodes[nodeIndex];
+        node.childBounds[0] =
+            primitives[begin]
+                .primitive
+                .getBounds();
 
+        if (end - begin == 2)
+        {
+            node.children[1] = begin + 1;
+
+            node.childBounds[1] =
+                primitives[begin + 1]
+                    .primitive
+                    .getBounds();
+        }
+        else
+        {
+            node.children[1] = begin;
+
+            node.childBounds[1] =
+                node.childBounds[0];
+        }
+    }
+
+    static void initializeInternal(
+        NodeType& node,
+        const std::vector<MortonPrimitive>& primitives,
+        const BuildTask& task,
+        uint32_t leftChild,
+        uint32_t rightChild,
+        uint32_t mid
+    )
+    {
         node.leaf = 0;
         node.pad0 = 0;
 
-        const uint32_t count =
-            end - begin;
-
-        if (count <= 2)
-        {
-            node.leaf = 1;
-
-            node.children[0] =
-                begin;
-
-            node.childBounds[0] =
-                primitives[begin]
-                    .primitive
-                    .getBounds();
-
-            if (count == 2)
-            {
-                node.children[1] =
-                    begin + 1;
-
-                node.childBounds[1] =
-                    primitives[begin + 1]
-                        .primitive
-                        .getBounds();
-            }
-            else
-            {
-                node.children[1] =
-                    begin;
-
-                node.childBounds[1] =
-                    node.childBounds[0];
-            }
-
-            return nodeIndex;
-        }
-
-        const int first =
-            static_cast<int>(
-                begin
-            );
-
-        const int last =
-            static_cast<int>(
-                end - 1
-            );
-
-        const int split =
-            determineSplit(
-                primitives,
-                first,
-                last
-            );
-
-        const uint32_t mid =
-            static_cast<uint32_t>(
-                split + 1
-            );
-
-        const uint32_t leftChild =
-            buildRecursive(
-                nodes,
-                primitives,
-                begin,
-                mid
-            );
-
-        const uint32_t rightChild =
-            buildRecursive(
-                nodes,
-                primitives,
-                mid,
-                end
-            );
-
-        node.children[0] =
-            leftChild;
-
-        node.children[1] =
-            rightChild;
+        node.children[0] = leftChild;
+        node.children[1] = rightChild;
 
         node.childBounds[0] =
             computeRangeBounds(
                 primitives,
-                begin,
+                task.begin,
                 mid
             );
 
@@ -285,10 +256,8 @@ private:
             computeRangeBounds(
                 primitives,
                 mid,
-                end
+                task.end
             );
-
-        return nodeIndex;
     }
 
 public:
@@ -308,7 +277,7 @@ public:
                 primitives.size()
             );
 
-        AABB centroidBounds =
+        const AABB centroidBounds =
             BVHUtils::computeCentroidBounds(
                 primitives,
                 0,
@@ -321,72 +290,48 @@ public:
                 centroidBounds.min
             );
 
-        extent.x =
-            std::max(
-                extent.x,
-                0.000001f
-            );
-
-        extent.y =
-            std::max(
-                extent.y,
-                0.000001f
-            );
-
-        extent.z =
-            std::max(
-                extent.z,
-                0.000001f
-            );
+        extent.x = std::max(extent.x, 0.000001f);
+        extent.y = std::max(extent.y, 0.000001f);
+        extent.z = std::max(extent.z, 0.000001f);
 
         std::vector<MortonPrimitive>
-            mortonPrimitives;
+            mortonPrimitives(primitiveCount);
 
-        mortonPrimitives.reserve(
-            primitives.size()
+        oneapi::tbb::parallel_for(
+            uint32_t(0),
+            primitiveCount,
+            [&](uint32_t i)
+            {
+                const PrimitiveRef& primitive =
+                    primitives[i];
+
+                const glm::vec3 centroid =
+                    primitive
+                        .getBounds()
+                        .getCenter();
+
+                glm::vec3 normalized =
+                    (
+                        centroid -
+                        glm::vec3(centroidBounds.min)
+                    ) / extent;
+
+                normalized =
+                    glm::clamp(
+                        normalized,
+                        glm::vec3(0.0f),
+                        glm::vec3(1.0f)
+                    );
+
+                mortonPrimitives[i] =
+                {
+                    morton3D(normalized),
+                    primitive
+                };
+            }
         );
 
-        for (
-            const PrimitiveRef& primitive :
-            primitives
-        )
-        {
-            glm::vec3 centroid =
-                primitive
-                    .getBounds()
-                    .getCenter();
-
-            glm::vec3 normalized =
-                (
-                    centroid -
-                    glm::vec3(
-                        centroidBounds.min
-                    )
-                ) / extent;
-
-            normalized =
-                glm::clamp(
-                    normalized,
-                    glm::vec3(0.0f),
-                    glm::vec3(1.0f)
-                );
-
-            MortonPrimitive entry;
-
-            entry.code =
-                morton3D(
-                    normalized
-                );
-
-            entry.primitive =
-                primitive;
-
-            mortonPrimitives.emplace_back(
-                entry
-            );
-        }
-
-        std::stable_sort(
+        oneapi::tbb::parallel_sort(
             mortonPrimitives.begin(),
             mortonPrimitives.end(),
             [](
@@ -398,33 +343,166 @@ public:
             }
         );
 
-        primitives.clear();
-
-        primitives.reserve(
-            mortonPrimitives.size()
-        );
-
-        for (
-            const MortonPrimitive& primitive :
-            mortonPrimitives
-        )
+        for (uint32_t i = 0; i < primitiveCount; ++i)
         {
-            primitives.emplace_back(
-                primitive.primitive
-            );
+            primitives[i] =
+                mortonPrimitives[i].primitive;
         }
 
-        nodes.reserve(
-            primitives.size() * 2
+        nodes.resize(primitiveCount);
+
+        std::vector<BuildTask> currentLevel;
+        std::vector<BuildTask> nextLevel;
+
+        currentLevel.reserve(primitiveCount);
+        nextLevel.reserve(primitiveCount);
+
+        currentLevel.push_back(
+            {
+                0,
+                0,
+                primitiveCount
+            }
         );
 
-        buildRecursive(
-            nodes,
-            mortonPrimitives,
-            0,
-            static_cast<uint32_t>(
-                mortonPrimitives.size()
-            )
-        );
+        uint32_t nextNode = 1;
+
+        while (!currentLevel.empty())
+        {
+
+            std::vector<SplitResult> splits(
+                currentLevel.size()
+            );
+
+            std::vector<uint32_t> childCounts(
+                currentLevel.size(),
+                0
+            );
+
+            oneapi::tbb::parallel_for(
+                size_t(0),
+                currentLevel.size(),
+                [&](size_t i)
+                {
+                    const BuildTask& task =
+                        currentLevel[i];
+
+                    const uint32_t count =
+                        task.end - task.begin;
+
+                    if (count <= 2)
+                        return;
+
+                    const uint32_t mid =
+                        determineSplit(
+                            mortonPrimitives,
+                            task.begin,
+                            task.end
+                        );
+
+                    splits[i].mid = mid;
+
+                    childCounts[i] = 2;
+                }
+            );
+
+            uint32_t allocation =
+                nextNode;
+
+            for (size_t i = 0; i < currentLevel.size(); ++i)
+            {
+                if (childCounts[i] == 0)
+                    continue;
+
+                splits[i].leftChild =
+                    allocation++;
+
+                splits[i].rightChild =
+                    allocation++;
+            }
+
+            nextNode = allocation;
+
+            std::vector<std::vector<BuildTask>> generated(
+                currentLevel.size()
+            );
+
+            oneapi::tbb::parallel_for(
+                size_t(0),
+                currentLevel.size(),
+                [&](size_t i)
+                {
+                    const BuildTask& task =
+                        currentLevel[i];
+
+                    NodeType& node =
+                        nodes[task.node];
+
+                    const uint32_t count =
+                        task.end - task.begin;
+
+                    if (count <= 2)
+                    {
+                        initializeLeaf(
+                            node,
+                            mortonPrimitives,
+                            task.begin,
+                            task.end
+                        );
+
+                        return;
+                    }
+
+                    const uint32_t mid =
+                        splits[i].mid;
+
+                    const uint32_t leftChild =
+                        splits[i].leftChild;
+
+                    const uint32_t rightChild =
+                        splits[i].rightChild;
+
+                    initializeInternal(
+                        node,
+                        mortonPrimitives,
+                        task,
+                        leftChild,
+                        rightChild,
+                        mid
+                    );
+
+                    generated[i].push_back(
+                        {
+                            leftChild,
+                            task.begin,
+                            mid
+                        }
+                    );
+
+                    generated[i].push_back(
+                        {
+                            rightChild,
+                            mid,
+                            task.end
+                        }
+                    );
+                }
+            );
+
+            nextLevel.clear();
+
+            for (const auto& children : generated)
+            {
+                nextLevel.insert(
+                    nextLevel.end(),
+                    children.begin(),
+                    children.end()
+                );
+            }
+
+            currentLevel.swap(nextLevel);
+        }
+
+        nodes.resize(nextNode);
     }
 };

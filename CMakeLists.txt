@@ -166,6 +166,12 @@ add_subdirectory(
 )
 
 # ============================================================
+# TBB
+# ============================================================
+
+find_package(TBB REQUIRED)
+
+# ============================================================
 # Shader compilation
 # ============================================================
 find_program(GLSLANG_VALIDATOR glslangValidator)
@@ -336,6 +342,7 @@ elseif(UNIX)
         assimp
         ktx
         nvtx3-cpp
+        TBB::tbb
         pthread
         dl
         X11
