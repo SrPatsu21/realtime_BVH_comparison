@@ -35,9 +35,9 @@ private:
 
     struct SplitResult
     {
-        uint32_t mid;
-        uint32_t leftChild;
-        uint32_t rightChild;
+        uint32_t mid = 0;
+        uint32_t leftChild = 0;
+        uint32_t rightChild = 0;
     };
 
     static uint32_t expandBits(
@@ -349,7 +349,9 @@ public:
                 mortonPrimitives[i].primitive;
         }
 
-        nodes.resize(primitiveCount);
+        nodes.resize(
+            static_cast<size_t>(primitiveCount) * 2 - 1
+        );
 
         std::vector<BuildTask> currentLevel;
         std::vector<BuildTask> nextLevel;
@@ -369,7 +371,6 @@ public:
 
         while (!currentLevel.empty())
         {
-
             std::vector<SplitResult> splits(
                 currentLevel.size()
             );

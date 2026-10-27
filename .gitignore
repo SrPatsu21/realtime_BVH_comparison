@@ -6,10 +6,14 @@ build-release
 build-windows-release
 .vscode
 
-src/client/assets/**/*.gif
-src/client/assets/**/*.ktx2
-src/client/assets/**/*.glb
-src/client/assets/**/*.gltf
-src/client/assets/**/*.bin
-src/client/assets/**/*.png
-src/client/assets/**/*.txt
+# src/client/assets/**/*.gif
+# src/client/assets/**/*.ktx2
+# src/client/assets/**/*.glb
+# src/client/assets/**/*.gltf
+# src/client/assets/**/*.bin
+# src/client/assets/**/*.png
+# src/client/assets/**/*.txt
+*.xlsx
+*.sqlite
+*.png
+*.csv

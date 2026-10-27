@@ -1,0 +1,2 @@
+simulacao/**/*.ngfx-capture filter=lfs diff=lfs merge=lfs -text
+simulacao/**/bvh_comparison_client filter=lfs diff=lfs merge=lfs -text

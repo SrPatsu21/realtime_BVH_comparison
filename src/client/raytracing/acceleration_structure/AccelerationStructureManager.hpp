@@ -363,44 +363,44 @@ AccelerationStructureManager<
             blas
         );
 
-        std::cout
-            << "BLAS:"
-            << std::endl;
+        // std::cout
+        //     << "BLAS:"
+        //     << std::endl;
 
-        std::cout
-            << "  Nodes: "
-            << blas->nodes.size()
-            << " | sizeof: "
-            << sizeof(typename decltype(blas->nodes)::value_type)
-            << " bytes"
-            << " | size: "
-            << sizeof(typename decltype(blas->nodes)::value_type) * blas->nodes.size()
-            << " bytes"
-            << " | allocated: "
-            << sizeof(typename decltype(blas->nodes)::value_type) * blas->nodes.capacity()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Nodes: "
+        //     << blas->nodes.size()
+        //     << " | sizeof: "
+        //     << sizeof(typename decltype(blas->nodes)::value_type)
+        //     << " bytes"
+        //     << " | size: "
+        //     << sizeof(typename decltype(blas->nodes)::value_type) * blas->nodes.size()
+        //     << " bytes"
+        //     << " | allocated: "
+        //     << sizeof(typename decltype(blas->nodes)::value_type) * blas->nodes.capacity()
+        //     << " bytes"
+        //     << std::endl;
 
-        std::cout
-            << "  Instances: "
-            << blas->instances.size()
-            << " | sizeof: "
-            << sizeof(typename decltype(blas->instances)::value_type)
-            << " bytes"
-            << " | size: "
-            << sizeof(typename decltype(blas->instances)::value_type) * blas->instances.size()
-            << " bytes"
-            << " | allocated: "
-            << sizeof(typename decltype(blas->instances)::value_type) * blas->instances.capacity()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Instances: "
+        //     << blas->instances.size()
+        //     << " | sizeof: "
+        //     << sizeof(typename decltype(blas->instances)::value_type)
+        //     << " bytes"
+        //     << " | size: "
+        //     << sizeof(typename decltype(blas->instances)::value_type) * blas->instances.size()
+        //     << " bytes"
+        //     << " | allocated: "
+        //     << sizeof(typename decltype(blas->instances)::value_type) * blas->instances.capacity()
+        //     << " bytes"
+        //     << std::endl;
 
-        std::cout
-            << "  Total: "
-            << sizeof(typename decltype(blas->nodes)::value_type) * blas->nodes.size()
-            + sizeof(typename decltype(blas->instances)::value_type) * blas->instances.size()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Total: "
+        //     << sizeof(typename decltype(blas->nodes)::value_type) * blas->nodes.size()
+        //     + sizeof(typename decltype(blas->instances)::value_type) * blas->instances.size()
+        //     << " bytes"
+        //     << std::endl;
     }
     {
         NGFXCPUMarker cpuMarker("BLAS Upload - CPU");
@@ -482,59 +482,59 @@ AccelerationStructureManager<
             instance.instanceOffset = blas.instanceOffset;
         }
 
-        std::cout
-            << "TLAS:"
-            << std::endl;
+        // std::cout
+        //     << "TLAS:"
+        //     << std::endl;
 
-        std::cout
-            << "  Nodes: "
-            << tlas.nodes.size()
-            << " | sizeof: "
-            << sizeof(typename decltype(tlas.nodes)::value_type)
-            << " bytes"
-            << " | size: "
-            << sizeof(typename decltype(tlas.nodes)::value_type) * tlas.nodes.size()
-            << " bytes"
-            << " | allocated: "
-            << sizeof(typename decltype(tlas.nodes)::value_type) * tlas.nodes.capacity()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Nodes: "
+        //     << tlas.nodes.size()
+        //     << " | sizeof: "
+        //     << sizeof(typename decltype(tlas.nodes)::value_type)
+        //     << " bytes"
+        //     << " | size: "
+        //     << sizeof(typename decltype(tlas.nodes)::value_type) * tlas.nodes.size()
+        //     << " bytes"
+        //     << " | allocated: "
+        //     << sizeof(typename decltype(tlas.nodes)::value_type) * tlas.nodes.capacity()
+        //     << " bytes"
+        //     << std::endl;
 
-        std::cout
-            << "  Instances: "
-            << tlas.instances.size()
-            << " | sizeof: "
-            << sizeof(typename decltype(tlas.instances)::value_type)
-            << " bytes"
-            << " | size: "
-            << sizeof(typename decltype(tlas.instances)::value_type) * tlas.instances.size()
-            << " bytes"
-            << " | allocated: "
-            << sizeof(typename decltype(tlas.instances)::value_type) * tlas.instances.capacity()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Instances: "
+        //     << tlas.instances.size()
+        //     << " | sizeof: "
+        //     << sizeof(typename decltype(tlas.instances)::value_type)
+        //     << " bytes"
+        //     << " | size: "
+        //     << sizeof(typename decltype(tlas.instances)::value_type) * tlas.instances.size()
+        //     << " bytes"
+        //     << " | allocated: "
+        //     << sizeof(typename decltype(tlas.instances)::value_type) * tlas.instances.capacity()
+        //     << " bytes"
+        //     << std::endl;
 
-        std::cout
-            << "  Primitives: "
-            << primitives.size()
-            << " | sizeof: "
-            << sizeof(typename decltype(primitives)::value_type)
-            << " bytes"
-            << " | size: "
-            << sizeof(typename decltype(primitives)::value_type) * primitives.size()
-            << " bytes"
-            << " | allocated: "
-            << sizeof(typename decltype(primitives)::value_type) * primitives.capacity()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Primitives: "
+        //     << primitives.size()
+        //     << " | sizeof: "
+        //     << sizeof(typename decltype(primitives)::value_type)
+        //     << " bytes"
+        //     << " | size: "
+        //     << sizeof(typename decltype(primitives)::value_type) * primitives.size()
+        //     << " bytes"
+        //     << " | allocated: "
+        //     << sizeof(typename decltype(primitives)::value_type) * primitives.capacity()
+        //     << " bytes"
+        //     << std::endl;
 
-        std::cout
-            << "  Total: "
-            << sizeof(typename decltype(tlas.nodes)::value_type) * tlas.nodes.size()
-            + sizeof(typename decltype(tlas.instances)::value_type) * tlas.instances.size()
-            + sizeof(typename decltype(primitives)::value_type) * primitives.size()
-            << " bytes"
-            << std::endl;
+        // std::cout
+        //     << "  Total: "
+        //     << sizeof(typename decltype(tlas.nodes)::value_type) * tlas.nodes.size()
+        //     + sizeof(typename decltype(tlas.instances)::value_type) * tlas.instances.size()
+        //     + sizeof(typename decltype(primitives)::value_type) * primitives.size()
+        //     << " bytes"
+        //     << std::endl;
     }
     {
         NGFXCPUMarker cpuMarker2("TLAS Upload");

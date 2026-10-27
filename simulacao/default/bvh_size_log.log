@@ -1,0 +1,370 @@
+available extensions:
+VK_KHR_device_group_creation		VK_KHR_display		VK_KHR_external_fence_capabilities		VK_KHR_external_memory_capabilities		VK_KHR_external_semaphore_capabilities		VK_KHR_get_display_properties2		VK_KHR_get_physical_device_properties2		VK_KHR_get_surface_capabilities2		VK_KHR_surface		VK_KHR_surface_maintenance1		VK_KHR_surface_protected_capabilities		VK_KHR_wayland_surface		VK_KHR_xcb_surface		VK_KHR_xlib_surface		VK_EXT_acquire_drm_display		VK_EXT_acquire_xlib_display		VK_EXT_debug_report		VK_EXT_debug_utils		VK_EXT_direct_mode_display		VK_EXT_display_surface_counter		VK_EXT_surface_maintenance1		VK_EXT_swapchain_colorspace		VK_NV_display_stereo		VK_KHR_portability_enumeration		VK_LUNARG_direct_driver_loading		
+
+Checking GPU: NVIDIA GeForce RTX 5060
+  ACCEPTED
+Device name: NVIDIA GeForce RTX 5060
+API version: 1.4.341
+Driver version: 2559459584
+Sample Count: 1
+Push Constant Max Size: 256 bytes
+BLAS:
+  Nodes: 3 | sizeof: 80 bytes | size: 240 bytes | allocated: 480 bytes
+  Instances: 3 | sizeof: 16 bytes | size: 48 bytes | allocated: 48 bytes
+  Total: 288 bytes
+BLAS:
+  Nodes: 175 | sizeof: 80 bytes | size: 14000 bytes | allocated: 24320 bytes
+  Instances: 152 | sizeof: 16 bytes | size: 2432 bytes | allocated: 2432 bytes
+  Total: 16432 bytes
+BLAS:
+  Nodes: 23 | sizeof: 80 bytes | size: 1840 bytes | allocated: 3200 bytes
+  Instances: 20 | sizeof: 16 bytes | size: 320 bytes | allocated: 320 bytes
+  Total: 2160 bytes
+BLAS:
+  Nodes: 3 | sizeof: 80 bytes | size: 240 bytes | allocated: 480 bytes
+  Instances: 3 | sizeof: 16 bytes | size: 48 bytes | allocated: 48 bytes
+  Total: 288 bytes
+BLAS:
+  Nodes: 863 | sizeof: 80 bytes | size: 69040 bytes | allocated: 110080 bytes
+  Instances: 688 | sizeof: 16 bytes | size: 11008 bytes | allocated: 11008 bytes
+  Total: 80048 bytes
+BLAS:
+  Nodes: 6365 | sizeof: 80 bytes | size: 509200 bytes | allocated: 836960 bytes
+  Instances: 5231 | sizeof: 16 bytes | size: 83696 bytes | allocated: 83696 bytes
+  Total: 592896 bytes
+batches map: 16 batch sorted:16
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
+TLAS:
+  Nodes: 127 | sizeof: 80 bytes | size: 10160 bytes | allocated: 16480 bytes
+  Instances: 103 | sizeof: 96 bytes | size: 9888 bytes | allocated: 9888 bytes
+  Primitives: 0 | sizeof: 44 bytes | size: 0 bytes | allocated: 4532 bytes
+  Total: 20048 bytes
