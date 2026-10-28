@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "comparacao_nsys"
+ALGORITHM_FOLDERS = ["bsah", "bvh8", "default", "lbvh"]
 
 # Implementações que serão consideradas como referência para os cálculos relativos.
 REFERENCE = "default"
@@ -311,33 +312,19 @@ def normalize_units(df):
 
 def choose_value(row):
     """
-    Escolhe a estatística principal utilizada na comparação.
+    Escolhe a média como estatística principal da comparação.
 
-    Para métricas com outliers relevantes, prioriza a mediana e,
-    quando disponível, a média sem outliers.
+    A coluna ``valor`` é usada pelos gráficos e pelas comparações,
+    portanto ela deve receber o campo ``media`` do relatório.
+    A média sem outliers continua disponível separadamente.
     """
 
-    median = safe_float(row.get("mediana"))
     mean = safe_float(row.get("media"))
-    median_clean = safe_float(row.get("mediana_sem_outliers"))
-    mean_clean = safe_float(row.get("media_sem_outliers"))
-    outlier_pct = safe_float(row.get("percentual_outliers"))
-
-    if not pd.isna(median_clean) and not pd.isna(outlier_pct):
-        if outlier_pct >= 5:
-            return median_clean, "mediana_sem_outliers"
-
-    if not pd.isna(median):
-        return median, "mediana"
-
-    if not pd.isna(mean_clean):
-        return mean_clean, "media_sem_outliers"
 
     if not pd.isna(mean):
         return mean, "media"
 
     return np.nan, "indisponível"
-
 
 def prepare_data(reports):
     """
@@ -1316,6 +1303,143 @@ def validate_reports(reports):
             "as mesmas métricas."
         )
 
+def parse_bvh_size_logs():
+    """
+    Lê os arquivos bvh_size_log.log de cada pasta de algoritmo e extrai
+    o total de bytes para BLAS e TLAS.
+    """
+    data_rows = []
+
+    for folder_name in ALGORITHM_FOLDERS:
+        folder_path = ROOT / folder_name
+        log_path = folder_path / "bvh_size_log.log"
+
+        if not log_path.is_file():
+            continue
+
+        current_type = None
+        blas_total_sum = 0
+        tlas_total_sum = 0
+
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line_str = line.strip()
+                if line_str.startswith("BLAS:"):
+                    current_type = "BLAS"
+                elif line_str.startswith("TLAS:"):
+                    current_type = "TLAS"
+                
+                if line_str.startswith("Total:"):
+                    match = re.search(r"Total:\s*([\d.]+)\s*bytes", line_str)
+                    if match:
+                        val = float(match.group(1))
+                        if current_type == "BLAS":
+                            blas_total_sum += val
+                        elif current_type == "TLAS":
+                            tlas_total_sum += val
+
+        if blas_total_sum > 0:
+            data_rows.append({
+                "implementacao": folder_name,
+                "tipo_metrica": "BVH_Size",
+                "nome_metrica": "BLAS Total Size",
+                "unidade": "bytes",
+                "quantidade_amostras": 1,
+                "media": blas_total_sum,
+                "mediana": blas_total_sum,
+                "desvio_padrao": 0.0,
+                "minimo": blas_total_sum,
+                "maximo": blas_total_sum,
+                "valor": blas_total_sum,
+                "estatistica_utilizada": "soma",
+                "unidade_normalizada": "bytes",
+                "valor_normalizado": blas_total_sum,
+            })
+
+        if tlas_total_sum > 0:
+            data_rows.append({
+                "implementacao": folder_name,
+                "tipo_metrica": "BVH_Size",
+                "nome_metrica": "TLAS Total Size",
+                "unidade": "bytes",
+                "quantidade_amostras": 1,
+                "media": tlas_total_sum,
+                "mediana": tlas_total_sum,
+                "desvio_padrao": 0.0,
+                "minimo": tlas_total_sum,
+                "maximo": tlas_total_sum,
+                "valor": tlas_total_sum,
+                "estatistica_utilizada": "soma",
+                "unidade_normalizada": "bytes",
+                "valor_normalizado": tlas_total_sum,
+            })
+
+    return pd.DataFrame(data_rows)
+
+
+def generate_bvh_size_bar_charts(data):
+    """
+    Gera dois gráficos de colunas separados (um para BLAS e outro para TLAS)
+    com 4 colunas (uma para cada tipo de algoritmo) salvos na pasta de saída.
+    """
+    bvh_data = data[data["tipo_metrica"] == "BVH_Size"]
+    if bvh_data.empty:
+        return 0
+
+    graph_dir = OUTPUT_DIR / "graficos" / "bvh_sizes"
+    graph_dir.mkdir(parents=True, exist_ok=True)
+
+    generated = 0
+    metrics_to_plot = [
+        ("BLAS Total Size", "Tamanho Total BLAS (bytes)", "blas_total_size.png"),
+        ("TLAS Total Size", "Tamanho Total TLAS (bytes)", "tlas_total_size.png"),
+    ]
+
+    for metric_name, y_label, filename in metrics_to_plot:
+        subset = bvh_data[bvh_data["nome_metrica"] == metric_name].copy()
+        if subset.empty:
+            continue
+
+        subset["implementacao"] = pd.Categorical(
+            subset["implementacao"], 
+            categories=ALGORITHM_FOLDERS, 
+            ordered=True
+        )
+        subset = subset.sort_values("implementacao")
+
+        implementations = subset["implementacao"].astype(str).tolist()
+        values = subset["valor"].astype(float).tolist()
+
+        plt.figure(figsize=(8, 5))
+        x = np.arange(len(implementations))
+
+        bars = plt.bar(x, values, color=["#4C72B0", "#55A868", "#C44E52", "#8172B3"])
+        plt.xticks(x, implementations)
+        plt.title(metric_name)
+        plt.ylabel(y_label)
+
+        for bar, value in zip(bars, values):
+            if not math.isfinite(value):
+                continue
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                f"{value:,.0f}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
+
+        plt.grid(axis="y", alpha=0.25)
+        plt.tight_layout()
+
+        output_path = graph_dir / filename
+        plt.savefig(output_path, dpi=180, bbox_inches="tight")
+        plt.close()
+        generated += 1
+
+    return generated
+
 
 def main():
 
@@ -1377,6 +1501,11 @@ def main():
     validate_reports(reports)
 
     data = prepare_data(reports)
+
+    # Adiciona os dados dos logs de BVH na estrutura geral
+    bvh_df = parse_bvh_size_logs()
+    if not bvh_df.empty:
+        data = pd.concat([data, bvh_df], ignore_index=True)
 
     if data.empty:
         print(
@@ -1444,6 +1573,8 @@ def main():
         data,
     )
 
+    generated_bvh = generate_bvh_size_bar_charts(data)
+
     # ==============================================================
     # CSV
     # ==============================================================
@@ -1495,6 +1626,10 @@ def main():
 
     print(
         f"Gráficos de todas as métricas: {generated_all}"
+    )
+
+    print(
+        f"Gráficos de tamanho BVH: {generated_bvh}"
     )
 
     print(
