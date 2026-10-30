@@ -1441,6 +1441,79 @@ def generate_bvh_size_bar_charts(data):
     return generated
 
 
+def generate_combined_metrics_chart(data):
+    """
+    Gera um único gráfico de barras comparando as 4 métricas principais
+    (Tempo de Frame, Tamanho Total BLAS, Atividade da Warp e Consumo de Energia)
+    expressas em variação percentual (%) em relação à referência (default).
+    """
+    selected_metrics = [
+        "GPU Frame Duration (Present Delta)",
+        "BLAS Total Size",
+        "Compute Warps in Flight [Avg]",
+        "Power",
+    ]
+
+    # Filtra as métricas desejadas
+    subset = data[data["nome_metrica"].isin(selected_metrics)].copy()
+    if subset.empty:
+        print("Nenhuma das métricas selecionadas foi encontrada para o gráfico combinado.")
+        return False
+
+    # Calcula ou extrai a variação percentual em relação à referência ('default')
+    # Como o script já possui a lógica de comparação relativa, vamos reaproveitá-la:
+    pivot = subset.pivot_table(
+        index="nome_metrica",
+        columns="implementacao",
+        values="valor",
+        aggfunc="first",
+    )
+
+    if REFERENCE not in pivot.columns:
+        print(f"Referência '{REFERENCE}' não encontrada para o gráfico combinado.")
+        return False
+
+    ref_values = pivot[REFERENCE]
+    relative_data = pd.DataFrame(index=pivot.index)
+
+    for col in pivot.columns:
+        if col == REFERENCE:
+            continue
+        # ((valor - referencia) / |referencia|) * 100
+        relative_data[col] = ((pivot[col] - ref_values) / abs(ref_values)) * 100.0
+
+    if relative_data.empty:
+        return False
+
+    # Prepara para plotagem (transpõe para as implementações ficarem no eixo X)
+    plot_df = relative_data.T
+
+    plt.figure(figsize=(10, 6))
+
+    # Plota o gráfico de barras agrupadas
+    ax = plot_df.plot(kind="bar", figsize=(10, 6), width=0.8)
+
+    plt.title("Impacto Relativo (%) vs. Default (Múltiplas Métricas)")
+    plt.ylabel("Variação Percentual (%)")
+    plt.xlabel("Implementação")
+    plt.axhline(0, color="black", linewidth=0.8, linestyle="--")
+    plt.xticks(rotation=0)
+    plt.legend(title="Métricas", bbox_to_anchor=(1.05, 1), loc="upper left")
+    plt.grid(axis="y", linestyle=":", alpha=0.7)
+    plt.tight_layout()
+
+    # Salva na pasta de saída de gráficos
+    graph_dir = OUTPUT_DIR / "graficos"
+    graph_dir.mkdir(parents=True, exist_ok=True)
+    output_path = graph_dir / "metricas_combinadas.png"
+
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close()
+
+    print(f"Gráfico combinado gerado: {output_path}")
+    return True
+
+
 def main():
 
     OUTPUT_DIR.mkdir(
@@ -1574,6 +1647,8 @@ def main():
     )
 
     generated_bvh = generate_bvh_size_bar_charts(data)
+
+    generated_combined = generate_combined_metrics_chart(data)
 
     # ==============================================================
     # CSV
